@@ -1,4 +1,4 @@
-# Especificación del sistema — Backstage
+# Especificación del sistema — Armatupogo
 
 > Este documento es el relevamiento de requerimientos del proyecto. Se mantiene actualizado durante el desarrollo.
 > Regla práctica: si una funcionalidad no está definida en este documento, no forma parte del MVP salvo que el equipo la acuerde y actualice previamente.
