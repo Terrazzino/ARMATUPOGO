@@ -5,16 +5,11 @@
  */
 
 import { z } from "zod";
-import { VALIDATION_LIMITS } from "@/utils/constants";
+import { VALIDATION_LIMITS } from "@/lib/constants";
 
-/**
- * Esquema para crear una valoración
- */
-export const ratingSchema = z.object({
-  contractId: z.string().uuid("ID de contratación inválido"),
-  targetId: z.string().uuid("ID de usuario destinatario inválido"),
-  targetProjectId: z.string().uuid("ID de proyecto inválido").optional().nullable(),
-  score: z
+export const crearValoracionSchema = z.object({
+  contratacionId: z.string().uuid("ID de contratación inválido"),
+  puntaje: z
     .number()
     .int("El puntaje debe ser un número entero")
     .min(
@@ -25,7 +20,7 @@ export const ratingSchema = z.object({
       VALIDATION_LIMITS.RATING_MAX_SCORE,
       `El puntaje máximo es ${VALIDATION_LIMITS.RATING_MAX_SCORE}`
     ),
-  comment: z
+  comentario: z
     .string()
     .trim()
     .max(
@@ -36,5 +31,4 @@ export const ratingSchema = z.object({
     .or(z.literal("")),
 });
 
-export type RatingInput = z.infer<typeof ratingSchema>;
-
+export type CrearValoracionInput = z.infer<typeof crearValoracionSchema>;

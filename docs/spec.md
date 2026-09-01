@@ -1,4 +1,4 @@
-# Especificación del sistema — Armatupogo
+# Especificación del sistema — Arma tu pogo
 
 > Este documento es el relevamiento de requerimientos del proyecto. Se mantiene actualizado durante el desarrollo.
 > Regla práctica: si una funcionalidad no está definida en este documento, no forma parte del MVP salvo que el equipo la acuerde y actualice previamente.
@@ -9,13 +9,13 @@
 
 **Qué ocurre hoy sin el sistema:** músicos y organizadores suelen encontrarse mediante redes sociales, contactos personales o publicaciones aisladas. La información sobre cachés, eventos, disponibilidad y antecedentes queda dispersa y no existe un espacio centralizado que facilite la contratación y permita conocer la reputación de las partes.
 
-**Qué mejora:** Backstage centraliza la oferta y demanda de músicos para eventos, permite publicar y descubrir oportunidades, facilita la negociación del caché, registra los acuerdos alcanzados y construye un sistema de reputación para músicos y organizadores. Además, ofrece una cartelera pública para que el público pueda descubrir eventos y artistas.
+**Qué mejora:** Arma tu pogo centraliza la oferta y demanda de músicos para eventos, permite publicar y descubrir oportunidades, facilita la negociación del caché, registra los acuerdos alcanzados y construye un sistema de reputación para músicos y organizadores. Además, ofrece una cartelera pública para que el público pueda descubrir eventos y artistas.
 
 ## 2. Alcance del MVP
 
 El MVP se concentrará en el núcleo del marketplace: registro y autenticación de usuarios, administración de proyectos musicales, publicación y búsqueda de eventos, postulación y selección de músicos, negociación mediante ofertas y contraofertas, registro del acuerdo alcanzado, valoración posterior de las partes y cartelera pública de eventos.
 
-El MVP no procesará pagos reales ni realizará transferencias de dinero. El sistema podrá registrar el monto acordado entre las partes, pero el pago efectivo se realizará por fuera de Backstage.
+El MVP no procesará pagos reales ni realizará transferencias de dinero. El sistema podrá registrar el monto acordado entre las partes, pero el pago efectivo se realizará por fuera de Arma tu pogo.
 
 La venta real de entradas y los mecanismos avanzados de monetización podrán quedar preparados conceptualmente para una versión posterior, pero no forman parte del procesamiento de pagos del MVP.
 
@@ -57,7 +57,7 @@ Formato: **Como** <rol>, **quiero** <acción>, **para** <beneficio>.
 
 ### H1 — Registrar una cuenta
 
-**Como** usuario, **quiero** registrarme indicando mi rol, **para** poder utilizar las funcionalidades correspondientes de Backstage.
+**Como** usuario, **quiero** registrarme indicando mi rol, **para** poder utilizar las funcionalidades correspondientes de Arma tu pogo.
 
 Criterios de aceptación:
 - [ ] Cuando una persona completa los datos obligatorios y selecciona un rol permitido, entonces se crea su cuenta.
@@ -192,7 +192,7 @@ Las restricciones que definen el comportamiento del sistema y que no deben queda
 - Cada oferta debe registrar quién la realizó y cuándo.
 - Una contraoferta reemplaza la propuesta vigente para efectos de negociación, pero el historial de ofertas se conserva.
 - El monto acordado se considera definitivo dentro de la contratación y no puede ser modificado unilateralmente.
-- El dinero real no se transfiere mediante Backstage durante el MVP.
+- El dinero real no se transfiere mediante Arma tu pogo durante el MVP.
 - Solo las partes que participaron de una contratación pueden valorarse entre sí.
 - Una valoración solo puede realizarse una vez por parte y por contratación.
 - La valoración debe estar respaldada por una contratación existente.
@@ -209,7 +209,7 @@ Las restricciones que definen el comportamiento del sistema y que no deben queda
 ### Usabilidad
 
 - [ ] Los flujos principales deben ser comprensibles sin capacitación previa.
-- [ ] Los formularios deben conservar la información ya ingresada cuando exista un error de validación.
+- [ ] Los formularios deben conservar la información ya ingresada cuando exista un error de validación (usando Zod y React Hook Form).
 - [ ] Los estados de eventos y contrataciones deben ser claros para evitar confusiones entre postulación, negociación, acuerdo, cancelación y cierre.
 - [ ] El proceso de negociación debe mostrar claramente la oferta vigente y el historial de propuestas.
 - [ ] La aplicación debe ser responsive y usable en celular, tablet y desktop.
@@ -222,25 +222,32 @@ Las restricciones que definen el comportamiento del sistema y que no deben queda
 - [ ] El contraste entre texto y fondo llega a 4,5:1 (3:1 si la letra es grande).
 - [ ] Los errores nunca se comunican solo mediante color: siempre incluyen texto.
 
-### Seguridad
+### Seguridad y Validación
 
-- [ ] Las funcionalidades privadas requieren autenticación.
-- [ ] El backend debe validar el rol y los permisos; no se debe confiar únicamente en las restricciones de la interfaz.
+- [ ] Las funcionalidades privadas requieren autenticación (Supabase Auth).
+- [ ] El servidor (Server Actions) debe validar rigurosamente el rol, permisos y esquemas con Zod antes de mutar la base de datos con Prisma.
 - [ ] Un músico solo puede modificar sus propios proyectos.
 - [ ] Un organizador solo puede modificar sus propios eventos.
 - [ ] Las negociaciones solo son accesibles para las partes involucradas.
 - [ ] Las valoraciones solo pueden ser creadas por participantes de la contratación correspondiente.
 - [ ] Las credenciales, claves y secretos no se almacenan en el repositorio.
-- [ ] Las variables sensibles se gestionan mediante variables de entorno.
-- [ ] Si se utiliza Supabase, las políticas de RLS deben impedir el acceso no autorizado a datos privados.
+- [ ] Las variables sensibles se gestionan mediante variables de entorno (`DATABASE_URL`, Supabase Keys).
 
-## 9. Integraciones externas
+## 9. Integraciones y Tecnologías Core
 
-**Supabase:** base de datos, autenticación y almacenamiento de archivos si el MVP requiere imágenes de eventos o proyectos.
+**Prisma ORM:** Capa de acceso a datos, modelado relacional y tipado estricto en PostgreSQL.
 
-**Vercel:** despliegue de la aplicación web.
+**PostgreSQL / Supabase:** Base de datos relacional y servicios de plataforma.
 
-**GitHub:** repositorio, control de versiones y flujo de trabajo mediante ramas y Pull Requests.
+**Supabase Auth:** Autenticación segura de usuarios y gestión de sesiones mediante `@supabase/ssr`.
+
+**Supabase Storage:** Almacenamiento seguro de archivos e imágenes (banners, fotos de proyectos) si aplica.
+
+**Zod:** Validación declarativa de esquemas tanto en cliente como en servidor.
+
+**Vercel:** Despliegue continuo de la aplicación web Next.js.
+
+**GitHub:** Repositorio, control de versiones y flujo de trabajo colaborativo.
 
 No se incorporarán integraciones de pago en el MVP.
 

@@ -7,11 +7,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { registerSchemaWithConfirm } from "@/lib/validations/auth";
+import { registroSchemaConConfirm, type RegistroInputConConfirm } from "@/lib/validations/auth";
 import { registerUser } from "@/app/actions/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import type { RegisterInputWithConfirm } from "@/lib/validations/auth";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -22,15 +21,15 @@ export function RegisterForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterInputWithConfirm>({
-    resolver: zodResolver(registerSchemaWithConfirm),
+  } = useForm<RegistroInputConConfirm>({
+    resolver: zodResolver(registroSchemaConConfirm),
     defaultValues: {
-      role: "MUSICIAN",
+      rol: "MUSICO",
       agreeTerms: false,
     },
   });
 
-  async function onSubmit(data: RegisterInputWithConfirm) {
+  async function onSubmit(data: RegistroInputConConfirm) {
     setIsLoading(true);
     setServerError(null);
 
@@ -42,8 +41,6 @@ export function RegisterForm() {
       return;
     }
 
-    // Si no hay error, la acción redirige automáticamente
-    // pero por si acaso:
     router.push("/auth/login?registered=true");
   }
 
@@ -71,59 +68,59 @@ export function RegisterForm() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label
-            htmlFor="firstName"
+            htmlFor="nombre"
             className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
           >
             Nombre
           </label>
           <input
-            {...register("firstName")}
+            {...register("nombre")}
             type="text"
-            id="firstName"
+            id="nombre"
             placeholder="Juan"
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isLoading}
           />
-          {errors.firstName && (
+          {errors.nombre && (
             <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-              {errors.firstName.message}
+              {errors.nombre.message}
             </p>
           )}
         </div>
 
         <div>
           <label
-            htmlFor="lastName"
+            htmlFor="apellido"
             className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
           >
             Apellido
           </label>
           <input
-            {...register("lastName")}
+            {...register("apellido")}
             type="text"
-            id="lastName"
+            id="apellido"
             placeholder="Pérez"
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isLoading}
           />
-          {errors.lastName && (
+          {errors.apellido && (
             <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-              {errors.lastName.message}
+              {errors.apellido.message}
             </p>
           )}
         </div>
       </div>
 
       <div>
-        <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+        <label htmlFor="rol" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
           ¿Cuál es tu rol?
         </label>
         <div className="space-y-2">
           <label className="flex items-center">
             <input
-              {...register("role")}
+              {...register("rol")}
               type="radio"
-              value="MUSICIAN"
+              value="MUSICO"
               disabled={isLoading}
               className="w-4 h-4 text-blue-500 cursor-pointer"
             />
@@ -133,9 +130,9 @@ export function RegisterForm() {
           </label>
           <label className="flex items-center">
             <input
-              {...register("role")}
+              {...register("rol")}
               type="radio"
-              value="ORGANIZER"
+              value="ORGANIZADOR"
               disabled={isLoading}
               className="w-4 h-4 text-blue-500 cursor-pointer"
             />
@@ -144,9 +141,9 @@ export function RegisterForm() {
             </span>
           </label>
         </div>
-        {errors.role && (
+        {errors.rol && (
           <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-            {errors.role.message}
+            {errors.rol.message}
           </p>
         )}
       </div>
@@ -203,7 +200,7 @@ export function RegisterForm() {
           className="w-4 h-4 mt-1 text-blue-500"
         />
         <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
-          Acepto los términos y condiciones de Backstage
+          Acepto los términos y condiciones de Arma tu pogo
         </span>
       </label>
       {errors.agreeTerms && (

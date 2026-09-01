@@ -5,18 +5,15 @@
  */
 
 import { z } from "zod";
-import { VALIDATION_LIMITS } from "@/utils/constants";
+import { VALIDATION_LIMITS } from "@/lib/constants";
 
-/**
- * Esquema para enviar una oferta o contraoferta
- */
-export const createOfferSchema = z.object({
-  contractId: z.string().uuid("ID de contratación inválido"),
-  amount: z
+export const crearOfertaSchema = z.object({
+  contratacionId: z.string().uuid("ID de contratación inválido"),
+  monto: z
     .number()
     .min(0, "El monto de la oferta no puede ser negativo")
     .max(VALIDATION_LIMITS.MAX_PRICE, "El monto supera el límite permitido"),
-  message: z
+  mensaje: z
     .string()
     .trim()
     .max(
@@ -27,14 +24,4 @@ export const createOfferSchema = z.object({
     .or(z.literal("")),
 });
 
-/**
- * Esquema para responder a una oferta (aceptar o rechazar)
- */
-export const respondOfferSchema = z.object({
-  offerId: z.string().uuid("ID de oferta inválido"),
-  action: z.enum(["ACCEPT", "REJECT"]),
-});
-
-export type CreateOfferInput = z.infer<typeof createOfferSchema>;
-export type RespondOfferInput = z.infer<typeof respondOfferSchema>;
-
+export type CrearOfertaInput = z.infer<typeof crearOfertaSchema>;

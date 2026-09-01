@@ -13,15 +13,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Backstage - Marketplace de Música",
+  title: "Arma tu pogo - Marketplace de Música",
   description:
     "Conecta proyectos musicales, organizadores de eventos y público. Publica eventos, postúlate a oportunidades y negocia contrataciones.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

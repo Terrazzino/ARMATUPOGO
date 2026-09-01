@@ -8,26 +8,23 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/app/actions/auth";
 
 export const metadata = {
-  title: "Dashboard - Backstage",
-  description: "Tu dashboard en Backstage",
+  title: "Dashboard - Arma tu pogo",
+  description: "Tu dashboard en Arma tu pogo",
 };
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
-  // Proteger ruta: redirigir si no está autenticado
   if (!user) {
     redirect("/auth/login");
   }
 
-  // Redirigir según rol
-  if (user.role === "MUSICIAN") {
+  if (user.rol === "MUSICO") {
     redirect("/dashboard/musician");
-  } else if (user.role === "ORGANIZER") {
+  } else if (user.rol === "ORGANIZADOR") {
     redirect("/dashboard/organizer");
   }
 
-  // Fallback (no debería ocurrir)
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">

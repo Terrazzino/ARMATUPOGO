@@ -6,7 +6,7 @@
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Confirmar email - Backstage",
+  title: "Confirmar email - Arma tu pogo",
 };
 
 export default async function AuthCallbackPage() {

@@ -1,18 +1,14 @@
 /**
  * Esquemas de validación Zod para Proyectos Musicales.
- * Valida los datos de entrada en formularios y Server Actions.
  *
  * @see docs/spec.md H2
  */
 
 import { z } from "zod";
-import { VALIDATION_LIMITS } from "@/utils/constants";
+import { VALIDATION_LIMITS } from "@/lib/constants";
 
-/**
- * Esquema para crear o actualizar un proyecto musical
- */
-export const projectSchema = z.object({
-  name: z
+export const proyectoMusicalSchema = z.object({
+  nombre: z
     .string()
     .trim()
     .min(
@@ -23,12 +19,12 @@ export const projectSchema = z.object({
       VALIDATION_LIMITS.NAME_MAX_LENGTH,
       `El nombre artístico no puede superar los ${VALIDATION_LIMITS.NAME_MAX_LENGTH} caracteres`
     ),
-  genre: z
+  genero: z
     .string()
     .trim()
     .min(2, "El género musical es obligatorio")
     .max(50, "El género musical no puede superar los 50 caracteres"),
-  description: z
+  descripcion: z
     .string()
     .trim()
     .max(
@@ -37,20 +33,20 @@ export const projectSchema = z.object({
     )
     .optional()
     .or(z.literal("")),
-  approximateCache: z
+  cacheAproximado: z
     .number()
     .min(0, "El caché aproximado no puede ser negativo")
     .max(VALIDATION_LIMITS.MAX_PRICE, "El monto supera el límite permitido")
     .optional()
     .nullable(),
-  location: z.string().trim().max(100).optional().or(z.literal("")),
-  city: z.string().trim().max(100).optional().or(z.literal("")),
-  imageUrl: z.string().url("URL de imagen inválida").optional().or(z.literal("")),
+  ubicacion: z.string().trim().max(100).optional().or(z.literal("")),
+  ciudad: z.string().trim().max(100).optional().or(z.literal("")),
+  imagenUrl: z.string().url("URL de imagen inválida").optional().or(z.literal("")),
   spotifyUrl: z.string().url("URL de Spotify inválida").optional().or(z.literal("")),
   youtubeUrl: z.string().url("URL de YouTube inválida").optional().or(z.literal("")),
   instagramUrl: z.string().url("URL de Instagram inválida").optional().or(z.literal("")),
-  websiteUrl: z.string().url("URL de sitio web inválida").optional().or(z.literal("")),
-  customLinks: z
+  sitioWebUrl: z.string().url("URL de sitio web inválida").optional().or(z.literal("")),
+  enlacesPersonalizados: z
     .array(
       z.object({
         title: z.string().min(1, "El título del enlace es requerido").max(50),
@@ -61,5 +57,4 @@ export const projectSchema = z.object({
     .default([]),
 });
 
-export type ProjectInput = z.infer<typeof projectSchema>;
-
+export type ProyectoMusicalInput = z.infer<typeof proyectoMusicalSchema>;
