@@ -4,10 +4,10 @@ export default function Home() {
       <main className="flex flex-col items-center justify-center gap-8 px-4 py-16 max-w-2xl">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-4">
-            Bienvenido a Backstage
+            ARMA TU POGO
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-            El marketplace donde conectan músicos, organizadores y público.
+            Tu banda, tu evento, tus conciertos.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export default function Home() {
               Público
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Descubre eventos y artistas en la cartelera
+              Descubre conciertos en la cartelera
             </p>
           </div>
         </div>
