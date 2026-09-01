@@ -6,28 +6,19 @@
 
 import { z } from "zod";
 
-/**
- * Esquema para postularse a un evento o invitar a un proyecto
- */
-export const createContractSchema = z.object({
-  eventId: z.string().uuid("ID de evento inválido"),
-  musicalProjectId: z.string().uuid("ID de proyecto musical inválido"),
-  organizerId: z.string().uuid("ID de organizador inválido"),
-  musicianId: z.string().uuid("ID de músico inválido"),
+export const crearContratacionSchema = z.object({
+  eventoId: z.string().uuid("ID de evento inválido"),
+  proyectoMusicalId: z.string().uuid("ID de proyecto musical inválido"),
 });
 
-/**
- * Esquema para cancelar una contratación
- */
-export const cancelContractSchema = z.object({
-  contractId: z.string().uuid("ID de contratación inválido"),
-  cancellationReason: z
+export const cancelarContratacionSchema = z.object({
+  contratacionId: z.string().uuid("ID de contratación inválido"),
+  motivoCancelacion: z
     .string()
     .trim()
     .min(5, "El motivo debe tener al menos 5 caracteres")
     .max(500, "El motivo no puede superar los 500 caracteres"),
 });
 
-export type CreateContractInput = z.infer<typeof createContractSchema>;
-export type CancelContractInput = z.infer<typeof cancelContractSchema>;
-
+export type CrearContratacionInput = z.infer<typeof crearContratacionSchema>;
+export type CancelarContratacionInput = z.infer<typeof cancelarContratacionSchema>;

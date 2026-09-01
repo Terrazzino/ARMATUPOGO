@@ -1,8 +1,8 @@
 /**
  * Acciones del servidor para autenticación
- * Ejecutan lógica sensible en el servidor, nunca en el cliente
+ * Ejecutan lógica sensible en el servidor con Prisma y Zod
  *
- * @see https://nextjs.org/docs/app/building-application-features/actions
+ * @see AGENTS.md § 8. ACCESO A DATOS Y SERVICIOS: PRISMA Y SUPABASE
  * @see AGENTS.md § 10. AUTENTICACIÓN Y AUTORIZACIÓN
  */
 
@@ -10,45 +10,49 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import {
-  registerSchemaWithConfirm,
+  registroSchemaConConfirm,
   loginSchema,
-  type RegisterInputWithConfirm,
+  type RegistroInputConConfirm,
   type LoginInput,
 } from "@/lib/validations/auth";
-import { normalizeError, ValidationError } from "@/utils/errors";
+import { normalizeError, ValidationError } from "@/lib/errors";
 
 /**
- * Registra un nuevo usuario con su perfil
- *
- * @param input - Datos de registro validados
- * @returns Error si falla, redirige si éxito
+ * Registra un nuevo usuario en Supabase Auth y crea su perfil en PostgreSQL vía Prisma (modelo Usuario)
  */
-export async function registerUser(input: RegisterInputWithConfirm) {
+export async function registerUser(input: RegistroInputConConfirm) {
   try {
-    // Validar entrada
-    const validatedInput = registerSchemaWithConfirm.parse(input);
+    const validatedInput = registroSchemaConConfirm.parse(input);
 
     const supabase = await createClient();
+    if (!supabase) {
+      throw new ValidationError(
+        "El servicio de autenticación no está configurado. Verifica las variables de entorno."
+      );
+    }
 
     // 1. Crear usuario en Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedInput.email,
       password: validatedInput.password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
         data: {
-          first_name: validatedInput.firstName,
-          last_name: validatedInput.lastName,
-          role: validatedInput.role,
+          first_name: validatedInput.nombre,
+          last_name: validatedInput.apellido,
+          role: validatedInput.rol,
         },
       },
     });
 
     if (authError) {
-      // Manejar error común: usuario ya existe
-      if (authError.message.includes("already registered")) {
-        throw new ValidationError("El email ya está registrado", {
+      if (
+        authError.message.toLowerCase().includes("already registered") ||
+        authError.message.toLowerCase().includes("user already exists")
+      ) {
+        throw new ValidationError("El email ya se encuentra registrado", {
           field: "email",
         });
       }
@@ -56,27 +60,27 @@ export async function registerUser(input: RegisterInputWithConfirm) {
     }
 
     if (!authData.user) {
-      throw new Error("Usuario no fue creado correctamente");
+      throw new Error("No se pudo crear el usuario en el servicio de autenticación");
     }
 
-    // 2. Crear perfil del usuario
-    const { error: profileError } = await supabase
-      .from("profile_users")
-      .insert({
-        id: authData.user.id,
-        email: validatedInput.email,
-        first_name: validatedInput.firstName,
-        last_name: validatedInput.lastName,
-        role: validatedInput.role,
+    // 2. Crear el perfil en la base de datos usando el modelo Usuario de Prisma
+    try {
+      await prisma.usuario.create({
+        data: {
+          id: authData.user.id,
+          email: validatedInput.email.toLowerCase().trim(),
+          nombre: validatedInput.nombre.trim(),
+          apellido: validatedInput.apellido.trim(),
+          rol: validatedInput.rol,
+        },
       });
-
-    if (profileError) {
-      // Limpiar: eliminar usuario de auth si falla el perfil
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw profileError;
+    } catch (dbError) {
+      console.error("Error creating Usuario via Prisma:", dbError);
+      throw new ValidationError(
+        "No se pudo registrar el perfil de usuario. Por favor intenta de nuevo."
+      );
     }
 
-    // Redirigir a login (usuario necesita confirmar email o puede loguear directamente)
     redirect("/auth/login?registered=true");
   } catch (error) {
     const normalizedError = normalizeError(error);
@@ -89,35 +93,45 @@ export async function registerUser(input: RegisterInputWithConfirm) {
 }
 
 /**
- * Autentica un usuario existente
- *
- * @param input - Email y contraseña
- * @returns Error si falla, redirige al dashboard si éxito
+ * Autentica un usuario existente con Supabase Auth y obtiene su rol en Prisma
  */
 export async function loginUser(input: LoginInput) {
   try {
-    // Validar entrada
     const validatedInput = loginSchema.parse(input);
 
     const supabase = await createClient();
+    if (!supabase) {
+      throw new ValidationError(
+        "El servicio de autenticación no está configurado. Verifica las variables de entorno."
+      );
+    }
 
-    // Autenticar con Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: validatedInput.email,
+      email: validatedInput.email.toLowerCase().trim(),
       password: validatedInput.password,
     });
 
     if (error) {
-      // Usar mensaje genérico por seguridad
       throw new ValidationError("Email o contraseña incorrectos");
     }
 
     if (!data.session) {
-      throw new Error("No se estableció sesión");
+      throw new Error("No se pudo iniciar sesión. Por favor verifica tus credenciales.");
     }
 
-    // Redirigir al dashboard
-    redirect("/dashboard");
+    // Obtener rol desde Prisma para redirección personalizada
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: data.user.id },
+      select: { rol: true },
+    });
+
+    if (usuario?.rol === "MUSICO") {
+      redirect("/dashboard/musician");
+    } else if (usuario?.rol === "ORGANIZADOR") {
+      redirect("/dashboard/organizer");
+    } else {
+      redirect("/dashboard");
+    }
   } catch (error) {
     const normalizedError = normalizeError(error);
     return {
@@ -134,10 +148,11 @@ export async function loginUser(input: LoginInput) {
 export async function logoutUser() {
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      throw error;
+    if (supabase) {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
     }
 
     redirect("/");
@@ -152,59 +167,30 @@ export async function logoutUser() {
 }
 
 /**
- * Obtiene el usuario actual autenticado
- * Se usa en Server Components
+ * Obtiene el usuario autenticado desde Prisma (modelo Usuario)
  */
 export async function getCurrentUser() {
   try {
     const supabase = await createClient();
+    if (!supabase) {
+      return null;
+    }
 
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser();
 
-    if (error) {
-      throw error;
-    }
-
-    if (!user) {
+    if (error || !user) {
       return null;
     }
 
-    // Obtener perfil del usuario
-    const { data: profile, error: profileError } = await supabase
-      .from("profile_users")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: user.id },
+    });
 
-    if (profileError) {
-      throw profileError;
-    }
-
-    return profile;
-  } catch (error) {
-    console.error("Error getting current user:", error);
+    return usuario;
+  } catch {
     return null;
   }
-}
-
-/**
- * Obtiene el usuario actual para uso en rutas API
- * Útil para proteger endpoints
- */
-export async function getCurrentUserForApi() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return null;
-  }
-
-  return user;
 }

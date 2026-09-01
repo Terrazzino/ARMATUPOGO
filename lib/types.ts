@@ -1,228 +1,152 @@
 /**
- * Tipos de dominio compartidos en toda la aplicación.
- * Corresponden a las entidades definidas en docs/spec.md
+ * Tipos de dominio compartidos en toda la aplicación (Arma tu pogo).
+ * Corresponden a las entidades y enums definidos en prisma/schema.prisma y docs/spec.md
  */
 
-/**
- * Roles funcionales definidos en el MVP
- * @see docs/spec.md § 3. Roles
- */
-export enum UserRole {
-  MUSICIAN = "MUSICIAN",
-  ORGANIZER = "ORGANIZER",
-  PUBLIC = "PUBLIC", // No autenticado
-}
+export type RolUsuario = "MUSICO" | "ORGANIZADOR";
+
+export type EstadoEvento =
+  | "BORRADOR"
+  | "PUBLICADO"
+  | "EN_CURSO"
+  | "COMPLETADO"
+  | "CANCELADO";
+
+export type EstadoContratacion =
+  | "PENDIENTE"
+  | "NEGOCIANDO"
+  | "ACORDADO"
+  | "CANCELADO"
+  | "COMPLETADO"
+  | "RECHAZADO";
+
+export type EstadoOferta =
+  | "PROPUESTA"
+  | "ACEPTADA"
+  | "RECHAZADA"
+  | "CONTRAOFERTADA";
+
+export type TipoEntrada = "GENERAL" | "VIP" | "ANTICIPADA" | "ENTRADA_LIBRE";
 
 /**
- * Estados posibles de un evento
- * @see docs/spec.md § 4. Entidades
+ * Representación de un usuario en el sistema
  */
-export enum EventStatus {
-  DRAFT = "DRAFT",
-  PUBLISHED = "PUBLISHED",
-  IN_PROGRESS = "IN_PROGRESS",
-  COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED",
-}
-
-/**
- * Estados posibles de una contratación
- * @see docs/spec.md § 4. Entidades y § 7. Reglas de negocio
- */
-export enum ContractStatus {
-  PENDING = "PENDING", // Postulación inicial o propuesta inicial
-  NEGOTIATING = "NEGOTIATING", // En negociación de ofertas
-  AGREED = "AGREED", // Oferta aceptada / acuerdo cerrado
-  CANCELLED = "CANCELLED", // Cancelada por alguna de las partes
-  COMPLETED = "COMPLETED", // Evento finalizado
-  REJECTED = "REJECTED", // Postulación o negociación rechazada
-}
-
-/**
- * Estados posibles de una oferta
- * @see docs/spec.md § 4. Entidades y H6
- */
-export enum OfferStatus {
-  PROPOSED = "PROPOSED", // Propuesta o contraoferta vigente
-  REJECTED = "REJECTED", // Rechazada
-  COUNTERED = "COUNTERED", // Reemplazada por una nueva contraoferta
-  ACCEPTED = "ACCEPTED", // Aceptada por la otra parte
-}
-
-/**
- * Tipos de entrada conceptuales
- * @see docs/spec.md § 4. Entidades
- */
-export enum TicketType {
-  GENERAL = "GENERAL",
-  VIP = "VIP",
-  ANTICIPADA = "ANTICIPADA",
-  ENTRADA_LIBRE = "ENTRADA_LIBRE",
-}
-
-/**
- * Perfil de usuario en la base de datos
- */
-export interface UserProfile {
+export interface Usuario {
   id: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: "MUSICIAN" | "ORGANIZER";
-  avatar_url?: string | null;
-  bio?: string | null;
-  phone?: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Representación de un usuario autenticado
- * @see docs/spec.md § 4. Entidades
- */
-export interface User {
-  id: string;
-  email: string;
-  role: UserRole;
-  created_at: string;
-  updated_at: string;
+  nombre: string;
+  apellido: string;
+  rol: RolUsuario;
+  fotoPerfilUrl?: string | null;
+  biografia?: string | null;
+  telefono?: string | null;
+  creadoEn: Date | string;
+  actualizadoEn: Date | string;
 }
 
 /**
  * Proyecto musical administrado por un músico
- * @see docs/spec.md § 4. Entidades y H2
  */
-export interface MusicalProject {
+export interface ProyectoMusical {
   id: string;
-  user_id: string;
-  name: string;
-  description?: string | null;
-  genre: string;
-  approximate_cache?: number | null;
-  location?: string | null;
-  city?: string | null;
-  image_url?: string | null;
-  spotify_url?: string | null;
-  youtube_url?: string | null;
-  instagram_url?: string | null;
-  website_url?: string | null;
-  custom_links?: Array<{ title: string; url: string }>;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  usuarioId: string;
+  nombre: string;
+  descripcion?: string | null;
+  genero: string;
+  cacheAproximado?: number | string | null;
+  ubicacion?: string | null;
+  ciudad?: string | null;
+  imagenUrl?: string | null;
+  spotifyUrl?: string | null;
+  youtubeUrl?: string | null;
+  instagramUrl?: string | null;
+  sitioWebUrl?: string | null;
+  enlacesPersonalizados?: Array<{ title: string; url: string }>;
+  estaActivo: boolean;
+  creadoEn: Date | string;
+  actualizadoEn: Date | string;
 }
 
 /**
- * Evento publicado por un organizador
- * @see docs/spec.md § 4. Entidades y H3
+ * Evento o recital publicado por un organizador
  */
-export interface Event {
+export interface Evento {
   id: string;
-  organizer_id: string;
-  title: string;
-  description?: string | null;
-  event_date: string;
-  location: string;
-  venue_name?: string | null;
-  city?: string | null;
-  required_musicians_count: number;
-  offered_cache?: number | null;
-  status: EventStatus;
-  banner_url?: string | null;
-  created_at: string;
-  updated_at: string;
+  organizadorId: string;
+  titulo: string;
+  descripcion?: string | null;
+  fechaEvento: Date | string;
+  ubicacion: string;
+  nombreLugar?: string | null;
+  ciudad?: string | null;
+  cantidadMusicosRequerida: number;
+  cacheOfrecido?: number | string | null;
+  estado: EstadoEvento;
+  bannerUrl?: string | null;
+  creadoEn: Date | string;
+  actualizadoEn: Date | string;
 }
 
 /**
- * Contratación entre un evento y un proyecto musical
- * @see docs/spec.md § 4. Entidades y H7
+ * Contratación y postulación entre un evento y un proyecto musical
  */
-export interface Contract {
+export interface Contratacion {
   id: string;
-  event_id: string;
-  musical_project_id: string;
-  organizer_id: string;
-  musician_id: string;
-  status: ContractStatus;
-  agreed_amount?: number | null;
-  agreed_at?: string | null;
-  cancelled_at?: string | null;
-  cancellation_reason?: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
+  eventoId: string;
+  proyectoMusicalId: string;
+  organizadorId: string;
+  musicoId: string;
+  estado: EstadoContratacion;
+  montoPactado?: number | string | null;
+  fechaAcuerdo?: Date | string | null;
+  fechaCancelacion?: Date | string | null;
+  motivoCancelacion?: string | null;
+  creadoPorId: string;
+  creadoEn: Date | string;
+  actualizadoEn: Date | string;
 }
 
 /**
- * Oferta o propuesta económica dentro de una contratación
- * @see docs/spec.md § 4. Entidades y H6
+ * Oferta o contraoferta económica dentro de una negociación
  */
-export interface Offer {
+export interface Oferta {
   id: string;
-  contract_id: string;
-  sender_id: string;
-  amount: number;
-  message?: string | null;
-  status: OfferStatus;
-  created_at: string;
-  updated_at: string;
+  contratacionId: string;
+  remitenteId: string;
+  monto: number | string;
+  mensaje?: string | null;
+  estado: EstadoOferta;
+  creadoEn: Date | string;
+  actualizadoEn: Date | string;
 }
 
 /**
- * Valoración posterior a la realización de un evento
- * @see docs/spec.md § 4. Entidades y H8, H9
+ * Valoración mutua post-recital
  */
-export interface Rating {
+export interface Valoracion {
   id: string;
-  contract_id: string;
-  author_id: string;
-  target_id: string;
-  target_project_id?: string | null;
-  score: number; // 1 a 5
-  comment?: string | null;
-  created_at: string;
-  updated_at: string;
+  contratacionId: string;
+  autorId: string;
+  destinatarioId: string;
+  proyectoDestinatarioId?: string | null;
+  puntaje: number;
+  comentario?: string | null;
+  creadoEn: Date | string;
+  actualizadoEn: Date | string;
 }
 
 /**
- * Información conceptual de entradas para un evento (MVP)
- * @see docs/spec.md § 4. Entidades
+ * Entradas para un evento
  */
-export interface TicketInfo {
+export interface Entrada {
   id: string;
-  event_id: string;
-  ticket_type: string;
-  price: number;
-  capacity?: number | null;
-  description?: string | null;
-  external_purchase_url?: string | null;
-  is_free: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Sesión del usuario actual
- */
-export interface Session {
-  user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
-}
-
-/**
- * Tipo para respuestas de error estándar
- */
-export interface ErrorResponse {
-  error: string;
-  message: string;
-  details?: Record<string, unknown>;
-}
-
-/**
- * Tipo para respuestas exitosas
- */
-export interface SuccessResponse<T> {
-  data: T;
-  message?: string;
+  eventoId: string;
+  tipoEntrada: string;
+  precio: number | string;
+  capacidad?: number | null;
+  descripcion?: string | null;
+  urlCompraExterna?: string | null;
+  esGratuita: boolean;
+  creadoEn: Date | string;
+  actualizadoEn: Date | string;
 }

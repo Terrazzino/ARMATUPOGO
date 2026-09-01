@@ -1,18 +1,14 @@
 /**
- * Esquemas de validación Zod para Eventos.
- * Valida los datos de entrada en formularios y Server Actions.
+ * Esquemas de validación Zod para Eventos y Recitales.
  *
  * @see docs/spec.md H3
  */
 
 import { z } from "zod";
-import { VALIDATION_LIMITS, EVENT_STATES } from "@/utils/constants";
+import { VALIDATION_LIMITS, EVENT_STATES } from "@/lib/constants";
 
-/**
- * Esquema para crear o actualizar un evento
- */
-export const eventSchema = z.object({
-  title: z
+export const eventoSchema = z.object({
+  titulo: z
     .string()
     .trim()
     .min(
@@ -23,7 +19,7 @@ export const eventSchema = z.object({
       VALIDATION_LIMITS.TITLE_MAX_LENGTH,
       `El título no puede superar los ${VALIDATION_LIMITS.TITLE_MAX_LENGTH} caracteres`
     ),
-  description: z
+  descripcion: z
     .string()
     .trim()
     .max(
@@ -32,32 +28,31 @@ export const eventSchema = z.object({
     )
     .optional()
     .or(z.literal("")),
-  eventDate: z
+  fechaEvento: z
     .string()
     .refine((val) => !isNaN(Date.parse(val)), {
       message: "Fecha y hora del evento inválida",
     }),
-  location: z
+  ubicacion: z
     .string()
     .trim()
     .min(3, "La ubicación o dirección es obligatoria")
     .max(150, "La ubicación no puede superar los 150 caracteres"),
-  venueName: z.string().trim().max(100).optional().or(z.literal("")),
-  city: z.string().trim().max(100).optional().or(z.literal("")),
-  requiredMusiciansCount: z
+  nombreLugar: z.string().trim().max(100).optional().or(z.literal("")),
+  ciudad: z.string().trim().max(100).optional().or(z.literal("")),
+  cantidadMusicosRequerida: z
     .number()
     .int("Debe ser un número entero")
     .min(1, "Se requiere al menos 1 proyecto musical")
     .max(50, "El límite máximo es 50 proyectos musicales"),
-  offeredCache: z
+  cacheOfrecido: z
     .number()
     .min(0, "El caché ofrecido no puede ser negativo")
     .max(VALIDATION_LIMITS.MAX_PRICE, "El monto supera el límite permitido")
     .optional()
     .nullable(),
-  status: z.enum(EVENT_STATES).optional().default("PUBLISHED"),
+  estado: z.enum(EVENT_STATES).optional().default("PUBLICADO"),
   bannerUrl: z.string().url("URL de banner inválida").optional().or(z.literal("")),
 });
 
-export type EventInput = z.infer<typeof eventSchema>;
-
+export type EventoInput = z.infer<typeof eventoSchema>;

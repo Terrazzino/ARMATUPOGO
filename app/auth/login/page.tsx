@@ -10,8 +10,8 @@ interface LoginPageProps {
 }
 
 export const metadata = {
-  title: "Iniciar sesión - Backstage",
-  description: "Inicia sesión en tu cuenta de Backstage",
+  title: "Iniciar sesión - Arma tu pogo",
+  description: "Inicia sesión en tu cuenta de Arma tu pogo",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -26,7 +26,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Iniciar sesión
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Bienvenido a Backstage
+            Bienvenido a Arma tu pogo
           </p>
         </div>
 

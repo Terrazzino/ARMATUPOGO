@@ -6,8 +6,8 @@
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const metadata = {
-  title: "Registrarse - Backstage",
-  description: "Crea tu cuenta en Backstage",
+  title: "Registrarse - Arma tu pogo",
+  description: "Crea tu cuenta en Arma tu pogo",
 };
 
 export default function RegisterPage() {
@@ -19,7 +19,7 @@ export default function RegisterPage() {
             Crear cuenta
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Únete a Backstage, el marketplace de música
+            Únete a Arma tu pogo, el marketplace de recitales
           </p>
         </div>
 

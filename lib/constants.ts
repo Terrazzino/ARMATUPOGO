@@ -1,59 +1,59 @@
 /**
- * Constantes de la aplicación Backstage
+ * Constantes de la aplicación Arma tu pogo
  */
 
 /**
  * Nombre de la aplicación
  */
-export const APP_NAME = "Backstage";
+export const APP_NAME = "Arma tu pogo";
 
 /**
  * Nombre de la aplicación en minúsculas para URLs
  */
-export const APP_SLUG = "backstage";
+export const APP_SLUG = "arma-tu-pogo";
 
 /**
  * Descripción de la aplicación
  */
 export const APP_DESCRIPTION =
-  "Conecta proyectos musicales, organizadores y público en un marketplace de eventos musicales";
+  "Conecta proyectos musicales, organizadores y público en un marketplace de recitales y fechas independientes";
 
 /**
  * Roles válidos para autenticación
  */
-export const VALID_ROLES = ["MUSICIAN", "ORGANIZER"] as const;
+export const VALID_ROLES = ["MUSICO", "ORGANIZADOR"] as const;
 
 /**
  * Estados válidos de eventos
  */
 export const EVENT_STATES = [
-  "DRAFT",
-  "PUBLISHED",
-  "IN_PROGRESS",
-  "COMPLETED",
-  "CANCELLED",
+  "BORRADOR",
+  "PUBLICADO",
+  "EN_CURSO",
+  "COMPLETADO",
+  "CANCELADO",
 ] as const;
 
 /**
  * Estados válidos de contratación
  */
 export const CONTRACT_STATES = [
-  "PENDING",
-  "NEGOTIATING",
-  "AGREED",
-  "CANCELLED",
-  "COMPLETED",
-  "REJECTED",
+  "PENDIENTE",
+  "NEGOCIANDO",
+  "ACORDADO",
+  "CANCELADO",
+  "COMPLETADO",
+  "RECHAZADO",
 ] as const;
 
 /**
  * Estados válidos de ofertas
  */
 export const OFFER_STATES = [
-  "PROPOSED",
-  "ACCEPTED",
-  "REJECTED",
-  "COUNTERED",
+  "PROPUESTA",
+  "ACEPTADA",
+  "RECHAZADA",
+  "CONTRAOFERTADA",
 ] as const;
 
 /**
@@ -85,9 +85,9 @@ export const VALIDATION_LIMITS = {
 /**
  * Rutas públicas (sin autenticación requerida)
  */
-export const PUBLIC_ROUTES = ["/", "/events", "/artists"];
+export const PUBLIC_ROUTES = ["/", "/events", "/projects", "/artists"];
 
 /**
  * Rutas protegidas (requieren autenticación)
  */
-export const PROTECTED_ROUTES = ["/dashboard", "/projects", "/profile"];
+export const PROTECTED_ROUTES = ["/dashboard"];

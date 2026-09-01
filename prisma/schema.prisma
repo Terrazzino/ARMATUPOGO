@@ -11,186 +11,185 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum UserRole {
-  MUSICIAN
-  ORGANIZER
+enum RolUsuario {
+  MUSICO
+  ORGANIZADOR
 }
 
-enum EventStatus {
-  DRAFT
-  PUBLISHED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+enum EstadoEvento {
+  BORRADOR
+  PUBLICADO
+  EN_CURSO
+  COMPLETADO
+  CANCELADO
 }
 
-enum ContractStatus {
-  PENDING
-  NEGOTIATING
-  AGREED
-  CANCELLED
-  COMPLETED
-  REJECTED
+enum EstadoContratacion {
+  PENDIENTE
+  NEGOCIANDO
+  ACORDADO
+  CANCELADO
+  COMPLETADO
+  RECHAZADO
 }
 
-enum OfferStatus {
-  PROPOSED
-  ACCEPTED
-  REJECTED
-  COUNTERED
+enum EstadoOferta {
+  PROPUESTA
+  ACEPTADA
+  RECHAZADA
+  CONTRAOFERTADA
 }
 
-model ProfileUser {
-  id        String   @id @db.Uuid
-  email     String   @unique
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
-  role      UserRole
-  avatarUrl String?  @map("avatar_url")
-  bio       String?
-  phone     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model Usuario {
+  id           String     @id @db.Uuid
+  email        String     @unique
+  nombre       String     @map("first_name")
+  apellido     String     @map("last_name")
+  rol          RolUsuario @map("role")
+  fotoPerfilUrl String?   @map("avatar_url")
+  biografia    String?    @map("bio")
+  telefono     String?    @map("phone")
+  creadoEn     DateTime   @default(now()) @map("created_at")
+  actualizadoEn DateTime  @updatedAt @map("updated_at")
 
   // Relaciones
-  projects         MusicalProject[]
-  events           Event[]
-  contractsAsOrg   Contract[]       @relation("OrganizerContracts")
-  contractsAsMus   Contract[]       @relation("MusicianContracts")
-  contractsCreated Contract[]       @relation("CreatedContracts")
-  offersSent       Offer[]
-  ratingsGiven     Rating[]         @relation("RatingsGiven")
-  ratingsReceived  Rating[]         @relation("RatingsReceived")
+  proyectos            ProyectoMusical[]
+  eventos              Evento[]
+  contratosOrganizador Contratacion[]    @relation("ContratosOrganizador")
+  contratosMusico      Contratacion[]    @relation("ContratosMusico")
+  contratosCreados     Contratacion[]    @relation("ContratosCreados")
+  ofertasEnviadas      Oferta[]
+  valoracionesDadas    Valoracion[]      @relation("ValoracionesDadas")
+  valoracionesRecibidas Valoracion[]     @relation("ValoracionesRecibidas")
 
-  @@map("profile_users")
+  @@map("usuarios")
 }
 
-model MusicalProject {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String    @map("user_id") @db.Uuid
-  name             String
-  description      String?
-  genre            String
-  approximateCache Decimal?  @map("approximate_cache") @db.Decimal(12, 2)
-  location         String?
-  city             String?
-  imageUrl         String?   @map("image_url")
-  spotifyUrl       String?   @map("spotify_url")
-  youtubeUrl       String?   @map("youtube_url")
-  instagramUrl     String?   @map("instagram_url")
-  websiteUrl       String?   @map("website_url")
-  customLinks      Json?     @default("[]") @map("custom_links")
-  isActive         Boolean   @default(true) @map("is_active")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+model ProyectoMusical {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId             String    @map("user_id") @db.Uuid
+  nombre                String    @map("name")
+  descripcion           String?   @map("description")
+  genero                String    @map("genre")
+  cacheAproximado       Decimal?  @map("approximate_cache") @db.Decimal(12, 2)
+  ubicacion             String?   @map("location")
+  ciudad                String?   @map("city")
+  imagenUrl             String?   @map("image_url")
+  spotifyUrl            String?   @map("spotify_url")
+  youtubeUrl            String?   @map("youtube_url")
+  instagramUrl          String?   @map("instagram_url")
+  sitioWebUrl           String?   @map("website_url")
+  enlacesPersonalizados Json?     @default("[]") @map("custom_links")
+  estaActivo            Boolean   @default(true) @map("is_active")
+  creadoEn              DateTime  @default(now()) @map("created_at")
+  actualizadoEn         DateTime  @updatedAt @map("updated_at")
 
-  user             ProfileUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contracts        Contract[]
-  ratings          Rating[]
+  usuario               Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contrataciones        Contratacion[]
+  valoraciones          Valoracion[]
 
-  @@map("musical_projects")
+  @@map("proyectos_musicales")
 }
 
-model Event {
-  id                     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizerId            String      @map("organizer_id") @db.Uuid
-  title                  String
-  description            String?
-  eventDate              DateTime    @map("event_date")
-  location               String
-  venueName              String?     @map("venue_name")
-  city                   String?
-  requiredMusiciansCount Int         @default(1) @map("required_musicians_count")
-  offeredCache           Decimal?    @map("offered_cache") @db.Decimal(12, 2)
-  status                 EventStatus @default(PUBLISHED)
-  bannerUrl              String?     @map("banner_url")
-  createdAt              DateTime    @default(now()) @map("created_at")
-  updatedAt              DateTime    @updatedAt @map("updated_at")
+model Evento {
+  id                        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizadorId             String       @map("organizer_id") @db.Uuid
+  titulo                    String       @map("title")
+  descripcion               String?      @map("description")
+  fechaEvento               DateTime     @map("event_date")
+  ubicacion                 String       @map("location")
+  nombreLugar               String?      @map("venue_name")
+  ciudad                    String?      @map("city")
+  cantidadMusicosRequerida  Int          @default(1) @map("required_musicians_count")
+  cacheOfrecido             Decimal?     @map("offered_cache") @db.Decimal(12, 2)
+  estado                    EstadoEvento @default(PUBLICADO) @map("status")
+  bannerUrl                 String?      @map("banner_url")
+  creadoEn                  DateTime     @default(now()) @map("created_at")
+  actualizadoEn             DateTime     @updatedAt @map("updated_at")
 
-  organizer              ProfileUser @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  contracts              Contract[]
-  tickets                Ticket[]
+  organizador               Usuario      @relation(fields: [organizadorId], references: [id], onDelete: Cascade)
+  contrataciones            Contratacion[]
+  entradas                  Entrada[]
 
-  @@map("events")
+  @@map("eventos")
 }
 
-model Contract {
-  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  eventId            String         @map("event_id") @db.Uuid
-  musicalProjectId   String         @map("musical_project_id") @db.Uuid
-  organizerId        String         @map("organizer_id") @db.Uuid
-  musicianId         String         @map("musician_id") @db.Uuid
-  status             ContractStatus @default(PENDING)
-  agreedAmount       Decimal?       @map("agreed_amount") @db.Decimal(12, 2)
-  agreedAt           DateTime?      @map("agreed_at")
-  cancelledAt        DateTime?      @map("cancelled_at")
-  cancellationReason String?        @map("cancellation_reason")
-  createdBy          String         @map("created_by") @db.Uuid
-  createdAt          DateTime       @default(now()) @map("created_at")
-  updatedAt          DateTime       @updatedAt @map("updated_at")
+model Contratacion {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventoId           String             @map("event_id") @db.Uuid
+  proyectoMusicalId  String             @map("musical_project_id") @db.Uuid
+  organizadorId      String             @map("organizer_id") @db.Uuid
+  musicoId           String             @map("musician_id") @db.Uuid
+  estado             EstadoContratacion @default(PENDIENTE) @map("status")
+  montoPactado       Decimal?           @map("agreed_amount") @db.Decimal(12, 2)
+  fechaAcuerdo       DateTime?          @map("agreed_at")
+  fechaCancelacion   DateTime?          @map("cancelled_at")
+  motivoCancelacion  String?            @map("cancellation_reason")
+  creadoPorId        String             @map("created_by") @db.Uuid
+  creadoEn           DateTime           @default(now()) @map("created_at")
+  actualizadoEn      DateTime           @updatedAt @map("updated_at")
 
-  event              Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  musicalProject     MusicalProject @relation(fields: [musicalProjectId], references: [id], onDelete: Restrict)
-  organizer          ProfileUser    @relation("OrganizerContracts", fields: [organizerId], references: [id], onDelete: Restrict)
-  musician           ProfileUser    @relation("MusicianContracts", fields: [musicianId], references: [id], onDelete: Restrict)
-  creator            ProfileUser    @relation("CreatedContracts", fields: [createdBy], references: [id], onDelete: Restrict)
-  offers             Offer[]
-  ratings            Rating[]
+  evento             Evento             @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  proyectoMusical    ProyectoMusical    @relation(fields: [proyectoMusicalId], references: [id], onDelete: Restrict)
+  organizador        Usuario            @relation("ContratosOrganizador", fields: [organizadorId], references: [id], onDelete: Restrict)
+  musico             Usuario            @relation("ContratosMusico", fields: [musicoId], references: [id], onDelete: Restrict)
+  creadoPor          Usuario            @relation("ContratosCreados", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  ofertas            Oferta[]
+  valoraciones       Valoracion[]
 
-  @@unique([eventId, musicalProjectId])
-  @@map("contracts")
+  @@unique([eventoId, proyectoMusicalId])
+  @@map("contrataciones")
 }
 
-model Offer {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  contractId String      @map("contract_id") @db.Uuid
-  senderId   String      @map("sender_id") @db.Uuid
-  amount     Decimal     @db.Decimal(12, 2)
-  message    String?
-  status     OfferStatus @default(PROPOSED)
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
+model Oferta {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contratacionId String       @map("contract_id") @db.Uuid
+  remitenteId    String       @map("sender_id") @db.Uuid
+  monto          Decimal      @map("amount") @db.Decimal(12, 2)
+  mensaje        String?      @map("message")
+  estado         EstadoOferta @default(PROPUESTA) @map("status")
+  creadoEn       DateTime     @default(now()) @map("created_at")
+  actualizadoEn  DateTime     @updatedAt @map("updated_at")
 
-  contract   Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  sender     ProfileUser @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  contratacion   Contratacion @relation(fields: [contratacionId], references: [id], onDelete: Cascade)
+  remitente      Usuario      @relation(fields: [remitenteId], references: [id], onDelete: Restrict)
 
-  @@map("offers")
+  @@map("ofertas")
 }
 
-model Rating {
-  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  contractId      String          @map("contract_id") @db.Uuid
-  authorId        String          @map("author_id") @db.Uuid
-  targetId        String          @map("target_id") @db.Uuid
-  targetProjectId String?         @map("target_project_id") @db.Uuid
-  score           Int
-  comment         String?
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
+model Valoracion {
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contratacionId        String           @map("contract_id") @db.Uuid
+  autorId               String           @map("author_id") @db.Uuid
+  destinatarioId        String           @map("target_id") @db.Uuid
+  proyectoDestinatarioId String?         @map("target_project_id") @db.Uuid
+  puntaje               Int              @map("score")
+  comentario            String?          @map("comment")
+  creadoEn              DateTime         @default(now()) @map("created_at")
+  actualizadoEn         DateTime         @updatedAt @map("updated_at")
 
-  contract        Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  author          ProfileUser     @relation("RatingsGiven", fields: [authorId], references: [id], onDelete: Restrict)
-  target          ProfileUser     @relation("RatingsReceived", fields: [targetId], references: [id], onDelete: Restrict)
-  targetProject   MusicalProject? @relation(fields: [targetProjectId], references: [id], onDelete: SetNull)
+  contratacion          Contratacion     @relation(fields: [contratacionId], references: [id], onDelete: Cascade)
+  autor                 Usuario          @relation("ValoracionesDadas", fields: [autorId], references: [id], onDelete: Restrict)
+  destinatario          Usuario          @relation("ValoracionesRecibidas", fields: [destinatarioId], references: [id], onDelete: Restrict)
+  proyectoDestinatario  ProyectoMusical? @relation(fields: [proyectoDestinatarioId], references: [id], onDelete: SetNull)
 
-  @@unique([contractId, authorId])
-  @@map("ratings")
+  @@unique([contratacionId, autorId])
+  @@map("valoraciones")
 }
 
-model Ticket {
+model Entrada {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  eventId             String   @map("event_id") @db.Uuid
-  ticketType          String   @default("GENERAL") @map("ticket_type")
-  price               Decimal  @default(0) @db.Decimal(12, 2)
-  capacity            Int?
-  description         String?
-  externalPurchaseUrl String?  @map("external_purchase_url")
-  isFree              Boolean  @default(false) @map("is_free")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  eventoId            String   @map("event_id") @db.Uuid
+  tipoEntrada         String   @default("GENERAL") @map("ticket_type")
+  precio              Decimal  @default(0) @map("price") @db.Decimal(12, 2)
+  capacidad           Int?     @map("capacity")
+  descripcion         String?  @map("description")
+  urlCompraExterna    String?  @map("external_purchase_url")
+  esGratuita          Boolean  @default(false) @map("is_free")
+  creadoEn            DateTime @default(now()) @map("created_at")
+  actualizadoEn       DateTime @updatedAt @map("updated_at")
 
-  event               Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  evento              Evento   @relation(fields: [eventoId], references: [id], onDelete: Cascade)
 
-  @@map("tickets")
+  @@map("entradas")
 }
-
