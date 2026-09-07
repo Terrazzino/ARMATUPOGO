@@ -292,3 +292,137 @@ El MVP se considerará funcional cuando:
 - [ ] La aplicación funcione correctamente en desktop y dispositivos móviles.
 - [ ] No existan secretos ni credenciales privadas dentro del repositorio.
 - [ ] El proyecto pueda ejecutarse y desplegarse fuera del entorno local.
+
+## 12. Endpoints de la API
+
+La API del sistema se organiza por recursos y utiliza el prefijo `/api`.
+
+Los endpoints que requieren autenticación deben validar la sesión del usuario mediante Supabase Auth y verificar los permisos correspondientes según su rol y relación con el recurso.
+
+Las operaciones de aceptación, rechazo, cancelación y finalización se representan mediante endpoints de acción para reflejar las reglas de negocio del sistema.
+
+### 12.1. Usuarios
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `GET` | `/api/usuarios/me` | Obtener los datos del usuario autenticado | Sí |
+| `PATCH` | `/api/usuarios/me` | Actualizar los datos del usuario autenticado | Sí |
+
+---
+
+### 12.2. Proyectos musicales
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `GET` | `/api/proyectos` | Obtener los proyectos musicales del usuario autenticado | Sí |
+| `POST` | `/api/proyectos` | Crear un nuevo proyecto musical | Sí |
+| `GET` | `/api/proyectos/:proyectoId` | Obtener el detalle de un proyecto musical | Según contexto |
+| `PATCH` | `/api/proyectos/:proyectoId` | Actualizar un proyecto musical propio | Sí |
+| `DELETE` | `/api/proyectos/:proyectoId` | Eliminar un proyecto musical propio | Sí |
+| `GET` | `/api/proyectos/buscar` | Buscar proyectos musicales disponibles | Sí |
+
+---
+
+### 12.3. Eventos
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `GET` | `/api/eventos` | Obtener eventos disponibles o pertenecientes al usuario según su rol | Sí |
+| `POST` | `/api/eventos` | Crear un nuevo evento | Sí |
+| `GET` | `/api/eventos/:eventoId` | Obtener el detalle de un evento | Sí |
+| `PATCH` | `/api/eventos/:eventoId` | Actualizar un evento propio | Sí |
+| `POST` | `/api/eventos/:eventoId/cancelar` | Cancelar un evento propio | Sí |
+
+---
+
+### 12.4. Postulaciones
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `GET` | `/api/eventos/:eventoId/postulaciones` | Obtener las postulaciones de un evento | Sí |
+| `POST` | `/api/eventos/:eventoId/postulaciones` | Crear una postulación de un proyecto musical a un evento | Sí |
+| `GET` | `/api/postulaciones` | Obtener las postulaciones relacionadas con el usuario autenticado | Sí |
+| `GET` | `/api/postulaciones/:postulacionId` | Obtener el detalle de una postulación | Sí |
+| `POST` | `/api/postulaciones/:postulacionId/aceptar` | Aceptar una postulación | Sí |
+| `POST` | `/api/postulaciones/:postulacionId/rechazar` | Rechazar una postulación | Sí |
+
+---
+
+### 12.5. Contrataciones
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `GET` | `/api/contrataciones` | Obtener las contrataciones relacionadas con el usuario autenticado | Sí |
+| `POST` | `/api/contrataciones` | Crear una contratación a partir de una selección o acuerdo | Sí |
+| `GET` | `/api/contrataciones/:contratacionId` | Obtener el detalle de una contratación | Sí |
+| `POST` | `/api/contrataciones/:contratacionId/cancelar` | Cancelar una contratación | Sí |
+| `POST` | `/api/contrataciones/:contratacionId/completar` | Marcar una contratación como completada | Sí |
+
+---
+
+### 12.6. Ofertas
+
+Las ofertas representan las propuestas económicas y contraofertas realizadas durante la negociación entre las partes de una contratación.
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `GET` | `/api/contrataciones/:contratacionId/ofertas` | Obtener el historial de ofertas de una contratación | Sí |
+| `POST` | `/api/contrataciones/:contratacionId/ofertas` | Crear una nueva oferta o contraoferta | Sí |
+| `POST` | `/api/ofertas/:ofertaId/aceptar` | Aceptar una oferta | Sí |
+| `POST` | `/api/ofertas/:ofertaId/rechazar` | Rechazar una oferta | Sí |
+
+La aceptación de una oferta debe registrar el monto acordado en la contratación y cerrar la negociación.
+
+Una vez aceptada una oferta, el monto acordado no puede modificarse mediante nuevas ofertas.
+
+---
+
+### 12.7. Valoraciones
+
+Las valoraciones se realizan una vez finalizada la contratación y permiten construir la reputación de músicos, proyectos musicales y organizadores.
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `POST` | `/api/contrataciones/:contratacionId/valoraciones` | Crear una valoración asociada a una contratación | Sí |
+| `GET` | `/api/contrataciones/:contratacionId/valoraciones` | Obtener las valoraciones de una contratación | Sí |
+| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Obtener las valoraciones asociadas a un usuario | Según contexto |
+| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Obtener las valoraciones de un proyecto musical | Según contexto |
+
+---
+
+### 12.8. API pública
+
+Los endpoints públicos no requieren autenticación.
+
+Solamente deben devolver información definida como pública y nunca exponer datos privados de usuarios, negociaciones, ofertas, postulaciones o contrataciones.
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| `GET` | `/api/publico/eventos` | Obtener los eventos publicados para consulta pública | No |
+| `GET` | `/api/publico/eventos/:eventoId` | Obtener el detalle público de un evento | No |
+| `GET` | `/api/publico/proyectos/:proyectoId` | Obtener la información pública de un proyecto musical | No |
+
+---
+
+### 12.9. Reglas generales de los endpoints
+
+- Todos los endpoints protegidos deben validar la sesión del usuario en el servidor.
+- La autenticación no se implementa mediante endpoints propios de login o registro, sino mediante **Supabase Auth**.
+- La autorización debe verificarse en el servidor según el rol del usuario y su relación con el recurso solicitado.
+- Un usuario no puede modificar, eliminar o cancelar recursos que no le pertenecen.
+- Un músico solamente puede gestionar sus propios proyectos musicales.
+- Un organizador solamente puede gestionar sus propios eventos.
+- Las postulaciones solamente pueden ser creadas por proyectos musicales en representación de su usuario propietario.
+- Un organizador solamente puede aceptar o rechazar postulaciones correspondientes a sus propios eventos.
+- Las ofertas solamente pueden ser creadas por las partes involucradas en la contratación.
+- Una oferta solamente puede ser aceptada o rechazada por la parte correspondiente.
+- Una vez aceptada una oferta, la negociación queda cerrada.
+- El monto acordado debe quedar registrado en la contratación y no puede modificarse mediante nuevas ofertas.
+- Las valoraciones solamente pueden realizarse entre participantes de una contratación.
+- Cada parte puede realizar como máximo una valoración por contratación.
+- Los endpoints públicos solamente deben exponer información marcada como pública.
+- Ningún endpoint debe devolver contraseñas, tokens, claves privadas, secretos, credenciales ni variables de entorno.
+- Las validaciones de datos deben realizarse también en el servidor mediante **Zod**.
+- Los errores de autorización deben impedir el acceso aunque el cliente manipule manualmente las solicitudes.
+- Los endpoints deben respetar las reglas de negocio definidas en este documento.
+- No debe implementarse ningún endpoint adicional que implique una funcionalidad fuera del alcance del MVP sin actualizar previamente esta especificación.
