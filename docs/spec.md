@@ -1,428 +1,1954 @@
 # Especificación del sistema — Arma tu pogo
 
-> Este documento es el relevamiento de requerimientos del proyecto. Se mantiene actualizado durante el desarrollo.
-> Regla práctica: si una funcionalidad no está definida en este documento, no forma parte del MVP salvo que el equipo la acuerde y actualice previamente.
+> Este documento constituye la fuente principal de requerimientos funcionales y reglas de negocio del proyecto.
+>
+> Se mantiene actualizado durante el desarrollo.
+>
+> **Regla práctica:** si una funcionalidad no está definida en este documento, no forma parte del MVP salvo que el equipo la acuerde y actualice previamente.
 
-## 1. El problema
+---
 
-**Para quién:** músicos y proyectos musicales que buscan participar en eventos, organizadores que necesitan contratar artistas y público que busca información sobre eventos musicales.
+# 1. El problema
 
-**Qué ocurre hoy sin el sistema:** músicos y organizadores suelen encontrarse mediante redes sociales, contactos personales o publicaciones aisladas. La información sobre cachés, eventos, disponibilidad y antecedentes queda dispersa y no existe un espacio centralizado que facilite la contratación y permita conocer la reputación de las partes.
+## Para quién
 
-**Qué mejora:** Arma tu pogo centraliza la oferta y demanda de músicos para eventos, permite publicar y descubrir oportunidades, facilita la negociación del caché, registra los acuerdos alcanzados y construye un sistema de reputación para músicos y organizadores. Además, ofrece una cartelera pública para que el público pueda descubrir eventos y artistas.
+Arma tu pogo está dirigido a:
 
-## 2. Alcance del MVP
+- músicos y proyectos musicales que buscan participar en eventos;
+- organizadores que necesitan contratar artistas;
+- público que busca información sobre eventos musicales.
 
-El MVP se concentrará en el núcleo del marketplace: registro y autenticación de usuarios, administración de proyectos musicales, publicación y búsqueda de eventos, postulación y selección de músicos, negociación mediante ofertas y contraofertas, registro del acuerdo alcanzado, valoración posterior de las partes y cartelera pública de eventos.
+## Situación actual
 
-El MVP no procesará pagos reales ni realizará transferencias de dinero. El sistema podrá registrar el monto acordado entre las partes, pero el pago efectivo se realizará por fuera de Arma tu pogo.
+Actualmente, músicos y organizadores suelen encontrarse mediante redes sociales, contactos personales o publicaciones aisladas.
 
-La venta real de entradas y los mecanismos avanzados de monetización podrán quedar preparados conceptualmente para una versión posterior, pero no forman parte del procesamiento de pagos del MVP.
+La información sobre:
 
-## 3. Roles
+- eventos disponibles;
+- cachés;
+- disponibilidad;
+- negociaciones;
+- antecedentes;
+- reputación;
 
-| Rol | Quién es | Qué puede hacer que los otros no |
+queda dispersa y no existe un espacio centralizado que facilite la contratación.
+
+## Qué mejora Arma tu pogo
+
+Arma tu pogo centraliza la oferta y demanda de músicos para eventos.
+
+La plataforma permite:
+
+- registrar proyectos musicales;
+- publicar eventos;
+- descubrir oportunidades;
+- postular proyectos musicales;
+- seleccionar artistas;
+- negociar cachés mediante ofertas y contraofertas;
+- registrar acuerdos;
+- gestionar disponibilidad;
+- construir reputación;
+- consultar una cartelera pública de eventos.
+
+---
+
+# 2. Alcance del MVP
+
+El MVP se concentrará en el núcleo del marketplace:
+
+1. registro y autenticación de usuarios;
+2. administración de perfiles;
+3. administración de proyectos musicales;
+4. publicación y búsqueda de eventos;
+5. postulación de proyectos musicales;
+6. selección directa de proyectos por parte de organizadores;
+7. creación de contrataciones;
+8. negociación mediante ofertas y contraofertas;
+9. registro del acuerdo económico alcanzado;
+10. gestión de disponibilidad de músicos;
+11. cancelación y finalización de contrataciones;
+12. valoración posterior de las partes;
+13. consulta de reputación;
+14. cartelera pública de eventos.
+
+El MVP **no procesará pagos reales ni transferencias de dinero**.
+
+El sistema solamente registrará:
+
+- cachés aproximados;
+- cachés ofrecidos;
+- ofertas;
+- contraofertas;
+- monto finalmente acordado.
+
+El pago efectivo se realizará por fuera de Arma tu pogo.
+
+La venta real de entradas y mecanismos avanzados de monetización quedan fuera del procesamiento del MVP.
+
+---
+
+# 3. Roles
+
+| Rol | Quién es | Funcionalidades principales |
 |---|---|---|
-| **Músico** | Persona que representa uno o varios proyectos musicales | Registrar y administrar proyectos, postularse a eventos, negociar contrataciones y valorar organizadores |
-| **Organizador** | Persona o entidad que organiza eventos | Crear y administrar eventos, buscar/seleccionar músicos, negociar contrataciones y valorar músicos |
-| **Público** | Visitante interesado en asistir o conocer eventos | Consultar la cartelera, ver artistas participantes y acceder a sus redes y plataformas musicales |
+| **Músico** | Persona que representa uno o varios proyectos musicales | Crear proyectos, administrarlos, buscar eventos, postular proyectos, negociar contrataciones y valorar organizadores |
+| **Organizador** | Persona o entidad responsable de organizar eventos | Crear eventos, administrar eventos, consultar proyectos, recibir postulaciones, iniciar contrataciones, negociar y valorar proyectos |
+| **Público** | Persona interesada en consultar eventos | Consultar cartelera, eventos, artistas participantes y enlaces públicos |
 
-El público no necesita una cuenta para consultar la cartelera pública.
+## Reglas de roles
 
-Un usuario autenticado tendrá un rol de Músico o de Organizador en el MVP. No se contempla que una misma cuenta tenga ambos roles simultáneamente.
+- Un usuario autenticado posee un único rol dentro del MVP.
+- Los roles permitidos son `MUSICO` y `ORGANIZADOR`.
+- Una misma cuenta no puede utilizar ambos roles simultáneamente.
+- El rol se selecciona durante el registro.
+- El rol no puede modificarse posteriormente desde el perfil durante el MVP.
+- El público no necesita una cuenta.
 
-## 4. Entidades
+---
 
-Los sustantivos que aparecen en las historias de usuario forman la base del modelo de datos.
+# 4. Autenticación e identidad
 
-| Entidad | Qué representa | Se relaciona con |
-|---|---|---|
-| **Usuario** | Una persona autenticada dentro de la plataforma, con un rol | Proyecto Musical · Evento · Contratación · Oferta · Valoración |
-| **Proyecto Musical** | Una banda, solista, dúo, tributo u otro proyecto artístico administrado por un músico | Usuario (N-1) · Contratación (1-N) · Valoración (1-N) |
-| **Evento** | Un recital o evento publicado por un organizador | Usuario (N-1) · Contratación (1-N) |
-| **Contratación** | El acuerdo entre un proyecto musical y un organizador para participar en un evento | Evento (N-1) · Proyecto Musical (N-1) · Ofertas (1-N) · Valoraciones |
-| **Oferta** | Una propuesta económica o contraoferta realizada durante una negociación | Contratación (N-1) · Usuario (N-1) |
-| **Valoración** | La evaluación realizada por una de las partes después de una contratación | Contratación (N-1) · Usuario/Proyecto Musical |
-| **Entrada** | Registro conceptual de una entrada asociada a un evento | Evento (N-1) |
+La autenticación se implementará utilizando **Supabase Auth**.
 
-> En el MVP, `Entrada` no implica un sistema de pago real. Su implementación se definirá según el alcance que acuerde la cátedra.
+La aplicación no implementará endpoints propios para manejar contraseñas, login o generación de tokens.
 
-**Relación 1-N:** un músico puede administrar varios proyectos musicales; un organizador puede publicar varios eventos; un evento puede tener varias contrataciones; una contratación puede contener varias ofertas.
+## Registro
 
-**Relación N-N conceptual:** músicos/proyectos musicales y eventos se vinculan mediante `Contratación`, que representa el proceso y el acuerdo entre ambas partes.
+La aplicación deberá disponer de una vista de registro.
 
-## 5. Historias de usuario
+El usuario deberá proporcionar como mínimo:
 
-Formato: **Como** <rol>, **quiero** <acción>, **para** <beneficio>.
+- nombre;
+- apellido;
+- email;
+- contraseña;
+- confirmación de contraseña;
+- rol.
 
-### H1 — Registrar una cuenta
+El registro deberá:
 
-**Como** usuario, **quiero** registrarme indicando mi rol, **para** poder utilizar las funcionalidades correspondientes de Arma tu pogo.
+1. validar los datos ingresados;
+2. crear la identidad mediante Supabase Auth;
+3. crear el perfil correspondiente dentro de la tabla `usuarios`;
+4. utilizar el mismo UUID de Supabase Auth como identificador del usuario de la aplicación;
+5. almacenar el rol en la base de datos de Arma tu pogo.
 
-Criterios de aceptación:
-- [ ] Cuando una persona completa los datos obligatorios y selecciona un rol permitido, entonces se crea su cuenta.
-- [ ] El sistema no permite acceder a funcionalidades privadas sin autenticación.
-- [ ] El usuario solo puede utilizar las funcionalidades correspondientes a su rol.
-- [ ] Caso de error: si los datos obligatorios son inválidos o la cuenta ya existe, no se crea una nueva cuenta y se informa el motivo.
+La contraseña nunca deberá almacenarse dentro de la tabla `usuarios`.
 
-### H2 — Registrar un proyecto musical
+## Login
+
+La aplicación deberá disponer de una vista de inicio de sesión utilizando email y contraseña.
+
+Supabase Auth será responsable de:
+
+- validar las credenciales;
+- gestionar la sesión;
+- emitir los tokens correspondientes;
+- mantener la sesión utilizando el mecanismo SSR definido para Next.js.
+
+## Logout
+
+La aplicación deberá permitir cerrar la sesión mediante Supabase Auth.
+
+No es necesario implementar un endpoint propio `/api/auth/logout`.
+
+## Usuario de aplicación
+
+El usuario autenticado de Supabase deberá relacionarse con una única fila de `usuarios`.
+
+Conceptualmente:
+
+```text
+Supabase auth.users.id
+        =
+usuarios.id
+```
+
+## Datos que no pueden actualizarse mediante `/api/usuarios/me`
+
+El endpoint de modificación del perfil no permitirá modificar directamente:
+
+- `id`;
+- `role`;
+- contraseña;
+- credenciales;
+- tokens;
+- secretos.
+
+Los cambios de email, en caso de implementarse posteriormente, deberán realizarse mediante el mecanismo correspondiente de Supabase Auth y no mediante una modificación arbitraria de la tabla `usuarios`.
+
+---
+
+# 5. Entidades
+
+## 5.1. Usuario
+
+Representa a una persona autenticada.
+
+Campos conceptuales principales:
+
+- id;
+- email;
+- nombre;
+- apellido;
+- rol;
+- avatar;
+- biografía;
+- teléfono;
+- fechas de creación y modificación.
+
+Se relaciona con:
+
+- proyectos musicales;
+- eventos;
+- postulaciones;
+- contrataciones;
+- ofertas;
+- valoraciones.
+
+---
+
+## 5.2. Proyecto Musical
+
+Representa una banda, solista, dúo, tributo u otro proyecto artístico administrado por un músico.
+
+Un músico puede administrar múltiples proyectos musicales.
+
+Campos principales:
+
+- id;
+- propietario;
+- nombre;
+- descripción;
+- género musical;
+- caché aproximado;
+- ubicación;
+- ciudad;
+- imagen;
+- Spotify;
+- YouTube;
+- Instagram;
+- sitio web;
+- enlaces personalizados;
+- estado activo;
+- fechas de creación y modificación.
+
+### Baja lógica
+
+Los proyectos musicales no se eliminan físicamente cuando poseen historial asociado.
+
+El endpoint de eliminación realizará una **baja lógica**:
+
+```text
+is_active = false
+```
+
+Un proyecto inactivo:
+
+- no puede generar nuevas postulaciones;
+- no puede recibir nuevas contrataciones directas;
+- no aparece en búsquedas de proyectos disponibles;
+- conserva sus contrataciones, valoraciones e historial existentes.
+
+La información histórica necesaria podrá seguir siendo consultada cuando el proyecto participe de contrataciones o eventos anteriores.
+
+---
+
+## 5.3. Evento
+
+Representa un recital o evento publicado por un organizador.
+
+Campos principales:
+
+- id;
+- organizador;
+- título;
+- descripción;
+- fecha y hora de inicio;
+- fecha y hora de finalización;
+- ubicación;
+- nombre del establecimiento;
+- ciudad;
+- cantidad de proyectos requeridos;
+- caché ofrecido;
+- estado;
+- banner;
+- fechas de creación y modificación.
+
+### Horarios
+
+Un evento debe registrar:
+
+```text
+starts_at
+ends_at
+```
+
+Debe cumplirse:
+
+```text
+ends_at > starts_at
+```
+
+Esto permite determinar correctamente la disponibilidad de los músicos.
+
+### Estados
+
+Durante el MVP, los estados persistidos del evento serán:
+
+```text
+PUBLICADO
+CANCELADO
+```
+
+No es necesario persistir estados como:
+
+```text
+EN_CURSO
+COMPLETADO
+```
+
+porque pueden inferirse utilizando las fechas.
+
+Conceptualmente:
+
+```text
+ahora < starts_at
+→ próximo
+
+starts_at <= ahora < ends_at
+→ en curso
+
+ahora >= ends_at
+→ finalizado
+```
+
+Los eventos se crean directamente como `PUBLICADO`.
+
+El flujo de borradores queda fuera del MVP.
+
+---
+
+## 5.4. Postulación
+
+Representa la solicitud de un proyecto musical para participar en un evento.
+
+Campos conceptuales:
+
+- id;
+- evento;
+- proyecto musical;
+- músico propietario;
+- estado;
+- mensaje opcional;
+- fecha de creación;
+- fecha de modificación.
+
+### Estados
+
+```text
+PENDIENTE
+ACEPTADA
+RECHAZADA
+CANCELADA
+```
+
+### Reglas
+
+Una postulación pendiente no constituye una contratación.
+
+Un proyecto musical no puede generar postulaciones duplicadas para el mismo evento.
+
+Deberá existir una restricción equivalente a:
+
+```text
+UNIQUE(event_id, musical_project_id)
+```
+
+El músico asociado a la postulación siempre deberá obtenerse desde el propietario real del proyecto.
+
+Nunca se confiará en un `musician_id` arbitrario enviado por el cliente.
+
+---
+
+## 5.5. Contratación
+
+Representa el proceso de negociación y posterior acuerdo entre:
+
+- un evento;
+- un proyecto musical;
+- un músico;
+- un organizador.
+
+Campos principales:
+
+- id;
+- evento;
+- proyecto musical;
+- organizador;
+- músico;
+- postulación de origen opcional;
+- estado;
+- monto acordado;
+- fecha del acuerdo;
+- fecha de cancelación;
+- motivo de cancelación;
+- usuario que originó la contratación;
+- fechas de creación y modificación.
+
+### Relación opcional con Postulación
+
+Una contratación puede surgir de:
+
+1. una postulación aceptada;
+2. una selección directa realizada por un organizador.
+
+Cuando proviene de una postulación se recomienda registrar:
+
+```text
+postulation_id
+```
+
+Cuando fue iniciada directamente:
+
+```text
+postulation_id = null
+```
+
+Una misma postulación no puede generar múltiples contrataciones.
+
+### Estados
+
+```text
+NEGOCIANDO
+ACORDADO
+CANCELADO
+COMPLETADO
+```
+
+No se utilizarán los estados:
+
+```text
+PENDIENTE
+RECHAZADO
+```
+
+dentro de Contratación.
+
+Esos conceptos pertenecen a Postulación.
+
+---
+
+## 5.6. Oferta
+
+Representa una propuesta económica realizada dentro de una contratación.
+
+Campos principales:
+
+- id;
+- contratación;
+- usuario emisor;
+- monto;
+- mensaje opcional;
+- estado;
+- fechas de creación y modificación.
+
+### Estados
+
+```text
+PROPUESTA
+ACEPTADA
+RECHAZADA
+CONTRAOFERTADA
+```
+
+Dentro de una contratación solamente puede existir una oferta vigente en estado `PROPUESTA`.
+
+---
+
+## 5.7. Valoración
+
+Representa la evaluación realizada por una de las partes una vez completada una contratación.
+
+Campos principales:
+
+- id;
+- contratación;
+- autor;
+- usuario valorado;
+- proyecto valorado, cuando corresponda;
+- puntuación;
+- comentario;
+- fechas de creación y modificación.
+
+La puntuación deberá encontrarse dentro del rango:
+
+```text
+1 <= score <= 5
+```
+
+Deberá mantenerse la restricción:
+
+```text
+UNIQUE(contract_id, author_id)
+```
+
+para impedir que una misma parte valore dos veces la misma contratación.
+
+---
+
+## 5.8. Entrada
+
+Representa información conceptual relacionada con entradas de un evento.
+
+Puede contener:
+
+- tipo;
+- precio;
+- capacidad;
+- descripción;
+- enlace externo de compra;
+- indicación de entrada gratuita.
+
+La entidad podrá permanecer preparada en el modelo.
+
+Durante el MVP:
+
+- Arma tu pogo no vende entradas;
+- no procesa pagos;
+- no gestiona compras;
+- no necesita endpoints propios para Entrada.
+
+---
+
+# 6. Historias de usuario
+
+## H1 — Registrar una cuenta
+
+**Como** usuario, **quiero** registrarme indicando mis datos y rol, **para** utilizar las funcionalidades correspondientes.
+
+### Criterios de aceptación
+
+- [ ] El usuario puede elegir entre Músico y Organizador.
+- [ ] El registro utiliza Supabase Auth.
+- [ ] La identidad creada en Supabase se relaciona con el perfil local.
+- [ ] No se almacena la contraseña en la tabla `usuarios`.
+- [ ] El rol queda registrado y no puede modificarse posteriormente durante el MVP.
+- [ ] No se permite utilizar funcionalidades privadas sin autenticación.
+- [ ] Un usuario solamente puede utilizar funcionalidades correspondientes a su rol.
+- [ ] Si el email ya existe o los datos son inválidos, se informa el error.
+
+---
+
+## H2 — Iniciar y cerrar sesión
+
+**Como** usuario registrado, **quiero** iniciar y cerrar sesión, **para** acceder de forma segura a mis funcionalidades privadas.
+
+### Criterios de aceptación
+
+- [ ] Existe una vista de login.
+- [ ] El login utiliza Supabase Auth.
+- [ ] La sesión puede ser validada desde el servidor.
+- [ ] Existe una acción para cerrar la sesión.
+- [ ] Los endpoints protegidos no confían únicamente en datos enviados por el cliente.
+
+---
+
+## H3 — Registrar un proyecto musical
 
 **Como** músico, **quiero** registrar uno o varios proyectos musicales, **para** ofrecerlos a organizadores.
 
-Criterios de aceptación:
-- [ ] El músico puede registrar nombre, descripción, género musical, caché aproximado, redes sociales y plataformas donde publica su música.
-- [ ] Un músico puede administrar más de un proyecto desde su cuenta.
-- [ ] El proyecto aparece disponible para ser consultado según las reglas de visibilidad definidas.
-- [ ] Un organizador puede consultar la información pública del proyecto antes de iniciar una contratación.
+### Criterios de aceptación
 
-### H3 — Publicar un evento
+- [ ] Puede registrar nombre, descripción, género, caché aproximado y enlaces.
+- [ ] Puede administrar más de un proyecto.
+- [ ] Solamente el propietario puede modificar el proyecto.
+- [ ] El proyecto activo puede aparecer en búsquedas.
+- [ ] Un organizador puede consultar su información pública.
+- [ ] Eliminar un proyecto produce una baja lógica.
+- [ ] Un proyecto inactivo no puede generar nuevas oportunidades.
 
-**Como** organizador, **quiero** publicar un evento, **para** encontrar músicos que participen del mismo.
+---
 
-Criterios de aceptación:
-- [ ] El organizador puede indicar como mínimo nombre del evento, fecha, ubicación, cantidad de proyectos musicales requeridos y caché ofrecido.
-- [ ] El organizador puede publicar el evento para recibir postulaciones.
+## H4 — Publicar un evento
+
+**Como** organizador, **quiero** publicar un evento, **para** encontrar proyectos musicales que participen.
+
+### Criterios de aceptación
+
+El evento requiere como mínimo:
+
+- [ ] nombre;
+- [ ] fecha y hora de inicio;
+- [ ] fecha y hora de finalización;
+- [ ] ubicación;
+- [ ] cantidad de proyectos musicales requeridos.
+
+Opcionalmente puede indicar caché ofrecido y otra información pública.
+
+Además:
+
+- [ ] `ends_at` debe ser posterior a `starts_at`.
 - [ ] El organizador puede consultar las postulaciones recibidas.
-- [ ] Caso de error: no se publica un evento si faltan datos obligatorios.
+- [ ] El evento se crea como publicado.
+- [ ] Solamente el propietario puede modificarlo o cancelarlo.
 
-### H4 — Buscar y postularse a un evento
+---
 
-**Como** músico, **quiero** consultar eventos disponibles y solicitar participar, **para** conseguir contrataciones.
+## H5 — Buscar y postularse a un evento
 
-Criterios de aceptación:
+**Como** músico, **quiero** consultar eventos y postular uno de mis proyectos, **para** conseguir oportunidades.
+
+### Criterios de aceptación
+
 - [ ] El músico puede consultar eventos publicados.
-- [ ] El músico puede seleccionar un proyecto musical propio y solicitar participar.
-- [ ] El organizador recibe la postulación y puede aceptarla, rechazarla o iniciar la negociación.
-- [ ] Un mismo proyecto no puede generar postulaciones duplicadas para la misma necesidad de un evento.
+- [ ] Puede seleccionar únicamente proyectos propios y activos.
+- [ ] Puede enviar una postulación.
+- [ ] Un mismo proyecto no puede postularse dos veces al mismo evento.
+- [ ] Una postulación inicialmente queda `PENDIENTE`.
+- [ ] El organizador puede aceptarla o rechazarla.
+- [ ] Las postulaciones pendientes no reservan disponibilidad horaria.
 
-### H5 — Seleccionar un músico
+---
 
-**Como** organizador, **quiero** buscar proyectos musicales y seleccionar uno para mi evento, **para** cubrir las necesidades del evento.
+## H6 — Aceptar una postulación
 
-Criterios de aceptación:
-- [ ] El organizador puede consultar información pública de los proyectos musicales.
-- [ ] Puede iniciar una contratación con un proyecto.
-- [ ] La contratación queda asociada al evento y al proyecto musical correspondiente.
-- [ ] La contratación puede pasar al estado de negociación.
+**Como** organizador, **quiero** aceptar una postulación, **para** comenzar una negociación con el proyecto.
 
-### H6 — Negociar el caché
+### Criterios de aceptación
+
+Cuando una postulación pendiente es aceptada:
+
+```text
+Postulación PENDIENTE
+        ↓
+validar disponibilidad
+        ↓
+Postulación ACEPTADA
+        +
+Contratación NEGOCIANDO
+```
+
+Además:
+
+- [ ] aceptar la postulación no constituye un acuerdo económico;
+- [ ] aceptar la postulación no ocupa un cupo del evento;
+- [ ] se crea una única contratación;
+- [ ] la operación se realiza de forma atómica;
+- [ ] solamente el organizador propietario del evento puede aceptarla;
+- [ ] no puede aceptarse si genera un conflicto de disponibilidad del músico.
+
+---
+
+## H7 — Seleccionar directamente un proyecto
+
+**Como** organizador, **quiero** seleccionar un proyecto musical, **para** iniciar directamente una negociación.
+
+### Criterios de aceptación
+
+- [ ] El organizador puede consultar proyectos activos.
+- [ ] Puede seleccionar un proyecto para uno de sus eventos.
+- [ ] Se valida la disponibilidad del músico.
+- [ ] Se crea una contratación `NEGOCIANDO`.
+- [ ] La contratación queda asociada al evento y proyecto correspondientes.
+- [ ] La operación no ocupa todavía un cupo.
+- [ ] No se puede iniciar una contratación con un proyecto inactivo.
+
+---
+
+## H8 — Negociar el caché
 
 **Como** músico u organizador, **quiero** realizar ofertas y contraofertas, **para** acordar el monto de la contratación.
 
-Criterios de aceptación:
-- [ ] La parte que inicia la negociación puede enviar una oferta económica.
-- [ ] La otra parte puede aceptar, rechazar o realizar una contraoferta.
-- [ ] Las sucesivas ofertas quedan registradas dentro de la contratación.
-- [ ] Cuando una parte acepta una oferta, la contratación pasa a estado acordado.
-- [ ] El monto acordado queda registrado y no puede ser modificado unilateralmente.
-- [ ] Caso de error: una oferta no puede ser aceptada si la contratación ya fue cerrada o cancelada.
+### Criterios de aceptación
 
-### H7 — Registrar una contratación
+- [ ] Cualquiera de las partes puede enviar la primera oferta.
+- [ ] La contraparte puede aceptar, rechazar o contraofertar.
+- [ ] Todas las ofertas quedan registradas.
+- [ ] Solamente una oferta puede estar vigente como `PROPUESTA`.
+- [ ] Una contraoferta convierte la propuesta anterior en `CONTRAOFERTADA`.
+- [ ] El usuario que creó una oferta no puede aceptarla ni rechazarla.
+- [ ] Una negociación cerrada no acepta nuevas ofertas.
 
-**Como** músico u organizador, **quiero** consultar el acuerdo alcanzado, **para** conocer las condiciones bajo las cuales se realizará la participación.
+---
 
-Criterios de aceptación:
-- [ ] La contratación registra evento, proyecto musical, organizador, monto acordado y estado.
-- [ ] Una contratación acordada conserva el monto pactado aunque posteriormente cambien precios o condiciones económicas externas.
-- [ ] Ambas partes pueden consultar el acuerdo asociado a sus cuentas.
-- [ ] El sistema no permite que una parte modifique unilateralmente el acuerdo.
+## H9 — Registrar el acuerdo
 
-### H8 — Valorar una contratación
+**Como** músico u organizador, **quiero** consultar el acuerdo alcanzado, **para** conocer las condiciones pactadas.
 
-**Como** músico, **quiero** valorar al organizador después del evento, **para** aportar información sobre su reputación.
+### Criterios de aceptación
 
-**Como** organizador, **quiero** valorar al proyecto musical después del evento, **para** aportar información sobre su reputación.
+Cuando una oferta es aceptada:
 
-Criterios de aceptación:
-- [ ] Solo pueden valorar las partes que participaron de una contratación válida.
-- [ ] La valoración se habilita después de la fecha del evento.
-- [ ] Una misma parte no puede valorar más de una vez la misma contratación.
-- [ ] La valoración queda asociada a la contratación que la originó.
-- [ ] La reputación acumulada puede ser consultada antes de una nueva contratación.
+```text
+Oferta PROPUESTA
+        ↓
+ACEPTADA
 
-### H9 — Consultar la reputación
+Contratación NEGOCIANDO
+        ↓
+ACORDADO
+```
 
-**Como** músico u organizador, **quiero** consultar la valoración de la otra parte, **para** decidir si quiero trabajar con ella.
+Además:
 
-Criterios de aceptación:
-- [ ] El perfil correspondiente muestra una valoración calculada a partir de las contrataciones calificadas.
-- [ ] Se pueden consultar las valoraciones recibidas de contrataciones anteriores según el nivel de detalle definido para el MVP.
-- [ ] No se pueden generar valoraciones sin una contratación que las respalde.
+- [ ] se registra `agreed_amount`;
+- [ ] se registra `agreed_at`;
+- [ ] el monto acordado no puede modificarse unilateralmente;
+- [ ] antes de cerrar el acuerdo se valida nuevamente disponibilidad;
+- [ ] antes de cerrar el acuerdo se valida el cupo del evento;
+- [ ] el acuerdo es visible para ambas partes;
+- [ ] nuevas ofertas quedan deshabilitadas.
 
-### H10 — Consultar la cartelera pública
+---
 
-**Como** público, **quiero** consultar los eventos disponibles, **para** conocer qué recitales puedo visitar.
+## H10 — Cancelar una contratación
 
-Criterios de aceptación:
-- [ ] La cartelera es accesible sin iniciar sesión.
-- [ ] Cada evento publicado muestra la información pública definida para el evento.
-- [ ] Se pueden consultar los proyectos musicales participantes.
-- [ ] El público puede acceder a los enlaces de redes sociales y plataformas musicales de los proyectos.
-- [ ] Los eventos que no estén publicados o que ya no deban mostrarse no aparecen en la cartelera pública.
+**Como** músico u organizador, **quiero** cancelar una contratación cuando corresponda, **para** finalizar una negociación o acuerdo que no continuará.
 
-## 6. Flujo principal
+### Criterios de aceptación
 
-El recorrido principal que da valor al sistema es el proceso de contratación entre un organizador y un proyecto musical.
+Puede cancelarse una contratación:
 
-1. Un músico crea su cuenta y registra uno o varios proyectos musicales.
-2. El músico completa la información pública de cada proyecto, incluyendo género, descripción, caché aproximado y enlaces.
-3. Un organizador crea su cuenta y publica un evento indicando fecha, ubicación, cantidad de proyectos requeridos y caché ofrecido.
-4. Un proyecto musical encuentra el evento y solicita participar, o el organizador busca un proyecto y propone iniciar una contratación.
-5. Se crea una contratación entre el evento y el proyecto musical.
-6. Se inicia la negociación económica mediante ofertas y contraofertas.
-7. Ambas partes continúan negociando hasta que una oferta es aceptada o la negociación se cancela.
-8. Al aceptar una oferta, el monto acordado queda registrado en la contratación.
-9. El evento se realiza en la fecha establecida.
-10. Una vez finalizado el evento, el músico y el organizador pueden valorar a la otra parte.
-11. Las valoraciones pasan a formar parte de la reputación de cada parte para futuras contrataciones.
-12. Paralelamente, el público puede consultar la cartelera, conocer los proyectos participantes y acceder a sus redes y plataformas musicales.
+- [ ] en estado `NEGOCIANDO`;
+- [ ] en estado `ACORDADO` mientras el evento aún no haya comenzado.
 
-## 7. Reglas de negocio
+No puede cancelarse:
 
-Las restricciones que definen el comportamiento del sistema y que no deben quedar a criterio de la implementación.
+- [ ] una contratación `COMPLETADA`;
+- [ ] una contratación ya `CANCELADA`.
 
-- Un usuario autenticado tiene un único rol dentro del MVP: **Músico** u **Organizador**.
-- Un músico puede registrar múltiples proyectos musicales.
-- Un proyecto musical pertenece a un músico.
+Al cancelar:
+
+- [ ] cambia a `CANCELADO`;
+- [ ] se registra `cancelled_at`;
+- [ ] puede registrarse `cancellation_reason`;
+- [ ] deja de bloquear disponibilidad;
+- [ ] deja de ocupar cupo si estaba acordada;
+- [ ] sus ofertas permanecen como historial pero no pueden modificarse.
+
+---
+
+## H11 — Completar una contratación
+
+**Como** músico u organizador, **quiero** marcar una contratación como completada después del evento, **para** cerrar formalmente la participación.
+
+### Criterios de aceptación
+
+Puede completarse cuando:
+
+```text
+Contratación = ACORDADO
+y
+evento.ends_at <= ahora
+```
+
+Entonces:
+
+```text
+ACORDADO
+    ↓
+COMPLETADO
+```
+
+Además:
+
+- [ ] cualquiera de las dos partes puede completar la contratación;
+- [ ] solamente puede completarse una vez;
+- [ ] una contratación completada conserva el monto acordado;
+- [ ] una contratación completada no puede cancelarse;
+- [ ] completar habilita las valoraciones.
+
+---
+
+## H12 — Valorar una contratación
+
+**Como** músico, **quiero** valorar al organizador después de una participación completada.
+
+**Como** organizador, **quiero** valorar al proyecto musical después de una participación completada.
+
+### Criterios de aceptación
+
+- [ ] La contratación debe estar `COMPLETADA`.
+- [ ] Solamente los participantes pueden valorar.
+- [ ] Una misma parte no puede valorar dos veces la misma contratación.
+- [ ] La puntuación debe estar entre 1 y 5.
+- [ ] El servidor determina automáticamente quién es el destinatario.
+- [ ] El cliente no puede elegir arbitrariamente a quién valorar.
+- [ ] La valoración queda asociada a la contratación.
+
+---
+
+## H13 — Consultar reputación
+
+**Como** músico u organizador, **quiero** consultar la reputación de la otra parte, **para** decidir si quiero trabajar con ella.
+
+### Criterios de aceptación
+
+- [ ] Puede consultarse el promedio de puntuaciones.
+- [ ] Puede consultarse la cantidad de valoraciones.
+- [ ] Pueden consultarse las valoraciones anteriores según el nivel de detalle definido para el MVP.
+- [ ] No existen valoraciones sin contratación.
+- [ ] El organizador puede generar reputación para el proyecto musical valorado.
+- [ ] El músico puede generar reputación para el organizador.
+
+---
+
+## H14 — Consultar cartelera pública
+
+**Como** público, **quiero** consultar eventos, **para** conocer recitales disponibles.
+
+### Criterios de aceptación
+
+- [ ] No requiere autenticación.
+- [ ] Solamente muestra eventos publicados y vigentes.
+- [ ] No muestra eventos cancelados.
+- [ ] Los eventos que ya finalizaron no aparecen en la cartelera principal.
+- [ ] Puede consultarse información pública del evento.
+- [ ] Pueden consultarse proyectos con participación acordada.
+- [ ] Pueden consultarse redes y plataformas musicales.
+- [ ] Nunca se exponen negociaciones, ofertas o datos privados.
+
+---
+
+# 7. Flujo principal
+
+El recorrido principal del sistema será:
+
+1. Un usuario se registra mediante Supabase Auth.
+2. Selecciona rol Músico u Organizador.
+3. Se crea su perfil de Arma tu pogo.
+4. El músico registra uno o varios proyectos musicales.
+5. El organizador crea y publica un evento.
+6. El músico encuentra el evento y envía una postulación.
+
+Alternativamente:
+
+6. El organizador encuentra directamente un proyecto musical.
+
+### Desde una postulación
+
+7. El organizador acepta la postulación.
+8. Se valida la disponibilidad del músico.
+9. Se crea una contratación `NEGOCIANDO`.
+
+### Desde selección directa
+
+7. El organizador inicia una contratación.
+8. Se valida la disponibilidad del músico.
+9. Se crea una contratación `NEGOCIANDO`.
+
+### Negociación
+
+10. Una de las partes envía una oferta.
+11. La otra puede aceptar, rechazar o contraofertar.
+12. El historial completo queda almacenado.
+13. Antes de aceptar definitivamente se valida:
+    - disponibilidad del músico;
+    - cupo del evento.
+14. La oferta aceptada establece el monto definitivo.
+15. La contratación pasa a `ACORDADO`.
+16. El proyecto ocupa un cupo.
+
+### Finalización
+
+17. El evento se realiza.
+18. Después de `ends_at`, la contratación puede marcarse `COMPLETADO`.
+19. Ambas partes pueden valorarse.
+20. Las valoraciones forman parte de la reputación futura.
+
+Paralelamente, el público puede consultar la cartelera.
+
+---
+
+# 8. Reglas de disponibilidad del músico
+
+La disponibilidad se determina a nivel del **usuario con rol Músico**, no a nivel del proyecto musical.
+
+Esto significa que un músico con varios proyectos no puede utilizar proyectos diferentes para asumir compromisos simultáneos.
+
+Ejemplo:
+
+```text
+Músico
+├── Proyecto A
+└── Proyecto B
+```
+
+Si Proyecto A posee una contratación activa:
+
+```text
+Evento A
+20:00 → 23:00
+```
+
+no puede iniciarse otra contratación activa para Proyecto B:
+
+```text
+Evento B
+21:00 → 00:00
+```
+
+porque existe superposición.
+
+## Contrataciones que bloquean disponibilidad
+
+Bloquean:
+
+```text
+NEGOCIANDO
+ACORDADO
+```
+
+No bloquean:
+
+```text
+CANCELADO
+```
+
+`COMPLETADO` representa una participación pasada y no afecta eventos futuros.
+
+## Postulaciones
+
+Las postulaciones `PENDIENTES` **no bloquean disponibilidad**.
+
+Un músico puede tener:
+
+```text
+Evento A 21:00–23:00 → PENDIENTE
+Evento B 21:30–23:30 → PENDIENTE
+```
+
+Esto es válido porque todavía no existe ningún compromiso.
+
+El conflicto se valida cuando una postulación intenta ser aceptada.
+
+## Superposición
+
+Dos eventos se consideran incompatibles cuando sus intervalos horarios se superponen.
+
+Conceptualmente existe conflicto cuando:
+
+```text
+nuevoInicio < existenteFin
+y
+nuevoFin > existenteInicio
+```
+
+Por lo tanto:
+
+```text
+Evento A 18:00 → 20:00
+Evento B 20:00 → 22:00
+```
+
+son compatibles.
+
+## Mismo día con horarios diferentes
+
+Un músico puede participar en múltiples eventos durante el mismo día mientras los horarios no se superpongan.
+
+Ejemplo válido:
+
+```text
+Evento A
+12:00 → 15:00
+
+Evento B
+21:00 → 23:30
+```
+
+## Tiempo de traslado
+
+El MVP no calcula:
+
+- distancia;
+- tiempo de traslado;
+- prueba de sonido;
+- armado;
+- logística.
+
+Solamente se considera la superposición real de intervalos horarios.
+
+---
+
+# 9. Reglas de cupos
+
+Cada evento posee:
+
+```text
+required_projects_count
+```
+
+que indica cuántos proyectos musicales puede incorporar.
+
+## Ocupan cupo
+
+```text
+ACORDADO
+COMPLETADO
+```
+
+## No ocupan cupo
+
+```text
+Postulación PENDIENTE
+Postulación ACEPTADA
+Contratación NEGOCIANDO
+Contratación CANCELADO
+```
+
+Ejemplo:
+
+```text
+Evento
+required_projects_count = 3
+
+ACORDADO = 2
+NEGOCIANDO = 5
+
+cupos ocupados = 2
+cupos disponibles = 1
+```
+
+Puede existir cualquier cantidad razonable de negociaciones mientras todavía haya capacidad para cerrar acuerdos.
+
+## Validación definitiva
+
+El cupo debe comprobarse nuevamente al aceptar una oferta.
+
+No podrá aceptarse una oferta si la operación provocaría:
+
+```text
+contrataciones acordadas > required_projects_count
+```
+
+La aceptación de la oferta y el cambio de estado deberán realizarse de manera atómica.
+
+---
+
+# 10. Reglas de Postulación
+
+- Solamente un usuario `MUSICO` puede postularse.
+- Solamente puede utilizar proyectos propios.
+- El proyecto debe estar activo.
+- El evento debe estar `PUBLICADO`.
+- El evento no debe haber comenzado.
+- Un proyecto no puede postularse dos veces al mismo evento.
+- Una postulación nueva queda `PENDIENTE`.
+- Una postulación `PENDIENTE` puede pasar a:
+  - `ACEPTADA`;
+  - `RECHAZADA`;
+  - `CANCELADA` automáticamente si el evento es cancelado.
+- Una postulación aceptada crea una contratación `NEGOCIANDO`.
+- Una postulación aceptada no constituye un acuerdo.
+- Una postulación aceptada no ocupa un cupo.
+- Solamente el organizador propietario del evento puede aceptar o rechazar.
+- Al aceptar debe validarse disponibilidad.
+- La aceptación y creación de la contratación deberán realizarse en una transacción.
+
+---
+
+# 11. Reglas de Contratación
+
+Una contratación puede originarse mediante:
+
+```text
+Postulación aceptada
+```
+
+o:
+
+```text
+Selección directa del organizador
+```
+
+Toda contratación deberá registrar:
+
+- evento;
+- proyecto;
+- organizador;
+- músico;
+- estado;
+- origen;
+- usuario creador;
+- datos económicos cuando corresponda.
+
+## Identidades
+
+`organizer_id` deberá obtenerse desde el propietario del evento.
+
+`musician_id` deberá obtenerse desde el propietario del proyecto.
+
+Nunca deberán confiarse estos identificadores cuando sean proporcionados arbitrariamente por el cliente.
+
+## Duplicados
+
+Un mismo proyecto no puede mantener múltiples contrataciones equivalentes para el mismo evento.
+
+## Disponibilidad
+
+No puede crearse una contratación `NEGOCIANDO` si genera una superposición con otra contratación activa del mismo músico.
+
+---
+
+# 12. Reglas de Oferta
+
+Toda oferta pertenece a una contratación.
+
+Solo los participantes de la contratación pueden interactuar con sus ofertas.
+
+## Crear oferta
+
+Solamente puede realizarse cuando:
+
+```text
+Contratación = NEGOCIANDO
+```
+
+Una nueva oferta queda:
+
+```text
+PROPUESTA
+```
+
+## Oferta vigente
+
+Dentro de una contratación solamente puede existir una propuesta vigente.
+
+Si existe una propuesta de la contraparte y se envía una contraoferta:
+
+```text
+Oferta anterior:
+PROPUESTA → CONTRAOFERTADA
+
+Nueva oferta:
+→ PROPUESTA
+```
+
+## Aceptar
+
+Solamente la contraparte puede aceptar.
+
+Debe cumplirse:
+
+```text
+oferta.status = PROPUESTA
+contratacion.status = NEGOCIANDO
+```
+
+Antes de aceptar deben volver a validarse:
+
+1. disponibilidad del músico;
+2. cupo del evento.
+
+Si todo es válido:
+
+```text
+Oferta → ACEPTADA
+Contratación → ACORDADO
+agreed_amount = Oferta.amount
+agreed_at = ahora
+```
+
+## Rechazar
+
+Solamente la contraparte puede rechazar una oferta vigente.
+
+```text
+PROPUESTA → RECHAZADA
+```
+
+La contratación permanece `NEGOCIANDO`.
+
+Posteriormente cualquiera de las partes podrá iniciar una nueva propuesta válida.
+
+## Restricción del emisor
+
+El usuario que creó una oferta no puede:
+
+- aceptar su propia oferta;
+- rechazar su propia oferta;
+- responder a su propia oferta como contraparte.
+
+---
+
+# 13. Cancelación de eventos
+
+Solamente el organizador propietario puede cancelar su evento.
+
+El evento debe encontrarse `PUBLICADO` y no debe haber comenzado.
+
+Al cancelar:
+
+```text
+Evento
+PUBLICADO → CANCELADO
+```
+
+Además, dentro de una misma operación consistente:
+
+```text
+Postulaciones PENDIENTES
+→ CANCELADAS
+```
+
+```text
+Contrataciones NEGOCIANDO
+→ CANCELADAS
+```
+
+```text
+Contrataciones ACORDADAS
+→ CANCELADAS
+```
+
+Las ofertas y registros históricos no se eliminan.
+
+Las contrataciones canceladas:
+
+- dejan de bloquear disponibilidad;
+- dejan de ocupar cupos;
+- no admiten nuevas ofertas;
+- no pueden completarse;
+- no pueden generar valoraciones.
+
+---
+
+# 14. Modificación de eventos
+
+Solamente el organizador propietario puede modificar un evento.
+
+No podrán modificarse arbitrariamente datos que invaliden contrataciones existentes.
+
+## Fecha y horario
+
+Si existen contrataciones:
+
+```text
+NEGOCIANDO
+o
+ACORDADO
+```
+
+no podrá modificarse directamente:
+
+```text
+starts_at
+ends_at
+```
+
+porque podría invalidar la disponibilidad previamente comprobada.
+
+## Cantidad de proyectos
+
+`required_projects_count` nunca podrá reducirse por debajo de la cantidad de contrataciones que actualmente ocupan cupo.
+
+Debe cumplirse:
+
+```text
+required_projects_count >= cuposOcupados
+```
+
+## Caché ofrecido
+
+Modificar el caché ofrecido del evento no modifica montos previamente acordados.
+
+---
+
+# 15. Cancelación de contrataciones
+
+Una contratación puede ser cancelada por cualquiera de sus dos participantes.
+
+## Permitido
+
+```text
+NEGOCIANDO → CANCELADO
+```
+
+También:
+
+```text
+ACORDADO → CANCELADO
+```
+
+siempre que:
+
+```text
+ahora < evento.starts_at
+```
+
+## No permitido
+
+```text
+COMPLETADO → CANCELADO
+```
+
+```text
+CANCELADO → CANCELADO
+```
+
+Al cancelar se registra:
+
+- `cancelled_at`;
+- `cancellation_reason`, cuando corresponda.
+
+---
+
+# 16. Finalización de contrataciones
+
+Una contratación solamente puede completarse si:
+
+```text
+status = ACORDADO
+```
+
+y:
+
+```text
+evento.ends_at <= ahora
+```
+
+Entonces:
+
+```text
+ACORDADO → COMPLETADO
+```
+
+La operación puede ser realizada por el músico o el organizador participantes.
+
+Una contratación completada:
+
+- conserva el monto acordado;
+- conserva el historial;
+- no puede cancelarse;
+- habilita valoraciones.
+
+---
+
+# 17. Reglas de Valoración y reputación
+
+Una valoración solamente puede crearse cuando:
+
+```text
+Contratación = COMPLETADO
+```
+
+## Músico valora organizador
+
+El servidor determina:
+
+```text
+author = músico
+target = organizador
+target_project = null
+```
+
+## Organizador valora proyecto
+
+El servidor determina:
+
+```text
+author = organizador
+target = músico propietario
+target_project = proyecto
+```
+
+El cliente solamente proporciona información como:
+
+```json
+{
+  "score": 5,
+  "comment": "Excelente experiencia"
+}
+```
+
+No podrá decidir arbitrariamente:
+
+- `author_id`;
+- `target_id`;
+- `target_project_id`.
+
+## Reputación
+
+La reputación podrá calcular:
+
+- promedio de puntuación;
+- cantidad de valoraciones;
+- listado de valoraciones.
+
+El promedio no necesita persistirse necesariamente si puede calcularse correctamente a partir de las valoraciones existentes.
+
+---
+
+# 18. Información pública
+
+La información pública debe encontrarse claramente separada de la información privada.
+
+## Información pública de Evento
+
+Puede incluir:
+
+- título;
+- descripción;
+- fecha y hora;
+- ubicación;
+- establecimiento;
+- ciudad;
+- banner;
+- proyectos confirmados;
+- información pública relacionada.
+
+## Información pública de Proyecto
+
+Puede incluir:
+
+- nombre;
+- descripción;
+- género;
+- imagen;
+- ubicación;
+- ciudad;
+- caché aproximado cuando corresponda;
+- Spotify;
+- YouTube;
+- Instagram;
+- sitio web;
+- enlaces personalizados;
+- reputación pública.
+
+## Información que nunca debe exponerse públicamente
+
+- sesiones;
+- tokens;
+- credenciales;
+- teléfono privado;
+- negociaciones;
+- historial de ofertas;
+- postulaciones;
+- motivos privados de cancelación;
+- variables de entorno;
+- información interna no definida como pública.
+
+---
+
+# 19. Reglas de negocio generales
+
+- Un usuario tiene un único rol.
+- Un músico puede administrar múltiples proyectos.
+- Un proyecto pertenece a un músico.
 - Un organizador puede publicar múltiples eventos.
 - Un evento pertenece a un organizador.
-- Un evento puede requerir uno o varios proyectos musicales.
-- Un proyecto musical puede participar de múltiples eventos mediante distintas contrataciones.
-- Toda negociación debe estar asociada a una contratación concreta.
-- Cada oferta debe registrar quién la realizó y cuándo.
-- Una contraoferta reemplaza la propuesta vigente para efectos de negociación, pero el historial de ofertas se conserva.
-- El monto acordado se considera definitivo dentro de la contratación y no puede ser modificado unilateralmente.
-- El dinero real no se transfiere mediante Arma tu pogo durante el MVP.
-- Solo las partes que participaron de una contratación pueden valorarse entre sí.
-- Una valoración solo puede realizarse una vez por parte y por contratación.
-- La valoración debe estar respaldada por una contratación existente.
-- Un evento no puede aceptar más proyectos de los cupos disponibles.
-- Una contratación no puede continuar negociándose una vez que fue acordada, cancelada o cerrada.
-- El público puede consultar información pública sin necesidad de registrarse.
-- La información privada de usuarios y negociaciones no se expone al público.
-- El caché aproximado publicado por un proyecto musical sirve como referencia y no constituye una obligación contractual hasta que exista un acuerdo.
-- El caché acordado en una contratación es independiente del caché aproximado publicado en el perfil del proyecto.
-- Los pagos y transferencias reales quedan fuera del MVP.
-
-## 8. Requisitos no funcionales
-
-### Usabilidad
-
-- [ ] Los flujos principales deben ser comprensibles sin capacitación previa.
-- [ ] Los formularios deben conservar la información ya ingresada cuando exista un error de validación (usando Zod y React Hook Form).
-- [ ] Los estados de eventos y contrataciones deben ser claros para evitar confusiones entre postulación, negociación, acuerdo, cancelación y cierre.
-- [ ] El proceso de negociación debe mostrar claramente la oferta vigente y el historial de propuestas.
-- [ ] La aplicación debe ser responsive y usable en celular, tablet y desktop.
-
-### Accesibilidad
-
-- [ ] Todo se puede operar con teclado y se ve dónde está el foco.
-- [ ] Los campos de formulario tienen `label` asociado, no solo placeholder.
-- [ ] Las imágenes informativas tienen texto alternativo; las decorativas, alternativo vacío.
-- [ ] El contraste entre texto y fondo llega a 4,5:1 (3:1 si la letra es grande).
-- [ ] Los errores nunca se comunican solo mediante color: siempre incluyen texto.
-
-### Seguridad y Validación
-
-- [ ] Las funcionalidades privadas requieren autenticación (Supabase Auth).
-- [ ] El servidor (Server Actions) debe validar rigurosamente el rol, permisos y esquemas con Zod antes de mutar la base de datos con Prisma.
-- [ ] Un músico solo puede modificar sus propios proyectos.
-- [ ] Un organizador solo puede modificar sus propios eventos.
-- [ ] Las negociaciones solo son accesibles para las partes involucradas.
-- [ ] Las valoraciones solo pueden ser creadas por participantes de la contratación correspondiente.
-- [ ] Las credenciales, claves y secretos no se almacenan en el repositorio.
-- [ ] Las variables sensibles se gestionan mediante variables de entorno (`DATABASE_URL`, Supabase Keys).
-
-## 9. Integraciones y Tecnologías Core
-
-**Prisma ORM:** Capa de acceso a datos, modelado relacional y tipado estricto en PostgreSQL.
-
-**PostgreSQL / Supabase:** Base de datos relacional y servicios de plataforma.
-
-**Supabase Auth:** Autenticación segura de usuarios y gestión de sesiones mediante `@supabase/ssr`.
-
-**Supabase Storage:** Almacenamiento seguro de archivos e imágenes (banners, fotos de proyectos) si aplica.
-
-**Zod:** Validación declarativa de esquemas tanto en cliente como en servidor.
-
-**Vercel:** Despliegue continuo de la aplicación web Next.js.
-
-**GitHub:** Repositorio, control de versiones y flujo de trabajo colaborativo.
-
-No se incorporarán integraciones de pago en el MVP.
-
-Las redes sociales y plataformas musicales se manejarán inicialmente mediante enlaces externos proporcionados por los usuarios, sin necesidad de integrar sus APIs.
-
-## 10. Fuera de alcance
-
-Lo que decidimos no implementar en el MVP.
-
-- **Pagos y transferencias de dinero.** El sistema registra el monto acordado, pero no procesa el pago.
-- **Venta real de entradas y procesamiento de pagos para entradas.** Queda para una versión posterior.
-- **Sistema de billetera o saldo interno.**
-- **Facturación o emisión de comprobantes fiscales.**
-- **Integración con bancos, Mercado Pago, Stripe u otras plataformas de pago.**
-- **Aplicación móvil nativa.** El MVP será una aplicación web responsive.
-- **Chat general entre usuarios.** La comunicación económica se limitará al sistema de ofertas y contraofertas definido.
-- **Integración automática con redes sociales o plataformas musicales.** Se utilizarán enlaces externos.
-- **Verificación externa de identidad o antecedentes de músicos y organizadores.**
-- **Algoritmos avanzados de recomendación mediante inteligencia artificial.**
-- **Gestión completa de producción de eventos**, como venta de merchandising, catering, iluminación, sonido o logística.
-- **Gestión contable de las contrataciones.**
-- **Sistema avanzado de publicidad automatizada.** La publicidad se contempla como modelo de negocio futuro, no como núcleo del MVP.
-- **Múltiples roles simultáneos para una misma cuenta.**
-
-## 11. Criterios generales de aceptación del MVP
-
-El MVP se considerará funcional cuando:
-
-- [ ] Un usuario pueda registrarse e iniciar sesión.
-- [ ] Un músico pueda crear y administrar al menos un proyecto musical.
-- [ ] Un organizador pueda crear y publicar un evento.
-- [ ] Un músico pueda encontrar un evento y postular uno de sus proyectos.
-- [ ] Un organizador pueda seleccionar/iniciar una contratación con un proyecto.
-- [ ] Ambas partes puedan negociar mediante ofertas y contraofertas.
-- [ ] El sistema pueda registrar un acuerdo con un monto definitivo.
-- [ ] El acuerdo pueda ser consultado por ambas partes.
-- [ ] Después del evento, ambas partes puedan valorarse mutuamente.
-- [ ] La reputación resultante pueda consultarse.
-- [ ] El público pueda consultar una cartelera pública de eventos.
-- [ ] El público pueda consultar los proyectos participantes y sus enlaces externos.
-- [ ] Los permisos impidan que un usuario modifique información que no le pertenece.
-- [ ] La aplicación funcione correctamente en desktop y dispositivos móviles.
-- [ ] No existan secretos ni credenciales privadas dentro del repositorio.
-- [ ] El proyecto pueda ejecutarse y desplegarse fuera del entorno local.
-
-## 12. Endpoints de la API
-
-La API del sistema se organiza por recursos y utiliza el prefijo `/api`.
-
-Los endpoints que requieren autenticación deben validar la sesión del usuario mediante Supabase Auth y verificar los permisos correspondientes según su rol y relación con el recurso.
-
-Las operaciones de aceptación, rechazo, cancelación y finalización se representan mediante endpoints de acción para reflejar las reglas de negocio del sistema.
-
-### 12.1. Usuarios
-
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `GET` | `/api/usuarios/me` | Obtener los datos del usuario autenticado | Sí |
-| `PATCH` | `/api/usuarios/me` | Actualizar los datos del usuario autenticado | Sí |
+- Un evento puede contratar múltiples proyectos.
+- Los proyectos y eventos se relacionan mediante contrataciones.
+- Toda negociación pertenece a una contratación.
+- Toda oferta registra autor, monto y fecha.
+- El historial de ofertas nunca se elimina al contraofertar.
+- El monto acordado es definitivo.
+- Cambiar el caché aproximado de un proyecto no modifica acuerdos existentes.
+- Cambiar el caché ofrecido de un evento no modifica acuerdos existentes.
+- Arma tu pogo no procesa dinero real.
+- Solamente los participantes pueden acceder a una negociación.
+- Solamente los participantes pueden valorar.
+- Cada participante puede valorar una vez por contratación.
+- Un evento no puede superar sus cupos.
+- Una contratación cerrada no puede seguir negociándose.
+- El público puede consultar información pública sin registrarse.
+- Los datos privados no deben exponerse mediante endpoints públicos.
+- La disponibilidad del músico se determina por intervalos horarios.
+- Los diferentes proyectos de un mismo músico comparten disponibilidad.
+- Las postulaciones pendientes no reservan disponibilidad.
+- Las contrataciones en negociación sí reservan disponibilidad.
+- Una contratación acordada ocupa cupo.
+- Una contratación cancelada libera disponibilidad y cupo.
+- Las reglas de autorización deben verificarse siempre en el servidor.
 
 ---
 
-### 12.2. Proyectos musicales
+# 20. Requisitos no funcionales
 
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `GET` | `/api/proyectos` | Obtener los proyectos musicales del usuario autenticado | Sí |
-| `POST` | `/api/proyectos` | Crear un nuevo proyecto musical | Sí |
-| `GET` | `/api/proyectos/:proyectoId` | Obtener el detalle de un proyecto musical | Según contexto |
-| `PATCH` | `/api/proyectos/:proyectoId` | Actualizar un proyecto musical propio | Sí |
-| `DELETE` | `/api/proyectos/:proyectoId` | Eliminar un proyecto musical propio | Sí |
-| `GET` | `/api/proyectos/buscar` | Buscar proyectos musicales disponibles | Sí |
+## Usabilidad
 
----
+- [ ] Los principales flujos deben ser comprensibles sin capacitación.
+- [ ] Los formularios conservan los datos cuando existe un error de validación.
+- [ ] Se utilizarán React Hook Form y Zod cuando corresponda.
+- [ ] Los estados deben mostrarse claramente.
+- [ ] La negociación debe mostrar oferta vigente e historial.
+- [ ] La aplicación debe ser responsive.
+- [ ] Debe funcionar correctamente en celular, tablet y desktop.
 
-### 12.3. Eventos
+## Accesibilidad
 
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `GET` | `/api/eventos` | Obtener eventos disponibles o pertenecientes al usuario según su rol | Sí |
-| `POST` | `/api/eventos` | Crear un nuevo evento | Sí |
-| `GET` | `/api/eventos/:eventoId` | Obtener el detalle de un evento | Sí |
-| `PATCH` | `/api/eventos/:eventoId` | Actualizar un evento propio | Sí |
-| `POST` | `/api/eventos/:eventoId/cancelar` | Cancelar un evento propio | Sí |
+- [ ] La interfaz puede operarse mediante teclado.
+- [ ] El foco debe ser visible.
+- [ ] Los inputs poseen `label`.
+- [ ] Las imágenes informativas poseen texto alternativo.
+- [ ] Las imágenes decorativas poseen texto alternativo vacío.
+- [ ] El contraste debe ser suficiente.
+- [ ] Los errores nunca se comunican solamente mediante color.
 
----
+## Seguridad
 
-### 12.4. Postulaciones
-
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `GET` | `/api/eventos/:eventoId/postulaciones` | Obtener las postulaciones de un evento | Sí |
-| `POST` | `/api/eventos/:eventoId/postulaciones` | Crear una postulación de un proyecto musical a un evento | Sí |
-| `GET` | `/api/postulaciones` | Obtener las postulaciones relacionadas con el usuario autenticado | Sí |
-| `GET` | `/api/postulaciones/:postulacionId` | Obtener el detalle de una postulación | Sí |
-| `POST` | `/api/postulaciones/:postulacionId/aceptar` | Aceptar una postulación | Sí |
-| `POST` | `/api/postulaciones/:postulacionId/rechazar` | Rechazar una postulación | Sí |
-
----
-
-### 12.5. Contrataciones
-
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `GET` | `/api/contrataciones` | Obtener las contrataciones relacionadas con el usuario autenticado | Sí |
-| `POST` | `/api/contrataciones` | Crear una contratación a partir de una selección o acuerdo | Sí |
-| `GET` | `/api/contrataciones/:contratacionId` | Obtener el detalle de una contratación | Sí |
-| `POST` | `/api/contrataciones/:contratacionId/cancelar` | Cancelar una contratación | Sí |
-| `POST` | `/api/contrataciones/:contratacionId/completar` | Marcar una contratación como completada | Sí |
+- [ ] Los endpoints privados requieren autenticación.
+- [ ] La sesión se valida en el servidor mediante Supabase.
+- [ ] Los roles se verifican en el servidor.
+- [ ] El ownership se verifica en el servidor.
+- [ ] El cliente no puede asignarse IDs de recursos que no le pertenecen.
+- [ ] Los datos de entrada se validan mediante Zod.
+- [ ] Prisma es responsable del acceso a PostgreSQL.
+- [ ] Las operaciones sensibles utilizan transacciones cuando corresponda.
+- [ ] Las credenciales no se almacenan en el repositorio.
+- [ ] Los secretos se gestionan mediante variables de entorno.
+- [ ] Los endpoints públicos no exponen información privada.
 
 ---
 
-### 12.6. Ofertas
+# 21. Integraciones y tecnologías Core
 
-Las ofertas representan las propuestas económicas y contraofertas realizadas durante la negociación entre las partes de una contratación.
+## Next.js
 
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `GET` | `/api/contrataciones/:contratacionId/ofertas` | Obtener el historial de ofertas de una contratación | Sí |
-| `POST` | `/api/contrataciones/:contratacionId/ofertas` | Crear una nueva oferta o contraoferta | Sí |
-| `POST` | `/api/ofertas/:ofertaId/aceptar` | Aceptar una oferta | Sí |
-| `POST` | `/api/ofertas/:ofertaId/rechazar` | Rechazar una oferta | Sí |
+La aplicación utilizará Next.js como framework web.
 
-La aceptación de una oferta debe registrar el monto acordado en la contratación y cerrar la negociación.
+Se utilizarán Route Handlers y/o Server Actions según corresponda a la arquitectura acordada.
 
-Una vez aceptada una oferta, el monto acordado no puede modificarse mediante nuevas ofertas.
+Las reglas de negocio siempre deben verificarse en servidor.
+
+## Prisma ORM
+
+Prisma será la capa principal de acceso a datos.
+
+Responsabilidades:
+
+- modelado;
+- consultas;
+- relaciones;
+- constraints;
+- transacciones;
+- acceso tipado a PostgreSQL.
+
+## PostgreSQL / Supabase
+
+PostgreSQL será la base de datos relacional.
+
+Supabase proveerá la infraestructura correspondiente.
+
+## Supabase Auth
+
+Responsable de:
+
+- registro;
+- login;
+- sesiones;
+- tokens;
+- identidad.
+
+## Supabase Storage
+
+Podrá utilizarse para:
+
+- avatares;
+- imágenes de proyectos;
+- banners.
+
+## Zod
+
+Se utilizará para validación tanto en frontend como especialmente en servidor.
+
+## React Hook Form
+
+Se utilizará para gestionar formularios cuando corresponda.
+
+## Vercel
+
+Plataforma prevista para el despliegue de la aplicación Next.js.
+
+## GitHub
+
+Repositorio y control de versiones.
 
 ---
 
-### 12.7. Valoraciones
+# 22. Fuera de alcance
 
-Las valoraciones se realizan una vez finalizada la contratación y permiten construir la reputación de músicos, proyectos musicales y organizadores.
+No forman parte del MVP:
 
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `POST` | `/api/contrataciones/:contratacionId/valoraciones` | Crear una valoración asociada a una contratación | Sí |
-| `GET` | `/api/contrataciones/:contratacionId/valoraciones` | Obtener las valoraciones de una contratación | Sí |
-| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Obtener las valoraciones asociadas a un usuario | Según contexto |
-| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Obtener las valoraciones de un proyecto musical | Según contexto |
+- pagos reales;
+- transferencias;
+- Mercado Pago;
+- Stripe;
+- integración bancaria;
+- billetera interna;
+- saldo;
+- facturación;
+- comprobantes fiscales;
+- venta real de entradas;
+- procesamiento de compra de entradas;
+- aplicación móvil nativa;
+- chat general;
+- integración automática con Spotify;
+- integración automática con YouTube;
+- integración automática con Instagram;
+- verificación externa de identidad;
+- antecedentes;
+- inteligencia artificial;
+- recomendaciones avanzadas;
+- gestión de catering;
+- iluminación;
+- sonido;
+- logística de producción;
+- merchandising;
+- gestión contable;
+- publicidad automatizada;
+- múltiples roles simultáneos;
+- gestión individual de integrantes de bandas;
+- cálculo de tiempos de traslado entre eventos;
+- borradores de eventos.
 
 ---
 
-### 12.8. API pública
+# 23. Endpoints de la API
 
-Los endpoints públicos no requieren autenticación.
+La API utiliza el prefijo:
 
-Solamente deben devolver información definida como pública y nunca exponer datos privados de usuarios, negociaciones, ofertas, postulaciones o contrataciones.
+```text
+/api
+```
 
-| Método | Endpoint | Descripción | Autenticación |
-|---|---|---|---|
-| `GET` | `/api/publico/eventos` | Obtener los eventos publicados para consulta pública | No |
-| `GET` | `/api/publico/eventos/:eventoId` | Obtener el detalle público de un evento | No |
-| `GET` | `/api/publico/proyectos/:proyectoId` | Obtener la información pública de un proyecto musical | No |
+Todos los endpoints privados deben validar:
+
+1. sesión;
+2. usuario;
+3. rol;
+4. ownership;
+5. relación con el recurso;
+6. reglas de negocio;
+7. datos mediante Zod.
 
 ---
 
-### 12.9. Reglas generales de los endpoints
+## 23.1. Usuarios
 
-- Todos los endpoints protegidos deben validar la sesión del usuario en el servidor.
-- La autenticación no se implementa mediante endpoints propios de login o registro, sino mediante **Supabase Auth**.
-- La autorización debe verificarse en el servidor según el rol del usuario y su relación con el recurso solicitado.
-- Un usuario no puede modificar, eliminar o cancelar recursos que no le pertenecen.
-- Un músico solamente puede gestionar sus propios proyectos musicales.
-- Un organizador solamente puede gestionar sus propios eventos.
-- Las postulaciones solamente pueden ser creadas por proyectos musicales en representación de su usuario propietario.
-- Un organizador solamente puede aceptar o rechazar postulaciones correspondientes a sus propios eventos.
-- Las ofertas solamente pueden ser creadas por las partes involucradas en la contratación.
-- Una oferta solamente puede ser aceptada o rechazada por la parte correspondiente.
-- Una vez aceptada una oferta, la negociación queda cerrada.
-- El monto acordado debe quedar registrado en la contratación y no puede modificarse mediante nuevas ofertas.
-- Las valoraciones solamente pueden realizarse entre participantes de una contratación.
-- Cada parte puede realizar como máximo una valoración por contratación.
-- Los endpoints públicos solamente deben exponer información marcada como pública.
-- Ningún endpoint debe devolver contraseñas, tokens, claves privadas, secretos, credenciales ni variables de entorno.
-- Las validaciones de datos deben realizarse también en el servidor mediante **Zod**.
-- Los errores de autorización deben impedir el acceso aunque el cliente manipule manualmente las solicitudes.
-- Los endpoints deben respetar las reglas de negocio definidas en este documento.
-- No debe implementarse ningún endpoint adicional que implique una funcionalidad fuera del alcance del MVP sin actualizar previamente esta especificación.
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `GET` | `/api/usuarios/me` | Obtener perfil del usuario autenticado | Sí |
+| `PATCH` | `/api/usuarios/me` | Modificar datos editables del perfil | Sí |
+
+No existen endpoints propios de registro y login porque esas operaciones utilizan Supabase Auth.
+
+---
+
+## 23.2. Proyectos musicales
+
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `GET` | `/api/proyectos` | Obtener proyectos propios | Sí |
+| `POST` | `/api/proyectos` | Crear proyecto | Sí |
+| `GET` | `/api/proyectos/buscar` | Buscar proyectos activos | Sí |
+| `GET` | `/api/proyectos/:proyectoId` | Obtener detalle | Según contexto |
+| `PATCH` | `/api/proyectos/:proyectoId` | Actualizar proyecto propio | Sí |
+| `DELETE` | `/api/proyectos/:proyectoId` | Desactivar proyecto propio | Sí |
+
+`DELETE` representa una baja lógica.
+
+---
+
+## 23.3. Eventos
+
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `GET` | `/api/eventos` | Obtener eventos correspondientes al rol | Sí |
+| `POST` | `/api/eventos` | Crear evento publicado | Sí |
+| `GET` | `/api/eventos/:eventoId` | Obtener detalle | Sí |
+| `PATCH` | `/api/eventos/:eventoId` | Actualizar evento propio | Sí |
+| `POST` | `/api/eventos/:eventoId/cancelar` | Cancelar evento | Sí |
+
+### `GET /api/eventos`
+
+Para Músico:
+
+- eventos publicados;
+- eventos disponibles;
+- eventos futuros o vigentes según filtros.
+
+Para Organizador:
+
+- eventos propios.
+
+---
+
+## 23.4. Postulaciones
+
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `GET` | `/api/eventos/:eventoId/postulaciones` | Postulaciones recibidas por un evento propio | Sí |
+| `POST` | `/api/eventos/:eventoId/postulaciones` | Postular un proyecto propio | Sí |
+| `GET` | `/api/postulaciones` | Obtener postulaciones relacionadas con el usuario | Sí |
+| `GET` | `/api/postulaciones/:postulacionId` | Obtener detalle | Sí |
+| `POST` | `/api/postulaciones/:postulacionId/aceptar` | Aceptar e iniciar contratación | Sí |
+| `POST` | `/api/postulaciones/:postulacionId/rechazar` | Rechazar | Sí |
+
+---
+
+## 23.5. Contrataciones
+
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `GET` | `/api/contrataciones` | Obtener contrataciones relacionadas | Sí |
+| `POST` | `/api/contrataciones` | Iniciar contratación directa | Sí |
+| `GET` | `/api/contrataciones/:contratacionId` | Obtener detalle | Sí |
+| `POST` | `/api/contrataciones/:contratacionId/cancelar` | Cancelar | Sí |
+| `POST` | `/api/contrataciones/:contratacionId/completar` | Completar después del evento | Sí |
+
+### POST directo
+
+`POST /api/contrataciones` corresponde a la selección directa realizada por un organizador.
+
+Las contrataciones originadas por postulaciones se crean mediante:
+
+```text
+POST /api/postulaciones/:postulacionId/aceptar
+```
+
+---
+
+## 23.6. Ofertas
+
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `GET` | `/api/contrataciones/:contratacionId/ofertas` | Obtener historial | Sí |
+| `POST` | `/api/contrataciones/:contratacionId/ofertas` | Crear oferta o contraoferta | Sí |
+| `POST` | `/api/ofertas/:ofertaId/aceptar` | Aceptar propuesta vigente | Sí |
+| `POST` | `/api/ofertas/:ofertaId/rechazar` | Rechazar propuesta vigente | Sí |
+
+---
+
+## 23.7. Valoraciones
+
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `POST` | `/api/contrataciones/:contratacionId/valoraciones` | Crear valoración | Sí |
+| `GET` | `/api/contrataciones/:contratacionId/valoraciones` | Obtener valoraciones de la contratación | Sí |
+| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Consultar reputación de usuario | Según contexto |
+| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Consultar reputación del proyecto | Según contexto |
+
+---
+
+## 23.8. API pública
+
+No requiere autenticación.
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `GET` | `/api/publico/eventos` | Cartelera pública |
+| `GET` | `/api/publico/eventos/:eventoId` | Detalle público |
+| `GET` | `/api/publico/proyectos/:proyectoId` | Perfil público de proyecto |
+
+Los endpoints públicos nunca devolverán:
+
+- ofertas;
+- negociaciones;
+- postulaciones;
+- datos privados;
+- tokens;
+- credenciales.
+
+---
+
+# 24. Respuestas HTTP generales
+
+Como criterio general:
+
+## `200 OK`
+
+Consulta o actualización exitosa.
+
+## `201 Created`
+
+Creación exitosa.
+
+## `400 Bad Request`
+
+Datos inválidos o error de validación.
+
+## `401 Unauthorized`
+
+No existe una sesión válida.
+
+## `403 Forbidden`
+
+El usuario está autenticado pero no posee permisos.
+
+## `404 Not Found`
+
+El recurso no existe o no puede encontrarse dentro del contexto correspondiente.
+
+## `409 Conflict`
+
+Conflicto de reglas de negocio.
+
+Ejemplos:
+
+- postulación duplicada;
+- músico no disponible;
+- evento sin cupos;
+- estado incompatible;
+- oferta ya cerrada;
+- contratación ya existente;
+- valoración duplicada.
+
+---
+
+# 25. Operaciones que requieren transacción
+
+Las siguientes operaciones deberán realizarse de forma atómica cuando involucren múltiples modificaciones relacionadas.
+
+## Aceptar postulación
+
+```text
+validar
++
+Postulación → ACEPTADA
++
+crear Contratación NEGOCIANDO
+```
+
+## Crear contraoferta
+
+```text
+Oferta anterior → CONTRAOFERTADA
++
+Nueva oferta → PROPUESTA
+```
+
+## Aceptar oferta
+
+```text
+validar disponibilidad
++
+validar cupo
++
+Oferta → ACEPTADA
++
+Contratación → ACORDADO
++
+agreed_amount
++
+agreed_at
+```
+
+## Cancelar evento
+
+```text
+Evento → CANCELADO
++
+Postulaciones pendientes → CANCELADAS
++
+Contrataciones activas → CANCELADAS
+```
+
+Las operaciones deberán ser seguras también frente a solicitudes concurrentes.
+
+---
+
+# 26. Criterios generales de aceptación del MVP
+
+El MVP se considera funcional cuando:
+
+- [ ] Un usuario puede registrarse.
+- [ ] Un usuario puede iniciar sesión.
+- [ ] Un usuario puede cerrar sesión.
+- [ ] El sistema reconoce correctamente su rol.
+- [ ] Un músico puede crear múltiples proyectos.
+- [ ] Un músico puede editar proyectos propios.
+- [ ] Un músico puede desactivar proyectos.
+- [ ] Un organizador puede crear eventos.
+- [ ] Los eventos poseen inicio y finalización.
+- [ ] Un músico puede buscar eventos.
+- [ ] Un organizador puede buscar proyectos.
+- [ ] Un músico puede enviar postulaciones.
+- [ ] Un organizador puede aceptar o rechazar postulaciones.
+- [ ] Aceptar una postulación crea una contratación.
+- [ ] Un organizador puede iniciar directamente una contratación.
+- [ ] La disponibilidad se controla por músico y no por proyecto.
+- [ ] Un músico puede participar en dos eventos del mismo día si no se superponen.
+- [ ] Un músico no puede negociar simultáneamente participaciones incompatibles.
+- [ ] Las partes pueden enviar ofertas.
+- [ ] Las partes pueden enviar contraofertas.
+- [ ] Una oferta puede ser aceptada.
+- [ ] El acuerdo registra el monto definitivo.
+- [ ] Una contratación acordada ocupa cupo.
+- [ ] El evento nunca supera sus cupos.
+- [ ] Las partes pueden cancelar una contratación cuando corresponda.
+- [ ] El organizador puede cancelar un evento.
+- [ ] Cancelar un evento cancela sus procesos activos.
+- [ ] Una contratación puede completarse después del evento.
+- [ ] Las partes pueden valorarse después de completar.
+- [ ] Una parte no puede valorar dos veces la misma contratación.
+- [ ] Puede consultarse reputación.
+- [ ] El público puede consultar cartelera sin autenticación.
+- [ ] El público puede consultar proyectos confirmados.
+- [ ] Los permisos impiden modificar recursos ajenos.
+- [ ] Ningún endpoint privado puede saltarse la autorización manipulando manualmente una request.
+- [ ] La aplicación funciona en desktop y dispositivos móviles.
+- [ ] No existen secretos dentro del repositorio.
+- [ ] El proyecto puede ejecutarse fuera del entorno local.
+- [ ] El proyecto puede desplegarse en Vercel.
+
+---
+
+# 27. Principio de implementación
+
+Las reglas de negocio definidas en este documento son responsabilidad del servidor.
+
+La interfaz de usuario puede impedir acciones inválidas para mejorar la experiencia, pero **nunca debe considerarse una barrera de seguridad**.
+
+Toda operación sensible deberá volver a validar en servidor:
+
+```text
+sesión
+↓
+usuario
+↓
+rol
+↓
+ownership
+↓
+estado del recurso
+↓
+reglas de negocio
+↓
+Zod
+↓
+Prisma
+↓
+PostgreSQL
+```
+
+El cliente nunca será considerado una fuente confiable para determinar:
+
+- identidad;
+- rol;
+- propietario;
+- participante;
+- organizador;
+- músico;
+- destinatario de una valoración;
+- estado anterior de un recurso;
+- disponibilidad;
+- cupos.
+
+---
+
+# 28. Regla final de alcance
+
+No deberá implementarse ningún endpoint, integración o funcionalidad adicional que implique ampliar el alcance del MVP sin actualizar previamente este documento.
+
+Ante una contradicción entre una implementación existente y este documento, deberá analizarse primero si:
+
+1. la implementación está incorrecta;
+2. el modelo de datos necesita una migración;
+3. el requerimiento necesita ser revisado.
+
+El agente de desarrollo no deberá inventar una nueva regla de negocio para resolver una ambigüedad.
+
+En caso de detectar una ambigüedad, deberá informarla antes de introducir comportamiento no definido.
