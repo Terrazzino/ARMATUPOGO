@@ -595,48 +595,58 @@ Además:
 
 ---
 
-## H5 — Buscar y postularse a un evento
-
-**Como** músico, **quiero** consultar eventos y postular uno de mis proyectos, **para** conseguir oportunidades.
+H5 — Buscar y postularse a un evento
 
 ### Criterios de aceptación
 
-- [ ] El músico puede consultar eventos publicados.
-- [ ] Puede seleccionar únicamente proyectos propios y activos.
-- [ ] Puede enviar una postulación.
-- [ ] Un mismo proyecto no puede postularse dos veces al mismo evento.
-- [ ] Una postulación inicialmente queda `PENDIENTE`.
-- [ ] El organizador puede aceptarla o rechazarla.
-- [ ] Las postulaciones pendientes no reservan disponibilidad horaria.
+* [ ] El músico puede consultar eventos publicados.
+* [ ] Puede seleccionar únicamente proyectos propios y activos.
+* [ ] Puede enviar una postulación independiente por cada proyecto musical.
+* [ ] Un mismo proyecto musical no puede postularse más de una vez al mismo evento.
+* [ ] Un mismo músico puede postular distintos proyectos musicales propios al mismo evento.
+* [ ] Cada proyecto postulado representa una alternativa independiente que el organizador puede evaluar.
+* [ ] Una postulación inicialmente queda `PENDIENTE`.
+* [ ] El organizador puede aceptar o rechazar cada postulación.
+* [ ] Las postulaciones pendientes no reservan disponibilidad horaria del músico.
+* [ ] La existencia de varias postulaciones del mismo músico para un evento no implica múltiples reservas ni múltiples contrataciones.
 
 ---
 
 ## H6 — Aceptar una postulación
 
-**Como** organizador, **quiero** aceptar una postulación, **para** comenzar una negociación con el proyecto.
+**Como** organizador, **quiero** aceptar una de las postulaciones recibidas, **para** seleccionar el proyecto que mejor se adapte a mi evento e iniciar una negociación.
 
 ### Criterios de aceptación
 
 Cuando una postulación pendiente es aceptada:
 
 ```text
-Postulación PENDIENTE
+Postulación seleccionada PENDIENTE
         ↓
-validar disponibilidad
+validar disponibilidad del músico
         ↓
-Postulación ACEPTADA
+Postulación seleccionada ACEPTADA
+        +
+otras postulaciones PENDIENTES
+del mismo músico para el mismo evento
+        ↓
+CANCELADAS
         +
 Contratación NEGOCIANDO
 ```
 
 Además:
 
-- [ ] aceptar la postulación no constituye un acuerdo económico;
-- [ ] aceptar la postulación no ocupa un cupo del evento;
-- [ ] se crea una única contratación;
-- [ ] la operación se realiza de forma atómica;
-- [ ] solamente el organizador propietario del evento puede aceptarla;
-- [ ] no puede aceptarse si genera un conflicto de disponibilidad del músico.
+* [ ] aceptar una postulación no constituye todavía un acuerdo económico;
+* [ ] aceptar una postulación no ocupa un cupo del evento;
+* [ ] se crea una única contratación para el proyecto seleccionado;
+* [ ] solamente el organizador propietario del evento puede aceptar una postulación;
+* [ ] no puede aceptarse una postulación si genera un conflicto de disponibilidad del músico;
+* [ ] cuando se acepta una postulación, todas las demás postulaciones `PENDIENTES` pertenecientes al mismo músico para ese mismo evento pasan automáticamente a `CANCELADA`;
+* [ ] las postulaciones de ese músico correspondientes a otros eventos no se modifican;
+* [ ] rechazar una postulación no afecta las demás postulaciones del mismo músico;
+* [ ] las postulaciones canceladas automáticamente no se reactivan si posteriormente se cancela la contratación generada;
+* [ ] toda la operación debe realizarse de forma atómica.
 
 ---
 
@@ -1029,23 +1039,111 @@ La aceptación de la oferta y el cambio de estado deberán realizarse de manera 
 
 # 10. Reglas de Postulación
 
-- Solamente un usuario `MUSICO` puede postularse.
-- Solamente puede utilizar proyectos propios.
-- El proyecto debe estar activo.
-- El evento debe estar `PUBLICADO`.
-- El evento no debe haber comenzado.
-- Un proyecto no puede postularse dos veces al mismo evento.
-- Una postulación nueva queda `PENDIENTE`.
-- Una postulación `PENDIENTE` puede pasar a:
-  - `ACEPTADA`;
-  - `RECHAZADA`;
-  - `CANCELADA` automáticamente si el evento es cancelado.
-- Una postulación aceptada crea una contratación `NEGOCIANDO`.
-- Una postulación aceptada no constituye un acuerdo.
-- Una postulación aceptada no ocupa un cupo.
-- Solamente el organizador propietario del evento puede aceptar o rechazar.
-- Al aceptar debe validarse disponibilidad.
-- La aceptación y creación de la contratación deberán realizarse en una transacción.
+* Solamente un usuario `MUSICO` puede crear postulaciones.
+* Solamente puede postular proyectos musicales propios.
+* El proyecto debe encontrarse activo.
+* El evento debe encontrarse `PUBLICADO`.
+* El evento no debe haber comenzado.
+* Una nueva postulación queda en estado `PENDIENTE`.
+
+## Múltiples proyectos del mismo músico
+
+Un músico puede administrar varios proyectos musicales y puede postular distintos proyectos propios al mismo evento.
+
+Ejemplo válido:
+
+```text
+Evento X
+
+Músico A
+├── Proyecto Rock      → PENDIENTE
+├── Proyecto Acústico  → PENDIENTE
+└── Proyecto Tributo   → PENDIENTE
+```
+
+Cada proyecto constituye una alternativa independiente para el organizador.
+
+El mismo proyecto musical no puede generar más de una postulación para el mismo evento.
+
+Debe existir una restricción equivalente a:
+
+```text
+UNIQUE(event_id, musical_project_id)
+```
+
+No debe existir una restricción:
+
+```text
+UNIQUE(event_id, musician_id)
+```
+
+porque un mismo músico puede presentar varios proyectos diferentes al mismo evento.
+
+## Postulaciones y disponibilidad
+
+Las postulaciones `PENDIENTES` no reservan disponibilidad.
+
+Un músico puede mantener postulaciones pendientes para distintos eventos cuyos horarios se superpongan.
+
+La disponibilidad se valida cuando una postulación intenta convertirse en una contratación activa.
+
+## Aceptación
+
+Cuando el organizador acepta una postulación:
+
+1. se verifica que continúe en estado `PENDIENTE`;
+2. se obtiene el músico propietario del proyecto;
+3. se valida su disponibilidad horaria;
+4. la postulación seleccionada pasa a `ACEPTADA`;
+5. todas las demás postulaciones `PENDIENTES` del mismo músico para ese mismo evento pasan a `CANCELADA`;
+6. se crea una contratación `NEGOCIANDO` para el proyecto seleccionado.
+
+Conceptualmente:
+
+```text
+Proyecto A → PENDIENTE
+Proyecto B → PENDIENTE
+Proyecto C → PENDIENTE
+
+Organizador acepta Proyecto B
+
+Proyecto A → CANCELADA
+Proyecto B → ACEPTADA
+Proyecto C → CANCELADA
+
+Contratación Proyecto B → NEGOCIANDO
+```
+
+La aceptación completa debe realizarse dentro de una misma transacción.
+
+## Rechazo
+
+Rechazar una postulación solamente afecta a esa postulación:
+
+```text
+Proyecto A → RECHAZADA
+Proyecto B → PENDIENTE
+Proyecto C → PENDIENTE
+```
+
+Las demás alternativas continúan disponibles para que el organizador las evalúe.
+
+## Cancelación automática
+
+Las postulaciones que pasan automáticamente a `CANCELADA` debido a la aceptación de otro proyecto del mismo músico no se reactivan posteriormente.
+
+Si la contratación generada termina siendo cancelada y el organizador desea negociar con otro proyecto de ese músico, podrá utilizar el flujo de contratación directa definido en el MVP.
+
+## Cancelación del evento
+
+Cuando un evento es cancelado:
+
+```text
+Postulaciones PENDIENTES
+→ CANCELADAS
+```
+
+Las postulaciones que ya estén `ACEPTADAS`, `RECHAZADAS` o `CANCELADAS` conservan su historial.
 
 ---
 
@@ -1804,13 +1902,28 @@ Las siguientes operaciones deberán realizarse de forma atómica cuando involucr
 
 ## Aceptar postulación
 
+La aceptación de una postulación debe realizarse de forma atómica:
+
 ```text
-validar
-+
-Postulación → ACEPTADA
-+
-crear Contratación NEGOCIANDO
+1. validar sesión
+2. validar rol ORGANIZADOR
+3. validar ownership del evento
+4. verificar Postulación = PENDIENTE
+5. obtener músico propietario del proyecto
+6. validar disponibilidad horaria del músico
+7. Postulación seleccionada → ACEPTADA
+8. otras postulaciones:
+      mismo evento
+      mismo músico
+      estado PENDIENTE
+   → CANCELADAS
+9. crear Contratación NEGOCIANDO
+10. commit
 ```
+
+Si cualquiera de las validaciones falla, ninguna de las modificaciones debe persistirse.
+
+La operación debe impedir que solicitudes concurrentes puedan generar más de una contratación activa para el mismo músico y evento.
 
 ## Crear contraoferta
 
