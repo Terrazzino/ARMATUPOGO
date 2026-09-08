@@ -55,44 +55,37 @@ export async function applyToEvent(
       throw new ValidationError("El evento no está disponible para recibir postulaciones");
     }
 
-    // Verificar si ya existe una contratación/postulación
-    const existingContract = await prisma.contratacion.findUnique({
-      where: {
-        eventoId_proyectoMusicalId: {
-          eventoId,
-          proyectoMusicalId,
+    // Una postulación es independiente de una contratación.
+    const [existingApplication, existingContract] = await Promise.all([
+      prisma.postulacion.findUnique({
+        where: {
+          eventoId_proyectoMusicalId: {
+            eventoId,
+            proyectoMusicalId,
+          },
         },
-      },
-    });
+      }),
+      prisma.contratacion.findUnique({
+        where: {
+          eventoId_proyectoMusicalId: {
+            eventoId,
+            proyectoMusicalId,
+          },
+        },
+      }),
+    ]);
 
-    if (existingContract) {
+    if (existingApplication || existingContract) {
       throw new ConflictError("Ya existe una postulación o contratación para este proyecto en este evento");
     }
 
-    // Crear la contratación en estado PENDIENTE o NEGOCIANDO
-    const hasInitialOffer = initialOfferAmount !== undefined && initialOfferAmount > 0;
-
-    const contract = await prisma.contratacion.create({
+    const application = await prisma.postulacion.create({
       data: {
         eventoId,
         proyectoMusicalId,
-        organizadorId: event.organizadorId,
         musicoId: user.id,
-        creadoPorId: user.id,
-        estado: hasInitialOffer ? "NEGOCIANDO" : "PENDIENTE",
-        ofertas: hasInitialOffer
-          ? {
-              create: {
-                remitenteId: user.id,
-                monto: initialOfferAmount,
-                mensaje: initialMessage || null,
-                estado: "PROPUESTA",
-              },
-            }
-          : undefined,
-      },
-      include: {
-        ofertas: true,
+        estado: "PENDIENTE",
+        mensaje: initialMessage || null,
       },
     });
 
@@ -101,7 +94,7 @@ export async function applyToEvent(
 
     return {
       success: true,
-      data: contract,
+      data: application,
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -173,7 +166,7 @@ export async function inviteProject(
         organizadorId: user.id,
         musicoId: project.usuarioId,
         creadoPorId: user.id,
-        estado: hasInitialOffer ? "NEGOCIANDO" : "PENDIENTE",
+        estado: "NEGOCIANDO",
         ofertas: hasInitialOffer
           ? {
               create: {
@@ -237,7 +230,7 @@ export async function createOffer(input: CrearOfertaInput) {
     }
 
     // Verificar estado válido del contrato
-    if (["ACORDADO", "CANCELADO", "COMPLETADO", "RECHAZADO"].includes(contract.estado)) {
+    if (["ACORDADO", "CANCELADO", "COMPLETADO"].includes(contract.estado)) {
       throw new ValidationError(`No se pueden enviar ofertas en una contratación con estado ${contract.estado}`);
     }
 
@@ -322,7 +315,7 @@ export async function acceptOffer(ofertaId: string) {
       throw new ValidationError("Esta oferta ya no está disponible para ser aceptada");
     }
 
-    if (["ACORDADO", "CANCELADO", "COMPLETADO", "RECHAZADO"].includes(contract.estado)) {
+    if (["ACORDADO", "CANCELADO", "COMPLETADO"].includes(contract.estado)) {
       throw new ValidationError(`La contratación ya se encuentra en estado ${contract.estado}`);
     }
 
@@ -489,7 +482,7 @@ export async function getMyContracts() {
           select: {
             id: true,
             titulo: true,
-            fechaEvento: true,
+            startsAt: true,
             ubicacion: true,
             estado: true,
           },

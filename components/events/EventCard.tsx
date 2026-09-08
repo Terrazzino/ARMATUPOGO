@@ -6,11 +6,12 @@ interface EventCardProps {
     id: string;
     titulo: string;
     descripcion?: string | null;
-    fechaEvento: Date | string;
+    startsAt: Date | string;
+    endsAt?: Date | string;
     ubicacion: string;
     nombreLugar?: string | null;
     ciudad?: string | null;
-    cantidadMusicosRequerida: number;
+    cantidadProyectosRequeridos: number;
     cacheOfrecido?: number | string | { toString(): string } | null;
     estado: string;
     bannerUrl?: string | null;
@@ -31,7 +32,7 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const dateObj = new Date(event.fechaEvento);
+  const dateObj = new Date(event.startsAt);
   const formattedDate = dateObj.toLocaleDateString("es-AR", {
     weekday: "short",
     day: "numeric",
@@ -73,7 +74,7 @@ export function EventCard({ event }: EventCardProps) {
 
           <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-500 dark:text-gray-400 pt-2 border-t border-slate-100 dark:border-slate-700">
             <div>
-              <span className="text-gray-800 dark:text-gray-200 font-bold">{confirmedCount}</span> de {event.cantidadMusicosRequerida} bandas confirmadas
+              <span className="text-gray-800 dark:text-gray-200 font-bold">{confirmedCount}</span> de {event.cantidadProyectosRequeridos} bandas confirmadas
             </div>
             {event.cacheOfrecido && Number(event.cacheOfrecido.toString()) > 0 && (
               <div className="text-emerald-600 dark:text-emerald-400 font-semibold">

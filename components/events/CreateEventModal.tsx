@@ -19,7 +19,9 @@ export function CreateEventModal() {
   } = useForm<EventoInput>({
     resolver: zodResolver(eventoSchema),
     defaultValues: {
-      cantidadMusicosRequerida: 2,
+      cantidadProyectosRequeridos: 2,
+      startsAt: "",
+      endsAt: "",
       estado: "PUBLICADO",
     },
   });
@@ -94,13 +96,28 @@ export function CreateEventModal() {
                     Fecha y Hora *
                   </label>
                   <input
-                    {...register("fechaEvento")}
+                    {...register("startsAt")}
                     type="datetime-local"
                     disabled={isLoading}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
                   />
-                  {errors.fechaEvento && (
-                    <p className="text-xs text-red-500 mt-1">{errors.fechaEvento.message}</p>
+                  {errors.startsAt && (
+                    <p className="text-xs text-red-500 mt-1">{errors.startsAt.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    Fin del evento *
+                  </label>
+                  <input
+                    {...register("endsAt")}
+                    type="datetime-local"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  />
+                  {errors.endsAt && (
+                    <p className="text-xs text-red-500 mt-1">{errors.endsAt.message}</p>
                   )}
                 </div>
 
@@ -109,15 +126,15 @@ export function CreateEventModal() {
                     Cupos de Bandas Requeridos *
                   </label>
                   <input
-                    {...register("cantidadMusicosRequerida", { valueAsNumber: true })}
+                    {...register("cantidadProyectosRequeridos", { valueAsNumber: true })}
                     type="number"
                     min="1"
                     max="20"
                     disabled={isLoading}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
                   />
-                  {errors.cantidadMusicosRequerida && (
-                    <p className="text-xs text-red-500 mt-1">{errors.cantidadMusicosRequerida.message}</p>
+                  {errors.cantidadProyectosRequeridos && (
+                    <p className="text-xs text-red-500 mt-1">{errors.cantidadProyectosRequeridos.message}</p>
                   )}
                 </div>
               </div>

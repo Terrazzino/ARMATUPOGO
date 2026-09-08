@@ -35,7 +35,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   const musicianProjects = user?.rol === "MUSICO" ? await getMyProjects() : [];
 
-  const dateObj = new Date(event.fechaEvento);
+  const dateObj = new Date(event.startsAt);
   const formattedDate = dateObj.toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
@@ -103,7 +103,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 <div>
                   <h2 className="text-xl font-bold">Line-up de Bandas Confirmadas</h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {event.contrataciones.length} de {event.cantidadMusicosRequerida} cupos cubiertos
+                    {event.contrataciones.length} de {event.cantidadProyectosRequeridos} cupos cubiertos
                   </p>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500">Cupos de bandas:</span>
-                  <span className="font-semibold">{event.cantidadMusicosRequerida}</span>
+                  <span className="font-semibold">{event.cantidadProyectosRequeridos}</span>
                 </div>
                 {event.cacheOfrecido && Number(event.cacheOfrecido.toString()) > 0 && (
                   <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">

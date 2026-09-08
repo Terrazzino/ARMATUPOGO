@@ -28,10 +28,15 @@ export const eventoSchema = z.object({
     )
     .optional()
     .or(z.literal("")),
-  fechaEvento: z
+  startsAt: z
     .string()
     .refine((val) => !isNaN(Date.parse(val)), {
       message: "Fecha y hora del evento inválida",
+    }),
+  endsAt: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Fecha y hora de finalización inválida",
     }),
   ubicacion: z
     .string()
@@ -40,7 +45,7 @@ export const eventoSchema = z.object({
     .max(150, "La ubicación no puede superar los 150 caracteres"),
   nombreLugar: z.string().trim().max(100).optional().or(z.literal("")),
   ciudad: z.string().trim().max(100).optional().or(z.literal("")),
-  cantidadMusicosRequerida: z
+  cantidadProyectosRequeridos: z
     .number()
     .int("Debe ser un número entero")
     .min(1, "Se requiere al menos 1 proyecto musical")

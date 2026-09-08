@@ -9,7 +9,7 @@ interface InviteModalProps {
   events: Array<{
     id: string;
     titulo: string;
-    fechaEvento: Date | string;
+    startsAt: Date | string;
   }>;
 }
 
@@ -114,7 +114,7 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
                 >
                   {events.map((ev) => (
                     <option key={ev.id} value={ev.id}>
-                      {ev.titulo} ({new Date(ev.fechaEvento).toLocaleDateString("es-AR")})
+                      {ev.titulo} ({new Date(ev.startsAt).toLocaleDateString("es-AR")})
                     </option>
                   ))}
                 </select>

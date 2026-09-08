@@ -96,7 +96,7 @@ export default async function OrganizerDashboardPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-slate-500">
-                          {new Date(event.fechaEvento).toLocaleDateString("es-AR")}
+                          {new Date(event.startsAt).toLocaleDateString("es-AR")}
                         </span>
                         <StatusBadge status={event.estado} />
                       </div>
@@ -110,7 +110,7 @@ export default async function OrganizerDashboardPage() {
                       <div className="pt-2 flex items-center justify-between text-xs font-medium">
                         <span className="text-slate-500">Cupos cubiertos:</span>
                         <span className="font-bold text-slate-900 dark:text-slate-200">
-                          {confirmedBands} / {event.cantidadMusicosRequerida} bandas
+                          {confirmedBands} / {event.cantidadProyectosRequeridos} bandas
                         </span>
                       </div>
 

@@ -35,11 +35,12 @@ export async function createEvent(input: EventoInput) {
         organizadorId: user.id,
         titulo: validatedData.titulo,
         descripcion: validatedData.descripcion || null,
-        fechaEvento: new Date(validatedData.fechaEvento),
+        startsAt: new Date(validatedData.startsAt),
+        endsAt: new Date(validatedData.endsAt),
         ubicacion: validatedData.ubicacion,
         nombreLugar: validatedData.nombreLugar || null,
         ciudad: validatedData.ciudad || null,
-        cantidadMusicosRequerida: validatedData.cantidadMusicosRequerida,
+        cantidadProyectosRequeridos: validatedData.cantidadProyectosRequeridos,
         cacheOfrecido: validatedData.cacheOfrecido ?? null,
         estado: (validatedData.estado as EstadoEvento) || "PUBLICADO",
         bannerUrl: validatedData.bannerUrl || null,
@@ -92,11 +93,12 @@ export async function updateEvent(id: string, input: Partial<EventoInput>) {
       data: {
         ...(validatedData.titulo !== undefined && { titulo: validatedData.titulo }),
         ...(validatedData.descripcion !== undefined && { descripcion: validatedData.descripcion || null }),
-        ...(validatedData.fechaEvento !== undefined && { fechaEvento: new Date(validatedData.fechaEvento) }),
+        ...(validatedData.startsAt !== undefined && { startsAt: new Date(validatedData.startsAt) }),
+        ...(validatedData.endsAt !== undefined && { endsAt: new Date(validatedData.endsAt) }),
         ...(validatedData.ubicacion !== undefined && { ubicacion: validatedData.ubicacion }),
         ...(validatedData.nombreLugar !== undefined && { nombreLugar: validatedData.nombreLugar || null }),
         ...(validatedData.ciudad !== undefined && { ciudad: validatedData.ciudad || null }),
-        ...(validatedData.cantidadMusicosRequerida !== undefined && { cantidadMusicosRequerida: validatedData.cantidadMusicosRequerida }),
+        ...(validatedData.cantidadProyectosRequeridos !== undefined && { cantidadProyectosRequeridos: validatedData.cantidadProyectosRequeridos }),
         ...(validatedData.cacheOfrecido !== undefined && { cacheOfrecido: validatedData.cacheOfrecido ?? null }),
         ...(validatedData.estado !== undefined && { estado: validatedData.estado as EstadoEvento }),
         ...(validatedData.bannerUrl !== undefined && { bannerUrl: validatedData.bannerUrl || null }),
@@ -180,7 +182,7 @@ export async function getMyEvents() {
 
     const events = await prisma.evento.findMany({
       where: { organizadorId: user.id },
-      orderBy: { fechaEvento: "asc" },
+      orderBy: { startsAt: "asc" },
       include: {
         contrataciones: {
           select: {
@@ -280,7 +282,7 @@ export async function getPublicEvents(filters?: {
 
     const events = await prisma.evento.findMany({
       where,
-      orderBy: { fechaEvento: "asc" },
+      orderBy: { startsAt: "asc" },
       include: {
         organizador: {
           select: {
