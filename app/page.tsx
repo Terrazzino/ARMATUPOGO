@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
 import { getPublicEvents } from "@/app/actions/events";
@@ -17,15 +18,16 @@ export default async function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-b border-slate-800">
+      <section className="relative overflow-hidden py-12 sm:py-20 bg-neutral-950 border-b border-neutral-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider">
-            <span>🔥</span>
-            <span>Marketplace de Recitales y Bandas</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-bold uppercase tracking-wider">
+            <span>Escena independiente</span>
           </div>
 
+          <Image src="/branding/arma-tu-pogo-logo.png" alt="Arma tu pogo" width={220} height={220} className="mx-auto h-40 w-40 sm:h-52 sm:w-52 object-contain" priority />
+
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight">
-            ARMA TU <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">POGO</span>
+            TU PRÓXIMA FECHA, <span className="text-red-500">EN MARCHA</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal">
@@ -35,14 +37,14 @@ export default async function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
               href="/events"
-              className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-base font-bold rounded-xl transition-all shadow-lg hover:shadow-blue-600/30 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white text-base font-bold rounded-xl transition-all shadow-lg hover:shadow-red-600/20 flex items-center justify-center gap-2"
             >
               <span>📅</span>
               <span>Cartelera de Recitales</span>
             </Link>
             <Link
               href="/projects"
-              className="w-full sm:w-auto px-8 py-3.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-3.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-white text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <span>🎸</span>
               <span>Directorio de Bandas</span>

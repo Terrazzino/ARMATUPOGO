@@ -55,7 +55,7 @@ export function RegisterForm() {
           type="email"
           id="email"
           placeholder="tu@email.com"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         {errors.email && (
@@ -78,7 +78,7 @@ export function RegisterForm() {
             type="text"
             id="nombre"
             placeholder="Juan"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
             disabled={isLoading}
           />
           {errors.nombre && (
@@ -100,7 +100,7 @@ export function RegisterForm() {
             type="text"
             id="apellido"
             placeholder="Pérez"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
             disabled={isLoading}
           />
           {errors.apellido && (
@@ -122,7 +122,7 @@ export function RegisterForm() {
               type="radio"
               value="MUSICO"
               disabled={isLoading}
-              className="w-4 h-4 text-blue-500 cursor-pointer"
+              className="w-4 h-4 text-red-500 cursor-pointer"
             />
             <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
               Soy músico
@@ -134,7 +134,7 @@ export function RegisterForm() {
               type="radio"
               value="ORGANIZADOR"
               disabled={isLoading}
-              className="w-4 h-4 text-blue-500 cursor-pointer"
+              className="w-4 h-4 text-red-500 cursor-pointer"
             />
             <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
               Soy organizador de eventos
@@ -160,7 +160,7 @@ export function RegisterForm() {
           type="password"
           id="password"
           placeholder="••••••••"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         {errors.password && (
@@ -182,7 +182,7 @@ export function RegisterForm() {
           type="password"
           id="confirmPassword"
           placeholder="••••••••"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         {errors.confirmPassword && (
@@ -197,7 +197,7 @@ export function RegisterForm() {
           {...register("agreeTerms")}
           type="checkbox"
           disabled={isLoading}
-          className="w-4 h-4 mt-1 text-blue-500"
+          className="w-4 h-4 mt-1 text-red-500"
         />
         <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
           Acepto los términos y condiciones de Arma tu pogo
@@ -218,7 +218,7 @@ export function RegisterForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
       >
         {isLoading ? "Registrando..." : "Registrarse"}
       </button>
@@ -227,7 +227,7 @@ export function RegisterForm() {
         ¿Ya tienes cuenta?{" "}
         <a
           href="/auth/login"
-          className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          className="text-red-600 dark:text-red-400 hover:underline font-medium"
         >
           Ingresa aquí
         </a>

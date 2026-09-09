@@ -67,7 +67,7 @@ export function ApplyModal({ eventId, eventTitle, projects }: ApplyModalProps) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+        className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
       >
         <span>🎸</span>
         <span>Postular mi Banda</span>
@@ -160,7 +160,7 @@ export function ApplyModal({ eventId, eventTitle, projects }: ApplyModalProps) {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-lg transition-colors"
+                  className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
                   {isLoading ? "Enviando..." : "Enviar Postulación"}
                 </button>

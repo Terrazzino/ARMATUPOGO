@@ -37,9 +37,9 @@ export async function createRating(input: CrearValoracionInput) {
       throw new NotFoundError("Contratación");
     }
 
-    // 1. Validar que la contratación esté cerrada (ACORDADO o COMPLETADO)
-    if (contract.estado !== "ACORDADO" && contract.estado !== "COMPLETADO") {
-      throw new ValidationError("Solo se pueden valorar contrataciones acordadas o completadas");
+    // 1. Las valoraciones se habilitan únicamente al completar la contratación.
+    if (contract.estado !== "COMPLETADO") {
+      throw new ValidationError("Solo se pueden valorar contrataciones completadas");
     }
 
     // 2. Validar que el usuario sea participante

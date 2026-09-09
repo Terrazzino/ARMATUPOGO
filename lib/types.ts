@@ -5,20 +5,19 @@
 
 export type RolUsuario = "MUSICO" | "ORGANIZADOR";
 
-export type EstadoEvento =
-  | "BORRADOR"
-  | "PUBLICADO"
-  | "EN_CURSO"
-  | "COMPLETADO"
-  | "CANCELADO";
+export type EstadoEvento = "PUBLICADO" | "CANCELADO";
+
+export type EstadoPostulacion =
+  | "PENDIENTE"
+  | "ACEPTADA"
+  | "RECHAZADA"
+  | "CANCELADA";
 
 export type EstadoContratacion =
-  | "PENDIENTE"
   | "NEGOCIANDO"
   | "ACORDADO"
   | "CANCELADO"
-  | "COMPLETADO"
-  | "RECHAZADO";
+  | "COMPLETADO";
 
 export type EstadoOferta =
   | "PROPUESTA"
@@ -75,7 +74,8 @@ export interface Evento {
   organizadorId: string;
   titulo: string;
   descripcion?: string | null;
-  fechaEvento: Date | string;
+  startsAt: Date | string;
+  endsAt: Date | string;
   ubicacion: string;
   nombreLugar?: string | null;
   ciudad?: string | null;
@@ -94,6 +94,7 @@ export interface Contratacion {
   id: string;
   eventoId: string;
   proyectoMusicalId: string;
+  postulacionId?: string | null;
   organizadorId: string;
   musicoId: string;
   estado: EstadoContratacion;

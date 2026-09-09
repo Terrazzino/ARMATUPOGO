@@ -25,8 +25,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
       {/* Header with avatar / banner */}
-      <div className="bg-gradient-to-r from-purple-800 to-indigo-900 text-white p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-purple-700 border-2 border-white/20 flex items-center justify-center text-2xl font-bold uppercase shrink-0">
+      <div className="bg-neutral-900 text-white p-5 flex items-center gap-4 border-b border-red-600">
+        <div className="w-14 h-14 rounded-full bg-red-700 border-2 border-white/20 flex items-center justify-center text-2xl font-bold uppercase shrink-0">
           {project.nombre.charAt(0)}
         </div>
         <div className="overflow-hidden">
@@ -94,7 +94,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
         <Link
           href={`/projects/${project.id}`}
-          className="w-full text-center py-2.5 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-purple-600 dark:hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="w-full text-center py-2.5 px-4 bg-neutral-900 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           Ver Perfil Artístico
         </Link>

@@ -6,7 +6,8 @@ interface EventCardProps {
     id: string;
     titulo: string;
     descripcion?: string | null;
-    fechaEvento: Date | string;
+    startsAt: Date | string;
+    endsAt?: Date | string | null;
     ubicacion: string;
     nombreLugar?: string | null;
     ciudad?: string | null;
@@ -31,7 +32,7 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const dateObj = new Date(event.fechaEvento);
+  const dateObj = new Date(event.startsAt);
   const formattedDate = dateObj.toLocaleDateString("es-AR", {
     weekday: "short",
     day: "numeric",
@@ -48,9 +49,9 @@ export function EventCard({ event }: EventCardProps) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
       {/* Event Header / Banner placeholder if no image */}
-      <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-5 flex items-start justify-between">
+      <div className="bg-red-700 text-white p-5 flex items-start justify-between">
         <div>
-          <span className="text-xs uppercase tracking-wider font-semibold text-blue-200 block mb-1">
+          <span className="text-xs uppercase tracking-wider font-semibold text-red-100 block mb-1">
             {formattedDate} • {formattedTime} hs
           </span>
           <h3 className="text-xl font-bold line-clamp-1">{event.titulo}</h3>
@@ -85,7 +86,7 @@ export function EventCard({ event }: EventCardProps) {
 
         <Link
           href={`/events/${event.id}`}
-          className="w-full text-center py-2.5 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="w-full text-center py-2.5 px-4 bg-neutral-900 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           Ver Detalles y Postularse
         </Link>
