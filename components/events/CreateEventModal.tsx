@@ -44,7 +44,7 @@ export function CreateEventModal() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all shadow-sm flex items-center gap-2"
+        className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-xl transition-all shadow-sm flex items-center gap-2"
       >
         <span>+</span>
         <span>Publicar Nuevo Evento</span>
@@ -91,16 +91,31 @@ export function CreateEventModal() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Fecha y Hora *
+                    Inicio del evento *
                   </label>
                   <input
-                    {...register("fechaEvento")}
+                    {...register("startsAt")}
                     type="datetime-local"
                     disabled={isLoading}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
                   />
-                  {errors.fechaEvento && (
-                    <p className="text-xs text-red-500 mt-1">{errors.fechaEvento.message}</p>
+                  {errors.startsAt && (
+                    <p className="text-xs text-red-500 mt-1">{errors.startsAt.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    Fin del evento *
+                  </label>
+                  <input
+                    {...register("endsAt")}
+                    type="datetime-local"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  />
+                  {errors.endsAt && (
+                    <p className="text-xs text-red-500 mt-1">{errors.endsAt.message}</p>
                   )}
                 </div>
 
@@ -204,7 +219,7 @@ export function CreateEventModal() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-lg transition-colors"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
                   {isLoading ? "Publicando..." : "Publicar Evento"}
                 </button>

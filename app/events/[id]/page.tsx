@@ -35,7 +35,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   const musicianProjects = user?.rol === "MUSICO" ? await getMyProjects() : [];
 
-  const dateObj = new Date(event.fechaEvento);
+  const dateObj = new Date(event.startsAt);
   const formattedDate = dateObj.toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",

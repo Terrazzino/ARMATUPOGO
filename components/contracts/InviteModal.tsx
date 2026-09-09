@@ -9,7 +9,7 @@ interface InviteModalProps {
   events: Array<{
     id: string;
     titulo: string;
-    fechaEvento: Date | string;
+    startsAt: Date | string;
   }>;
 }
 
@@ -48,14 +48,14 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
 
   if (events.length === 0) {
     return (
-      <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-blue-800 dark:text-blue-200 text-sm">
+      <div className="p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-800 dark:text-neutral-200 text-sm">
         <p className="font-semibold">¿Quieres contratar a {projectName}?</p>
         <p className="mt-1">
           Primero debes publicar un evento activo desde tu panel de organizador.
         </p>
         <a
           href="/dashboard/organizer"
-          className="inline-block mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-xs transition-colors"
+          className="inline-block mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-xs transition-colors"
         >
           Publicar un Evento
         </a>
@@ -67,7 +67,7 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+        className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
       >
         <span>✉️</span>
         <span>Invitar a mi Evento</span>
@@ -114,7 +114,7 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
                 >
                   {events.map((ev) => (
                     <option key={ev.id} value={ev.id}>
-                      {ev.titulo} ({new Date(ev.fechaEvento).toLocaleDateString("es-AR")})
+                      {ev.titulo} ({new Date(ev.startsAt).toLocaleDateString("es-AR")})
                     </option>
                   ))}
                 </select>
@@ -160,7 +160,7 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg transition-colors"
+                  className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
                   {isLoading ? "Enviando..." : "Enviar Invitación"}
                 </button>

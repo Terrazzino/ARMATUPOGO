@@ -14,7 +14,7 @@ interface NegotiationCardProps {
     evento: {
       id: string;
       titulo: string;
-      fechaEvento: Date | string;
+      startsAt: Date | string;
       ubicacion: string;
     };
     proyectoMusical: {
@@ -54,7 +54,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
   const latestOffer = contract.ofertas?.[0];
   const isSender = latestOffer?.remitenteId === currentUserId;
   const canActOnOffer = latestOffer && latestOffer.estado === "PROPUESTA" && !isSender;
-  const isFinalState = ["ACORDADO", "CANCELADO", "COMPLETADO", "RECHAZADO"].includes(contract.estado);
+  const isFinalState = ["ACORDADO", "CANCELADO", "COMPLETADO"].includes(contract.estado);
 
   async function handleAccept(offerId: string) {
     setIsLoading(true);
@@ -137,7 +137,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
         <div>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Fecha: {new Date(contract.evento.fechaEvento).toLocaleDateString("es-AR")}
+            Fecha: {new Date(contract.evento.startsAt).toLocaleDateString("es-AR")}
           </span>
           <h4 className="text-lg font-bold text-slate-900 dark:text-white">
             {contract.evento.titulo}
@@ -215,7 +215,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
               </button>
               <button
                 onClick={() => setIsExpanding(!isExpanding)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
               >
                 ⇄ Enviar Contraoferta
               </button>
@@ -231,8 +231,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
         </div>
       )}
 
-      {/* No initial offer yet in PENDIENTE */}
-      {!latestOffer && contract.estado === "PENDIENTE" && (
+      {!latestOffer && contract.estado === "NEGOCIANDO" && (
         <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200">
           <span>Postulación inicial sin propuesta económica enviada aún.</span>
           <button
@@ -291,7 +290,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold text-xs rounded-lg transition-colors"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-bold text-xs rounded-lg transition-colors"
             >
               {isLoading ? "Enviando..." : "Enviar Propuesta"}
             </button>

@@ -28,10 +28,15 @@ export const eventoSchema = z.object({
     )
     .optional()
     .or(z.literal("")),
-  fechaEvento: z
+  startsAt: z
     .string()
     .refine((val) => !isNaN(Date.parse(val)), {
-      message: "Fecha y hora del evento inválida",
+      message: "Fecha y hora de inicio del evento inválida",
+    }),
+  endsAt: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Fecha y hora de finalización del evento inválida",
     }),
   ubicacion: z
     .string()

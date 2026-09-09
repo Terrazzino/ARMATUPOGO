@@ -27,10 +27,7 @@ export const VALID_ROLES = ["MUSICO", "ORGANIZADOR"] as const;
  * Estados válidos de eventos
  */
 export const EVENT_STATES = [
-  "BORRADOR",
   "PUBLICADO",
-  "EN_CURSO",
-  "COMPLETADO",
   "CANCELADO",
 ] as const;
 
@@ -38,12 +35,10 @@ export const EVENT_STATES = [
  * Estados válidos de contratación
  */
 export const CONTRACT_STATES = [
-  "PENDIENTE",
   "NEGOCIANDO",
   "ACORDADO",
   "CANCELADO",
   "COMPLETADO",
-  "RECHAZADO",
 ] as const;
 
 /**

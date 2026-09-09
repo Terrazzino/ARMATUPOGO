@@ -40,7 +40,7 @@ export function CreateProjectModal() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all shadow-sm flex items-center gap-2"
+        className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-xl transition-all shadow-sm flex items-center gap-2"
       >
         <span>+</span>
         <span>Crear Proyecto Musical</span>
@@ -228,7 +228,7 @@ export function CreateProjectModal() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-lg transition-colors"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
                   {isLoading ? "Creando..." : "Guardar Proyecto"}
                 </button>

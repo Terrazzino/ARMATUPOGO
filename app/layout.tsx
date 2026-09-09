@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Arma tu pogo - Marketplace de Música",
+  title: "Arma tu pogo | Música independiente",
   description:
     "Conecta proyectos musicales, organizadores de eventos y público. Publica eventos, postúlate a oportunidades y negocia contrataciones.",
 };
