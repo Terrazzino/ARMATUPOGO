@@ -58,6 +58,13 @@ export async function registerUser(input: RegistroInputConConfirm) {
           field: "email",
         });
       }
+
+      if (authError.message.toLowerCase().includes("rate limit")) {
+        throw new ValidationError(
+          "Se ha superado el límite de correos de confirmación de Supabase (máx. 3-4 por hora con el servidor por defecto). Desactiva 'Confirm email' en tu panel de Supabase para desarrollo local o aguarda unos minutos."
+        );
+      }
+
       throw authError;
     }
 
@@ -104,6 +111,8 @@ export async function registerUser(input: RegistroInputConConfirm) {
  * Autentica un usuario existente con Supabase Auth y obtiene su rol en Prisma
  */
 export async function loginUser(input: LoginInput) {
+  let redirectPath = "/dashboard";
+
   try {
     const validatedInput = loginSchema.parse(input);
 
@@ -140,11 +149,9 @@ export async function loginUser(input: LoginInput) {
     });
 
     if (usuario?.rol === "MUSICO") {
-      redirect("/dashboard/musician");
+      redirectPath = "/dashboard/musician";
     } else if (usuario?.rol === "ORGANIZADOR") {
-      redirect("/dashboard/organizer");
-    } else {
-      redirect("/dashboard");
+      redirectPath = "/dashboard/organizer";
     }
   } catch (error) {
     const normalizedError = normalizeError(error);
@@ -154,6 +161,8 @@ export async function loginUser(input: LoginInput) {
       code: normalizedError.code,
     };
   }
+
+  redirect(redirectPath);
 }
 
 /**
@@ -168,8 +177,6 @@ export async function logoutUser() {
         throw error;
       }
     }
-
-    redirect("/");
   } catch (error) {
     const normalizedError = normalizeError(error);
     return {
@@ -178,6 +185,8 @@ export async function logoutUser() {
       code: normalizedError.code,
     };
   }
+
+  redirect("/");
 }
 
 /**

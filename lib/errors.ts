@@ -94,7 +94,22 @@ export function normalizeError(error: unknown): AppError {
     return error;
   }
 
+  // Si es un error de redirección de Next.js (lanzado por redirect()), se relanza para que Next.js realice la navegación
+  if (
+    error &&
+    typeof error === "object" &&
+    "digest" in error &&
+    typeof (error as { digest: string }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  ) {
+    throw error;
+  }
+
   if (error instanceof Error) {
+    if (error.message === "NEXT_REDIRECT") {
+      throw error;
+    }
+
     if (
       error.message.includes("fetch failed") ||
       (error as { cause?: { code?: string } }).cause?.code === "ENOTFOUND"
