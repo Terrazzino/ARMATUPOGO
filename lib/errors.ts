@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Clases de error personalizadas para manejo centralizado de errores.
  *
  * @see AGENTS.md § 15. MANEJO DE ESTADOS
@@ -95,6 +95,15 @@ export function normalizeError(error: unknown): AppError {
   }
 
   if (error instanceof Error) {
+    if (
+      error.message.includes("fetch failed") ||
+      (error as { cause?: { code?: string } }).cause?.code === "ENOTFOUND"
+    ) {
+      return new InternalServerError(
+        "No se pudo conectar con el servidor de autenticación (Supabase). Verifica que NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY estén configuradas con tu proyecto real en el archivo .env.local y que el proyecto de Supabase esté activo."
+      );
+    }
+
     return new InternalServerError(error.message);
   }
 

@@ -170,6 +170,28 @@ export function RegisterForm() {
         )}
       </div>
 
+      <div>
+        <label
+          htmlFor="confirmPassword"
+          className="block text-sm font-medium text-neutral-300 mb-1"
+        >
+          Confirmar contraseña
+        </label>
+        <input
+          {...register("confirmPassword")}
+          type="password"
+          id="confirmPassword"
+          placeholder="••••••••"
+          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+          disabled={isLoading}
+        />
+        {errors.confirmPassword && (
+          <p className="text-sm text-red-400 mt-1">
+            {errors.confirmPassword.message}
+          </p>
+        )}
+      </div>
+
       <label className="flex items-start cursor-pointer">
         <input
           {...register("agreeTerms")}
