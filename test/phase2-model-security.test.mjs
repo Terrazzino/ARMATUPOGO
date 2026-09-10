@@ -44,9 +44,29 @@ function createContractFromAcceptedPostulation(postulation) {
     proyectoMusicalId: postulation.proyectoMusicalId,
     musicoId: postulation.musicoId,
     organizadorId: "organizador-1",
+    postulacionId: postulation.id,
     estado: "NEGOCIANDO",
     ofertas: [],
   };
+}
+
+function getReceivedPostulations(postulations, organizerId) {
+  return postulations.filter((postulation) => postulation.organizadorId === organizerId);
+}
+
+function processPendingPostulation({ postulation, organizerId, contracts, nextState }) {
+  if (postulation.organizadorId !== organizerId) throw new Error("Postulacion de otro organizador");
+  if (postulation.estado !== "PENDIENTE") throw new Error("Postulacion ya procesada");
+
+  postulation.estado = nextState;
+  if (nextState === "ACEPTADA") {
+    if (contracts.some((item) => item.postulacionId === postulation.id)) {
+      throw new Error("Contratacion duplicada");
+    }
+    contracts.push(createContractFromAcceptedPostulation(postulation));
+  }
+
+  return postulation;
 }
 
 function createOffer(contract, senderId, amount) {
@@ -100,7 +120,7 @@ function createRating(contract, authorId, score) {
 console.log("ARMA TU POGO - reglas actuales de postulaciones, contrataciones, ofertas y valoraciones\n");
 console.log("--- Postulaciones ---");
 
-const pending = { eventoId: "evento-1", proyectoMusicalId: "proyecto-1", musicoId: "musico-1", estado: "PENDIENTE" };
+const pending = { id: "postulacion-1", eventoId: "evento-1", proyectoMusicalId: "proyecto-1", musicoId: "musico-1", organizadorId: "organizador-1", estado: "PENDIENTE" };
 test("El musico crea una Postulacion PENDIENTE y no una Contratacion", () => {
   assert.equal(pending.estado, "PENDIENTE");
   assert.equal("contratacionId" in pending, false);
@@ -130,6 +150,74 @@ test("Los estados terminales no pueden volver a cancelarse", () => {
   for (const estado of ["ACEPTADA", "RECHAZADA", "CANCELADA"]) {
     assert.throws(() => transitionPostulation({ ...pending, estado }, "CANCELADA"), /no permitida/);
   }
+});
+
+test("El organizador ve las postulaciones de sus eventos y no las ajenas", () => {
+  const received = getReceivedPostulations([
+    { ...pending },
+    { ...pending, id: "postulacion-2", organizadorId: "organizador-2" },
+  ], "organizador-1");
+  assert.deepEqual(received.map((item) => item.id), ["postulacion-1"]);
+});
+
+test("Un organizador no puede gestionar la postulacion de otro", () => {
+  assert.throws(() => processPendingPostulation({
+    postulation: { ...pending },
+    organizerId: "organizador-2",
+    contracts: [],
+    nextState: "RECHAZADA",
+  }), /otro organizador/);
+});
+
+test("Rechazar una postulacion pendiente no crea una contratacion", () => {
+  const contracts = [];
+  const rejected = processPendingPostulation({
+    postulation: { ...pending },
+    organizerId: "organizador-1",
+    contracts,
+    nextState: "RECHAZADA",
+  });
+  assert.equal(rejected.estado, "RECHAZADA");
+  assert.equal(contracts.length, 0);
+});
+
+test("Aceptar crea exactamente una contratacion NEGOCIANDO vinculada a la postulacion", () => {
+  const contracts = [];
+  processPendingPostulation({
+    postulation: { ...pending },
+    organizerId: "organizador-1",
+    contracts,
+    nextState: "ACEPTADA",
+  });
+  assert.equal(contracts.length, 1);
+  assert.equal(contracts[0].estado, "NEGOCIANDO");
+  assert.equal(contracts[0].postulacionId, pending.id);
+});
+
+test("Una postulacion terminal no se procesa otra vez y la doble aceptacion no duplica contratos", () => {
+  const contracts = [];
+  const accepted = { ...pending };
+  processPendingPostulation({ postulation: accepted, organizerId: "organizador-1", contracts, nextState: "ACEPTADA" });
+  assert.throws(() => processPendingPostulation({
+    postulation: accepted,
+    organizerId: "organizador-1",
+    contracts,
+    nextState: "ACEPTADA",
+  }), /procesada/);
+  assert.equal(contracts.length, 1);
+});
+
+test("Una invitacion directa crea una contratacion sin exigir postulacionId", () => {
+  const directInvitation = {
+    eventoId: "evento-1",
+    proyectoMusicalId: "proyecto-2",
+    organizadorId: "organizador-1",
+    musicoId: "musico-2",
+    estado: "NEGOCIANDO",
+    postulacionId: null,
+  };
+  assert.equal(directInvitation.estado, "NEGOCIANDO");
+  assert.equal(directInvitation.postulacionId, null);
 });
 
 console.log("\n--- Contrataciones y ofertas ---");

@@ -2,13 +2,14 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getMyEvents } from "@/app/actions/events";
-import { getMyContracts } from "@/app/actions/contracts";
+import { getMyContracts, getReceivedPostulations } from "@/app/actions/contracts";
 import { getUserReputation } from "@/app/actions/ratings";
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CreateEventModal } from "@/components/events/CreateEventModal";
 import { NegotiationCard } from "@/components/contracts/NegotiationCard";
+import { PostulationCard } from "@/components/contracts/PostulationCard";
 import { RatingModal } from "@/components/ratings/RatingModal";
 
 export const metadata = {
@@ -27,8 +28,9 @@ export default async function OrganizerDashboardPage() {
     redirect("/dashboard/musician");
   }
 
-  const [events, contracts, reputation] = await Promise.all([
+  const [events, postulations, contracts, reputation] = await Promise.all([
     getMyEvents(),
+    getReceivedPostulations(),
     getMyContracts(),
     getUserReputation(user.id),
   ]);
@@ -139,11 +141,37 @@ export default async function OrganizerDashboardPage() {
           )}
         </section>
 
-        {/* Section 2: Applications & Negotiations */}
+        {/* Section 2: Received applications */}
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold">Postulaciones recibidas</h2>
+            <p className="text-xs text-slate-500">
+              Revisa las solicitudes enviadas a tus eventos y gestiona las que están pendientes.
+            </p>
+          </div>
+
+          {postulations.length === 0 ? (
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center max-w-md mx-auto">
+              <span className="text-4xl block mb-2" aria-hidden="true">📋</span>
+              <h3 className="font-bold text-base">No hay postulaciones recibidas</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Cuando un proyecto se postule a uno de tus eventos, aparecerá aquí.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {postulations.map((postulation) => (
+                <PostulationCard key={postulation.id} postulation={postulation} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Section 3: Negotiations */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Postulaciones y Negociaciones Activas</h2>
+              <h2 className="text-2xl font-bold">Negociaciones y Contrataciones</h2>
               <p className="text-xs text-slate-500">
                 Gestiona las propuestas económicas recibidas de bandas y envía contraofertas
               </p>
@@ -159,7 +187,7 @@ export default async function OrganizerDashboardPage() {
           {contracts.length === 0 ? (
             <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center max-w-md mx-auto">
               <span className="text-4xl block mb-2">✉️</span>
-              <h3 className="font-bold text-base">No hay postulaciones recibidas</h3>
+              <h3 className="font-bold text-base">No hay negociaciones iniciadas</h3>
               <p className="text-xs text-slate-500 mt-1 mb-4">
                 También puedes buscar proyectos musicales en el catálogo e invitarlos directamente a tus fechas.
               </p>

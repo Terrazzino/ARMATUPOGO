@@ -41,6 +41,14 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       label = "Aceptada";
       colorClass = "bg-emerald-950/50 text-emerald-300 border-emerald-800";
       break;
+    case "RECHAZADA":
+      label = "Rechazada";
+      colorClass = "bg-red-950/50 text-red-300 border-red-800";
+      break;
+    case "CANCELADA":
+      label = "Cancelada";
+      colorClass = "bg-neutral-800 text-neutral-400 border-neutral-700";
+      break;
     case "CONTRAOFERTADA":
       label = "Contraofertada";
       colorClass = "bg-neutral-800 text-neutral-400 border-neutral-700";

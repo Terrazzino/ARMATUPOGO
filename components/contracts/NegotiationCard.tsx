@@ -8,7 +8,7 @@ interface NegotiationCardProps {
   contract: {
     id: string;
     estado: string;
-    montoPactado?: number | string | { toString(): string } | null;
+    montoPactado?: number | null;
     fechaAcuerdo?: Date | string | null;
     motivoCancelacion?: string | null;
     evento: {
@@ -32,7 +32,7 @@ interface NegotiationCardProps {
     };
     ofertas?: Array<{
       id: string;
-      monto: number | string | { toString(): string };
+      monto: number;
       mensaje?: string | null;
       estado: string;
       remitenteId?: string;

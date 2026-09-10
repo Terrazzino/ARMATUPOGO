@@ -11,6 +11,8 @@ export const crearContratacionSchema = z.object({
   proyectoMusicalId: z.string().uuid("ID de proyecto musical inválido"),
 });
 
+export const postulacionIdSchema = z.string().uuid("ID de postulación inválido");
+
 export const cancelarContratacionSchema = z.object({
   contratacionId: z.string().uuid("ID de contratación inválido"),
   motivoCancelacion: z

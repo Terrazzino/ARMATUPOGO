@@ -8,10 +8,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/app/actions/auth";
 import { crearOfertaSchema, type CrearOfertaInput } from "@/lib/validations/offers";
-import { cancelarContratacionSchema, type CancelarContratacionInput } from "@/lib/validations/contracts";
+import {
+  cancelarContratacionSchema,
+  postulacionIdSchema,
+  type CancelarContratacionInput,
+} from "@/lib/validations/contracts";
 import { normalizeError, AuthorizationError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
 
 function formatPostulationMessage(initialMessage?: string, initialOfferAmount?: number) {
@@ -95,6 +100,7 @@ export async function applyToEvent(
     });
 
     revalidatePath("/dashboard/musician");
+    revalidatePath("/dashboard/organizer");
     revalidatePath(`/events/${eventoId}`);
 
     return {
@@ -221,8 +227,14 @@ export async function acceptPostulation(postulacionId: string) {
       throw new AuthorizationError("Debes iniciar sesión para aceptar una postulación");
     }
 
+    if (user.rol !== "ORGANIZADOR") {
+      throw new AuthorizationError("Solo los organizadores pueden aceptar postulaciones");
+    }
+
+    const validatedPostulacionId = postulacionIdSchema.parse(postulacionId);
+
     const postulacion = await prisma.postulacion.findUnique({
-      where: { id: postulacionId },
+      where: { id: validatedPostulacionId },
       include: {
         evento: true,
         proyectoMusical: true,
@@ -241,36 +253,84 @@ export async function acceptPostulation(postulacionId: string) {
       throw new ValidationError("La postulación ya no está pendiente");
     }
 
-    const existingContract = await prisma.contratacion.findUnique({
-      where: {
-        eventoId_proyectoMusicalId: {
-          eventoId: postulacion.eventoId,
-          proyectoMusicalId: postulacion.proyectoMusicalId,
-        },
-      },
-    });
-
-    if (existingContract) {
-      throw new ConflictError("Ya existe una contratación para este proyecto y evento");
+    if (postulacion.evento.estado !== "PUBLICADO") {
+      throw new ValidationError("El evento ya no admite postulaciones");
     }
 
-    const [updatedPostulacion, contract] = await prisma.$transaction([
-      prisma.postulacion.update({
-        where: { id: postulacionId },
+    const { updatedPostulacion, contract } = await prisma.$transaction(async (tx) => {
+      const existingContract = await tx.contratacion.findUnique({
+        where: {
+          eventoId_proyectoMusicalId: {
+            eventoId: postulacion.eventoId,
+            proyectoMusicalId: postulacion.proyectoMusicalId,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (existingContract) {
+        throw new ConflictError("Ya existe una contratación para este proyecto y evento");
+      }
+
+      const claimedPostulation = await tx.postulacion.updateMany({
+        where: {
+          id: validatedPostulacionId,
+          estado: "PENDIENTE",
+          evento: { organizadorId: user.id },
+        },
         data: { estado: "ACEPTADA" },
-      }),
-      prisma.contratacion.create({
+      });
+
+      if (claimedPostulation.count !== 1) {
+        throw new ConflictError("La postulación ya fue procesada por otra operación");
+      }
+
+      const unavailableContract = await tx.contratacion.findFirst({
+        where: {
+          musicoId: postulacion.proyectoMusical.usuarioId,
+          estado: { in: ["NEGOCIANDO", "ACORDADO"] },
+          evento: {
+            startsAt: { lt: postulacion.evento.endsAt },
+            endsAt: { gt: postulacion.evento.startsAt },
+          },
+        },
+        select: { id: true },
+      });
+
+      if (unavailableContract) {
+        throw new ConflictError("El músico ya tiene una contratación activa en ese horario");
+      }
+
+      await tx.postulacion.updateMany({
+        where: {
+          id: { not: validatedPostulacionId },
+          eventoId: postulacion.eventoId,
+          musicoId: postulacion.proyectoMusical.usuarioId,
+          estado: "PENDIENTE",
+        },
+        data: { estado: "CANCELADA" },
+      });
+
+      const contract = await tx.contratacion.create({
         data: {
           eventoId: postulacion.eventoId,
           proyectoMusicalId: postulacion.proyectoMusicalId,
           postulacionId: postulacion.id,
           organizadorId: postulacion.evento.organizadorId,
-          musicoId: postulacion.musicoId,
+          musicoId: postulacion.proyectoMusical.usuarioId,
           creadoPorId: user.id,
           estado: "NEGOCIANDO",
         },
-      }),
-    ]);
+      });
+
+      const updatedPostulacion = await tx.postulacion.findUniqueOrThrow({
+        where: { id: validatedPostulacionId },
+      });
+
+      return { updatedPostulacion, contract };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
 
     revalidatePath("/dashboard/organizer");
     revalidatePath("/dashboard/musician");
@@ -299,8 +359,14 @@ export async function rejectPostulation(postulacionId: string) {
       throw new AuthorizationError("Debes iniciar sesión para rechazar una postulación");
     }
 
+    if (user.rol !== "ORGANIZADOR") {
+      throw new AuthorizationError("Solo los organizadores pueden rechazar postulaciones");
+    }
+
+    const validatedPostulacionId = postulacionIdSchema.parse(postulacionId);
+
     const postulacion = await prisma.postulacion.findUnique({
-      where: { id: postulacionId },
+      where: { id: validatedPostulacionId },
       include: { evento: true },
     });
 
@@ -316,9 +382,21 @@ export async function rejectPostulation(postulacionId: string) {
       throw new ValidationError("La postulación ya no puede rechazarse");
     }
 
-    const updated = await prisma.postulacion.update({
-      where: { id: postulacionId },
+    const updateResult = await prisma.postulacion.updateMany({
+      where: {
+        id: validatedPostulacionId,
+        estado: "PENDIENTE",
+        evento: { organizadorId: user.id },
+      },
       data: { estado: "RECHAZADA" },
+    });
+
+    if (updateResult.count !== 1) {
+      throw new ConflictError("La postulación ya fue procesada por otra operación");
+    }
+
+    const updated = await prisma.postulacion.findUniqueOrThrow({
+      where: { id: validatedPostulacionId },
     });
 
     revalidatePath("/dashboard/organizer");
@@ -749,7 +827,14 @@ export async function getMyContracts() {
       },
     });
 
-    return contracts;
+    return contracts.map((contract) => ({
+      ...contract,
+      montoPactado: contract.montoPactado?.toNumber() ?? null,
+      ofertas: contract.ofertas.map((offer) => ({
+        ...offer,
+        monto: offer.monto.toNumber(),
+      })),
+    }));
   } catch (error) {
     console.warn("Could not fetch my contracts:", (error as Error).message);
     return [];
@@ -815,5 +900,55 @@ export async function getContractById(contratacionId: string) {
   } catch (error) {
     console.warn("Could not fetch contract by ID:", (error as Error).message);
     return null;
+  }
+}
+
+/**
+ * Obtiene las postulaciones recibidas en eventos del organizador autenticado.
+ */
+export async function getReceivedPostulations() {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.rol !== "ORGANIZADOR") {
+      return [];
+    }
+
+    return await prisma.postulacion.findMany({
+      where: {
+        evento: { organizadorId: user.id },
+        estado: { in: ["PENDIENTE", "ACEPTADA", "RECHAZADA", "CANCELADA"] },
+      },
+      orderBy: { creadoEn: "desc" },
+      select: {
+        id: true,
+        estado: true,
+        mensaje: true,
+        creadoEn: true,
+        evento: {
+          select: {
+            id: true,
+            titulo: true,
+          },
+        },
+        proyectoMusical: {
+          select: {
+            id: true,
+            nombre: true,
+          },
+        },
+        musico: {
+          select: {
+            nombre: true,
+            apellido: true,
+          },
+        },
+        contratacion: {
+          select: { id: true },
+        },
+      },
+    });
+  } catch (error) {
+    console.warn("Could not fetch received postulations:", (error as Error).message);
+    return [];
   }
 }
