@@ -48,7 +48,7 @@ export function CreateProjectModal() {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl my-8">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl my-8">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Nuevo Proyecto Musical
@@ -78,7 +78,7 @@ export function CreateProjectModal() {
                     type="text"
                     placeholder="Ej: Los Pogo Boys"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   {errors.nombre && (
                     <p className="text-xs text-red-500 mt-1">{errors.nombre.message}</p>
@@ -94,7 +94,7 @@ export function CreateProjectModal() {
                     type="text"
                     placeholder="Ej: Punk Rock / Indie"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   {errors.genero && (
                     <p className="text-xs text-red-500 mt-1">{errors.genero.message}</p>
@@ -111,7 +111,7 @@ export function CreateProjectModal() {
                   placeholder="Cuéntale a los organizadores sobre el sonido de la banda, trayectoria e integrantes..."
                   disabled={isLoading}
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
                 {errors.descripcion && (
                   <p className="text-xs text-red-500 mt-1">{errors.descripcion.message}</p>
@@ -129,7 +129,7 @@ export function CreateProjectModal() {
                     placeholder="50000"
                     min="0"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   {errors.cacheAproximado && (
                     <p className="text-xs text-red-500 mt-1">{errors.cacheAproximado.message}</p>
@@ -145,7 +145,7 @@ export function CreateProjectModal() {
                     type="text"
                     placeholder="CABA"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
 
@@ -158,7 +158,7 @@ export function CreateProjectModal() {
                     type="text"
                     placeholder="Palermo / Almagro"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               </div>
@@ -173,7 +173,7 @@ export function CreateProjectModal() {
                     type="url"
                     placeholder="https://open.spotify.com/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
 
@@ -186,7 +186,7 @@ export function CreateProjectModal() {
                     type="url"
                     placeholder="https://youtube.com/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
 
@@ -199,7 +199,7 @@ export function CreateProjectModal() {
                     type="url"
                     placeholder="https://instagram.com/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
 
@@ -212,7 +212,7 @@ export function CreateProjectModal() {
                     type="url"
                     placeholder="https://linktr.ee/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               </div>

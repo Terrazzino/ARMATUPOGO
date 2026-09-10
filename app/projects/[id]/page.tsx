@@ -37,27 +37,27 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const organizerEvents = user?.rol === "ORGANIZADOR" ? await getMyEvents() : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
         {/* Back Link */}
         <div className="mb-6">
-          <Link href="/projects" className="text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1">
+          <Link href="/projects" className="text-sm font-medium text-neutral-300 hover:text-red-400 flex items-center gap-1">
             ← Volver al catálogo de bandas
           </Link>
         </div>
 
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-xl mb-8 relative overflow-hidden">
+        <div className="bg-neutral-900 text-white rounded-2xl p-8 sm:p-10 border border-neutral-800 border-l-4 border-l-red-600 mb-8 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-purple-800 border-2 border-white/20 flex items-center justify-center text-4xl sm:text-5xl font-black uppercase shrink-0 shadow-lg">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-red-700 border-2 border-red-400/40 flex items-center justify-center text-4xl sm:text-5xl font-black uppercase shrink-0">
               {project.nombre.charAt(0)}
             </div>
 
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-bold px-2.5 py-1 bg-purple-500/30 border border-purple-400/30 text-purple-200 rounded-lg uppercase tracking-wider">
+                <span className="text-xs font-bold px-2.5 py-1 bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg uppercase tracking-wider">
                   {project.genero}
                 </span>
                 {reputation.total > 0 && (
@@ -84,7 +84,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-8">
             {/* Bio */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
               <h2 className="text-xl font-bold mb-4">Biografía y Propuesta</h2>
               <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed text-sm sm:text-base">
                 {project.descripcion || "Sin descripción proporcionada."}
@@ -92,7 +92,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             </div>
 
             {/* Reviews & Ratings */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold">Historial de Valoraciones</h2>
@@ -103,7 +103,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
               </div>
 
               {reputation.ratings.length === 0 ? (
-                <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                <div className="p-8 text-center bg-neutral-800/50 rounded-xl border border-dashed border-neutral-700">
                   <span className="text-3xl block mb-2">⭐</span>
                   <p className="text-sm font-semibold">Aún no posee valoraciones</p>
                   <p className="text-xs text-slate-500 mt-1">
@@ -115,7 +115,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   {reputation.ratings.map((r) => (
                     <div
                       key={r.id}
-                      className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2"
+                      className="p-4 bg-neutral-800 rounded-xl border border-neutral-700 space-y-2"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-amber-500">
@@ -142,7 +142,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
           {/* Sidebar / Links & Invitation */}
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 space-y-5">
               <h3 className="text-lg font-bold">Datos del Proyecto</h3>
 
               <div className="space-y-3 text-sm">
@@ -201,7 +201,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                       href={project.sitioWebUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors flex items-center gap-2"
+                      className="p-2.5 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors flex items-center gap-2"
                     >
                       <span>🌐</span> Sitio Oficial / Linktree
                     </a>
@@ -219,7 +219,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                       events={organizerEvents}
                     />
                   ) : (
-                    <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400 text-center">
+                    <div className="p-3 bg-neutral-800 rounded-lg text-xs text-neutral-400 text-center">
                       Eres músico. Puedes gestionar tus propios proyectos desde tu panel.
                     </div>
                   )
@@ -230,7 +230,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     </p>
                     <a
                       href="/auth/login"
-                      className="block w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors text-center"
+                      className="block w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-colors text-center"
                     >
                       Inicia Sesión para Invitar
                     </a>

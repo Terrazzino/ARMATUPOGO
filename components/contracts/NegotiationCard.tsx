@@ -132,18 +132,18 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+    <div className="bg-neutral-900 rounded-2xl p-5 sm:p-6 border border-neutral-800 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800">
         <div>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Fecha: {new Date(contract.evento.startsAt).toLocaleDateString("es-AR")}
           </span>
-          <h4 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h4 className="text-lg font-bold text-white">
             {contract.evento.titulo}
           </h4>
-          <p className="text-xs text-slate-600 dark:text-slate-400">
-            Banda: <strong className="text-slate-900 dark:text-slate-200">{contract.proyectoMusical.nombre}</strong> ({contract.proyectoMusical.genero}) • Organizador: {contract.organizador.nombre} {contract.organizador.apellido}
+          <p className="text-xs text-neutral-400">
+            Banda: <strong className="text-neutral-200">{contract.proyectoMusical.nombre}</strong> ({contract.proyectoMusical.genero}) • Organizador: {contract.organizador.nombre} {contract.organizador.apellido}
           </p>
         </div>
         <div>
@@ -185,7 +185,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
 
       {/* Latest Offer Details */}
       {latestOffer && contract.estado !== "ACORDADO" && contract.estado !== "CANCELADO" && (
-        <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+        <div className="p-4 bg-neutral-800 rounded-xl border border-neutral-700 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase text-slate-500">
               {isSender ? "Tu última propuesta" : "Propuesta económica recibida"}
@@ -193,7 +193,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
             <StatusBadge status={latestOffer.estado} />
           </div>
 
-          <p className="text-2xl font-black text-slate-900 dark:text-white">
+          <p className="text-2xl font-black text-white">
             ${Number(latestOffer.monto.toString()).toLocaleString("es-AR")}
           </p>
 
@@ -205,7 +205,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
 
           {/* Action buttons if received offer */}
           {canActOnOffer && (
-            <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex flex-wrap gap-2 pt-3 border-t border-neutral-700">
               <button
                 onClick={() => handleAccept(latestOffer.id)}
                 disabled={isLoading}
@@ -222,7 +222,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
               <button
                 onClick={() => handleReject(latestOffer.id)}
                 disabled={isLoading}
-                className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-medium text-xs rounded-lg transition-colors"
+                className="px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-neutral-200 font-medium text-xs rounded-lg transition-colors"
               >
                 Rechazar
               </button>
@@ -245,13 +245,13 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
 
       {/* Counter-offer Form accordion */}
       {isExpanding && !isFinalState && (
-        <form onSubmit={handleCounterOffer} className="p-4 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-          <h5 className="text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
+        <form onSubmit={handleCounterOffer} className="p-4 bg-neutral-800 rounded-xl border border-neutral-700 space-y-3">
+          <h5 className="text-xs font-bold uppercase text-neutral-300">
             Enviar Contraoferta
           </h5>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-neutral-400 mb-1">
               Nuevo monto propuesto ($) *
             </label>
             <input
@@ -261,12 +261,12 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
               onChange={(e) => setCounterAmount(e.target.value)}
               disabled={isLoading}
               min="0"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm"
+              className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-900 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-neutral-400 mb-1">
               Mensaje o justificación (Opcional)
             </label>
             <textarea
@@ -275,7 +275,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
               onChange={(e) => setCounterMessage(e.target.value)}
               disabled={isLoading}
               rows={2}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm"
+              className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-900 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
 
@@ -283,7 +283,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
             <button
               type="button"
               onClick={() => setIsExpanding(false)}
-              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700"
+              className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white"
             >
               Cancelar
             </button>
@@ -313,8 +313,8 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
       {/* Cancel Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
-            <h4 className="text-base font-bold text-slate-900 dark:text-white">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h4 className="text-base font-bold text-white">
               ¿Seguro que deseas cancelar esta contratación?
             </h4>
             <p className="text-xs text-slate-500">
@@ -323,7 +323,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
 
             <form onSubmit={handleCancelContract} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
                   Motivo de cancelación *
                 </label>
                 <textarea
@@ -331,7 +331,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Explica el motivo..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
@@ -339,7 +339,7 @@ export function NegotiationCard({ contract, currentUserId }: NegotiationCardProp
                 <button
                   type="button"
                   onClick={() => setShowCancelModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600"
+                  className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white"
                 >
                   Volver
                 </button>

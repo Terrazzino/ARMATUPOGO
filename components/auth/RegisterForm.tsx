@@ -47,7 +47,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-md">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+        <label htmlFor="email" className="block text-sm font-medium text-neutral-300 mb-1">
           Email
         </label>
         <input
@@ -55,7 +55,7 @@ export function RegisterForm() {
           type="email"
           id="email"
           placeholder="tu@email.com"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         {errors.email && (
@@ -69,7 +69,7 @@ export function RegisterForm() {
         <div>
           <label
             htmlFor="nombre"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+            className="block text-sm font-medium text-neutral-300 mb-1"
           >
             Nombre
           </label>
@@ -78,7 +78,7 @@ export function RegisterForm() {
             type="text"
             id="nombre"
             placeholder="Juan"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             disabled={isLoading}
           />
           {errors.nombre && (
@@ -91,7 +91,7 @@ export function RegisterForm() {
         <div>
           <label
             htmlFor="apellido"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+            className="block text-sm font-medium text-neutral-300 mb-1"
           >
             Apellido
           </label>
@@ -100,7 +100,7 @@ export function RegisterForm() {
             type="text"
             id="apellido"
             placeholder="Pérez"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             disabled={isLoading}
           />
           {errors.apellido && (
@@ -112,7 +112,7 @@ export function RegisterForm() {
       </div>
 
       <div>
-        <label htmlFor="rol" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+        <label htmlFor="rol" className="block text-sm font-medium text-neutral-300 mb-2">
           ¿Cuál es tu rol?
         </label>
         <div className="space-y-2">
@@ -124,7 +124,7 @@ export function RegisterForm() {
               disabled={isLoading}
               className="w-4 h-4 text-red-500 cursor-pointer"
             />
-            <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
+            <span className="ml-2 text-sm text-neutral-300">
               Soy músico
             </span>
           </label>
@@ -136,7 +136,7 @@ export function RegisterForm() {
               disabled={isLoading}
               className="w-4 h-4 text-red-500 cursor-pointer"
             />
-            <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
+            <span className="ml-2 text-sm text-neutral-300">
               Soy organizador de eventos
             </span>
           </label>
@@ -151,7 +151,7 @@ export function RegisterForm() {
       <div>
         <label
           htmlFor="password"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+          className="block text-sm font-medium text-neutral-300 mb-1"
         >
           Contraseña
         </label>
@@ -160,34 +160,12 @@ export function RegisterForm() {
           type="password"
           id="password"
           placeholder="••••••••"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         {errors.password && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+          <p className="text-sm text-red-400 mt-1">
             {errors.password.message}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-        >
-          Confirmar contraseña
-        </label>
-        <input
-          {...register("confirmPassword")}
-          type="password"
-          id="confirmPassword"
-          placeholder="••••••••"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-          disabled={isLoading}
-        />
-        {errors.confirmPassword && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-            {errors.confirmPassword.message}
           </p>
         )}
       </div>
@@ -199,7 +177,7 @@ export function RegisterForm() {
           disabled={isLoading}
           className="w-4 h-4 mt-1 text-red-500"
         />
-        <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
+        <span className="ml-2 text-sm text-neutral-300">
           Acepto los términos y condiciones de Arma tu pogo
         </span>
       </label>
@@ -210,8 +188,8 @@ export function RegisterForm() {
       )}
 
       {serverError && (
-        <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
-          <p className="text-sm text-red-700 dark:text-red-200">{serverError}</p>
+        <div className="p-3 bg-red-950/50 border border-red-800 rounded-lg">
+          <p className="text-sm text-red-200">{serverError}</p>
         </div>
       )}
 

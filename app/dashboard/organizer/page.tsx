@@ -34,14 +34,14 @@ export default async function OrganizerDashboardPage() {
   ]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full space-y-10">
         {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-indigo-900 to-purple-950 text-white rounded-3xl p-8 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="bg-neutral-900 text-white rounded-2xl p-8 border border-neutral-800 border-l-4 border-l-red-600 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <span className="text-xs uppercase font-bold tracking-wider text-indigo-300">
+            <span className="text-xs uppercase font-bold tracking-wider text-red-400">
               Panel de Organizador
             </span>
             <h1 className="text-3xl font-black mt-1">
@@ -52,9 +52,9 @@ export default async function OrganizerDashboardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10">
+          <div className="flex items-center gap-4 bg-neutral-800 px-5 py-3 rounded-xl border border-neutral-700">
             <div>
-              <span className="text-xs text-indigo-200 block font-semibold">Reputación</span>
+              <span className="text-xs text-neutral-400 block font-semibold">Reputación</span>
               <span className="text-2xl font-black text-amber-300">
                 ★ {reputation.averageScore > 0 ? reputation.averageScore : "—"}
               </span>
@@ -76,7 +76,7 @@ export default async function OrganizerDashboardPage() {
           </div>
 
           {events.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center max-w-md mx-auto">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center max-w-md mx-auto">
               <span className="text-4xl block mb-2">📅</span>
               <h3 className="font-bold text-base">Aún no publicaste ningún evento</h3>
               <p className="text-xs text-slate-500 mt-1 mb-4">
@@ -91,7 +91,7 @@ export default async function OrganizerDashboardPage() {
                 return (
                   <div
                     key={event.id}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between"
+                    className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -127,7 +127,7 @@ export default async function OrganizerDashboardPage() {
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                       <Link
                         href={`/events/${event.id}`}
-                        className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="text-xs font-semibold text-neutral-300 hover:text-red-400 hover:underline"
                       >
                         Ver Ficha Pública →
                       </Link>
@@ -150,14 +150,14 @@ export default async function OrganizerDashboardPage() {
             </div>
             <Link
               href="/projects"
-              className="text-xs font-semibold text-indigo-600 hover:underline"
+              className="text-xs font-semibold text-neutral-300 hover:text-red-400 hover:underline"
             >
               Buscar Bandas y Solistas →
             </Link>
           </div>
 
           {contracts.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center max-w-md mx-auto">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center max-w-md mx-auto">
               <span className="text-4xl block mb-2">✉️</span>
               <h3 className="font-bold text-base">No hay postulaciones recibidas</h3>
               <p className="text-xs text-slate-500 mt-1 mb-4">
@@ -165,7 +165,7 @@ export default async function OrganizerDashboardPage() {
               </p>
               <Link
                 href="/projects"
-                className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                className="inline-block px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold transition-colors"
               >
                 Buscar Bandas
               </Link>

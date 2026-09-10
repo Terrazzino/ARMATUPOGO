@@ -15,9 +15,13 @@ import type { LoginInput } from "@/lib/validations/auth";
 
 interface LoginFormProps {
   registered?: boolean;
+  emailConfirmationPending?: boolean;
 }
 
-export function LoginForm({ registered = false }: LoginFormProps) {
+export function LoginForm({
+  registered = false,
+  emailConfirmationPending = false,
+}: LoginFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -48,16 +52,24 @@ export function LoginForm({ registered = false }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-md">
-      {registered && (
+      {registered && !emailConfirmationPending && (
         <div className="p-3 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg">
-          <p className="text-sm text-green-700 dark:text-green-200">
+          <p className="text-sm text-emerald-300">
             Registro exitoso! Por favor inicia sesión.
           </p>
         </div>
       )}
 
+      {emailConfirmationPending && (
+        <div className="p-3 bg-amber-950/50 border border-amber-800 rounded-lg">
+          <p className="text-sm text-amber-200">
+            Tu cuenta fue creada. Revisa tu correo y confirma tu email antes de iniciar sesión.
+          </p>
+        </div>
+      )}
+
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+        <label htmlFor="email" className="block text-sm font-medium text-neutral-300 mb-1">
           Email
         </label>
         <input
@@ -65,7 +77,7 @@ export function LoginForm({ registered = false }: LoginFormProps) {
           type="email"
           id="email"
           placeholder="tu@email.com"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         {errors.email && (
@@ -78,7 +90,7 @@ export function LoginForm({ registered = false }: LoginFormProps) {
       <div>
         <label
           htmlFor="password"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+          className="block text-sm font-medium text-neutral-300 mb-1"
         >
           Contraseña
         </label>
@@ -87,7 +99,7 @@ export function LoginForm({ registered = false }: LoginFormProps) {
           type="password"
           id="password"
           placeholder="••••••••"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         {errors.password && (
@@ -98,8 +110,8 @@ export function LoginForm({ registered = false }: LoginFormProps) {
       </div>
 
       {serverError && (
-        <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
-          <p className="text-sm text-red-700 dark:text-red-200">{serverError}</p>
+        <div className="p-3 bg-red-950/50 border border-red-800 rounded-lg">
+          <p className="text-sm text-red-200">{serverError}</p>
         </div>
       )}
 

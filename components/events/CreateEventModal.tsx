@@ -52,7 +52,7 @@ export function CreateEventModal() {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl my-8">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl my-8">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Publicar Recital o Fecha
@@ -81,7 +81,7 @@ export function CreateEventModal() {
                   type="text"
                   placeholder="Ej: Noche de Punk Rock en Palermo"
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
                 {errors.titulo && (
                   <p className="text-xs text-red-500 mt-1">{errors.titulo.message}</p>
@@ -97,7 +97,7 @@ export function CreateEventModal() {
                     {...register("startsAt")}
                     type="datetime-local"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   {errors.startsAt && (
                     <p className="text-xs text-red-500 mt-1">{errors.startsAt.message}</p>
@@ -112,7 +112,7 @@ export function CreateEventModal() {
                     {...register("endsAt")}
                     type="datetime-local"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   {errors.endsAt && (
                     <p className="text-xs text-red-500 mt-1">{errors.endsAt.message}</p>
@@ -129,7 +129,7 @@ export function CreateEventModal() {
                     min="1"
                     max="20"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   {errors.cantidadMusicosRequerida && (
                     <p className="text-xs text-red-500 mt-1">{errors.cantidadMusicosRequerida.message}</p>
@@ -147,7 +147,7 @@ export function CreateEventModal() {
                     type="text"
                     placeholder="Ej: Club Lucille"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
 
@@ -160,7 +160,7 @@ export function CreateEventModal() {
                     type="text"
                     placeholder="Gorriti 5520"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   {errors.ubicacion && (
                     <p className="text-xs text-red-500 mt-1">{errors.ubicacion.message}</p>
@@ -176,7 +176,7 @@ export function CreateEventModal() {
                     type="text"
                     placeholder="CABA"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               </div>
@@ -191,7 +191,7 @@ export function CreateEventModal() {
                   placeholder="Ej: 80000"
                   min="0"
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
@@ -204,7 +204,7 @@ export function CreateEventModal() {
                   placeholder="Detalles sobre backline disponible, pruebas de sonido, horarios y propuesta del recital..."
                   disabled={isLoading}
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 

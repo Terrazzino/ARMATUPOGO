@@ -48,22 +48,22 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
         {/* Back Link */}
         <div className="mb-6">
-          <Link href="/events" className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1">
+          <Link href="/events" className="text-sm font-medium text-neutral-300 hover:text-red-400 flex items-center gap-1">
             ← Volver a la cartelera
           </Link>
         </div>
 
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-xl mb-8 relative overflow-hidden">
+        <div className="bg-neutral-900 text-white rounded-2xl p-8 sm:p-10 border border-neutral-800 border-l-4 border-l-red-600 mb-8 relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <span className="text-xs sm:text-sm uppercase tracking-wider font-bold text-blue-300">
+              <span className="text-xs sm:text-sm uppercase tracking-wider font-bold text-red-400">
                 📅 {formattedDate} • {formattedTime} hs
               </span>
               <StatusBadge status={event.estado} />
@@ -90,7 +90,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-8">
             {/* Description */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
               <h2 className="text-xl font-bold mb-4">Acerca de esta fecha</h2>
               <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed text-sm sm:text-base">
                 {event.descripcion || "Sin descripción proporcionada."}
@@ -98,7 +98,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </div>
 
             {/* Confirmed Lineup */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold">Line-up de Bandas Confirmadas</h2>
@@ -109,7 +109,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               </div>
 
               {event.contrataciones.length === 0 ? (
-                <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                <div className="p-8 text-center bg-neutral-800/50 rounded-xl border border-dashed border-neutral-700">
                   <span className="text-3xl block mb-2">🥁</span>
                   <p className="text-sm font-semibold">Aún no hay bandas confirmadas</p>
                   <p className="text-xs text-slate-500 mt-1">
@@ -121,10 +121,10 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                   {event.contrataciones.map((c) => (
                     <div
                       key={c.id}
-                      className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between gap-3"
+                      className="p-4 bg-neutral-800 rounded-xl border border-neutral-700 flex flex-col justify-between gap-3"
                     >
                       <div>
-                        <span className="text-xs font-semibold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded uppercase">
+                        <span className="text-xs font-semibold px-2 py-0.5 bg-neutral-700 text-neutral-200 border border-neutral-600 rounded uppercase">
                           {c.proyectoMusical.genero}
                         </span>
                         <h4 className="text-base font-bold mt-1.5">{c.proyectoMusical.nombre}</h4>
@@ -132,7 +132,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
                       <Link
                         href={`/projects/${c.proyectoMusical.id}`}
-                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                        className="text-xs font-semibold text-neutral-300 hover:text-red-400 hover:underline"
                       >
                         Ver Perfil y Redes →
                       </Link>
@@ -145,7 +145,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
           {/* Sidebar / Application Action */}
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 space-y-5">
               <h3 className="text-lg font-bold">Resumen de la Fecha</h3>
 
               <div className="space-y-3 text-sm">
@@ -177,7 +177,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                       projects={musicianProjects}
                     />
                   ) : (
-                    <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400 text-center">
+                    <div className="p-3 bg-neutral-800 rounded-lg text-xs text-neutral-400 text-center">
                       Eres organizador. Puedes gestionar tus fechas desde tu panel.
                     </div>
                   )
@@ -188,7 +188,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                     </p>
                     <a
                       href="/auth/login"
-                      className="block w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors text-center"
+                      className="block w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-colors text-center"
                     >
                       Inicia Sesión para Postularte
                     </a>

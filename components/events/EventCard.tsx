@@ -47,7 +47,7 @@ export function EventCard({ event }: EventCardProps) {
   const confirmedCount = event.contrataciones?.length || 0;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+    <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden flex flex-col hover:border-neutral-700 transition-colors">
       {/* Event Header / Banner placeholder if no image */}
       <div className="bg-red-700 text-white p-5 flex items-start justify-between">
         <div>
@@ -61,20 +61,20 @@ export function EventCard({ event }: EventCardProps) {
 
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div className="space-y-3 mb-4">
-          <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+          <div className="text-sm text-neutral-300 flex items-center gap-1.5">
             <span>📍</span>
             <span>{event.nombreLugar ? `${event.nombreLugar}, ` : ""}{event.ubicacion}{event.ciudad ? ` (${event.ciudad})` : ""}</span>
           </div>
 
           {event.descripcion && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+            <p className="text-sm text-neutral-400 line-clamp-2">
               {event.descripcion}
             </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-500 dark:text-gray-400 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-neutral-400 pt-2 border-t border-neutral-800">
             <div>
-              <span className="text-gray-800 dark:text-gray-200 font-bold">{confirmedCount}</span> de {event.cantidadMusicosRequerida} bandas confirmadas
+              <span className="text-neutral-200 font-bold">{confirmedCount}</span> de {event.cantidadMusicosRequerida} bandas confirmadas
             </div>
             {event.cacheOfrecido && Number(event.cacheOfrecido.toString()) > 0 && (
               <div className="text-emerald-600 dark:text-emerald-400 font-semibold">
@@ -86,7 +86,7 @@ export function EventCard({ event }: EventCardProps) {
 
         <Link
           href={`/events/${event.id}`}
-          className="w-full text-center py-2.5 px-4 bg-neutral-900 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="w-full text-center py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           Ver Detalles y Postularse
         </Link>
