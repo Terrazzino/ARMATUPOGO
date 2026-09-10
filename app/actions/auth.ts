@@ -23,6 +23,8 @@ import { normalizeError, ValidationError } from "@/lib/errors";
  * Registra un nuevo usuario en Supabase Auth y crea su perfil en PostgreSQL vía Prisma (modelo Usuario)
  */
 export async function registerUser(input: RegistroInputConConfirm) {
+  let redirectPath = "/auth/login?registered=true&confirmation=pending";
+
   try {
     const validatedInput = registroSchemaConConfirm.parse(input);
 
@@ -81,7 +83,11 @@ export async function registerUser(input: RegistroInputConConfirm) {
       );
     }
 
-    redirect("/auth/login?registered=true");
+    if (authData.session) {
+      redirectPath = validatedInput.rol === "MUSICO"
+        ? "/dashboard/musician"
+        : "/dashboard/organizer";
+    }
   } catch (error) {
     const normalizedError = normalizeError(error);
     return {
@@ -90,6 +96,8 @@ export async function registerUser(input: RegistroInputConConfirm) {
       code: normalizedError.code,
     };
   }
+
+  redirect(redirectPath);
 }
 
 /**
@@ -110,6 +118,12 @@ export async function loginUser(input: LoginInput) {
       email: validatedInput.email.toLowerCase().trim(),
       password: validatedInput.password,
     });
+
+    if (error?.code === "email_not_confirmed") {
+      throw new ValidationError(
+        "Tu email todavía no está confirmado. Revisa tu correo y confirma tu cuenta antes de iniciar sesión."
+      );
+    }
 
     if (error) {
       throw new ValidationError("Email o contraseña incorrectos");

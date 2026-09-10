@@ -75,7 +75,7 @@ export function ApplyModal({ eventId, eventTitle, projects }: ApplyModalProps) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Postular a Recital</h3>
@@ -110,7 +110,7 @@ export function ApplyModal({ eventId, eventTitle, projects }: ApplyModalProps) {
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -131,7 +131,7 @@ export function ApplyModal({ eventId, eventTitle, projects }: ApplyModalProps) {
                   onChange={(e) => setOfferAmount(e.target.value)}
                   disabled={isLoading}
                   min="0"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
@@ -145,7 +145,7 @@ export function ApplyModal({ eventId, eventTitle, projects }: ApplyModalProps) {
                   onChange={(e) => setMessage(e.target.value)}
                   disabled={isLoading}
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 

@@ -50,9 +50,9 @@ export function RatingModal({ contractId, targetName }: RatingModalProps) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base font-bold text-white">
                 Valorar a {targetName}
               </h3>
               <button
@@ -67,8 +67,8 @@ export function RatingModal({ contractId, targetName }: RatingModalProps) {
               <div
                 className={`p-3 rounded-lg text-xs font-medium border ${
                   feedback.error
-                    ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50"
-                    : "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50"
+                    ? "bg-red-950/50 text-red-200 border-red-800"
+                    : "bg-emerald-950/50 text-emerald-200 border-emerald-800"
                 }`}
               >
                 {feedback.message}
@@ -100,7 +100,7 @@ export function RatingModal({ contractId, targetName }: RatingModalProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="block text-xs font-semibold text-neutral-300 uppercase mb-1">
                   Comentario o Reseña (Opcional)
                 </label>
                 <textarea
@@ -108,7 +108,7 @@ export function RatingModal({ contractId, targetName }: RatingModalProps) {
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Comparte tu experiencia trabajando juntos en la fecha..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
@@ -116,7 +116,7 @@ export function RatingModal({ contractId, targetName }: RatingModalProps) {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600"
+                  className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white"
                 >
                   Cancelar
                 </button>

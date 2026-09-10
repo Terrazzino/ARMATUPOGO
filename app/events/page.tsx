@@ -20,29 +20,29 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
             Cartelera de Recitales
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2 text-base">
+          <p className="text-neutral-400 mt-2 text-base">
             Explora las próximas fechas, descubre nuevas bandas y asiste a recitales independientes.
           </p>
         </div>
 
         {/* Search / Filter Bar */}
-        <form method="GET" className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8 flex flex-col sm:flex-row gap-3">
+        <form method="GET" className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 mb-8 flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <input
               type="text"
               name="search"
               defaultValue={params.search || ""}
               placeholder="Buscar por nombre, sala o descripción..."
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 rounded-lg border border-neutral-700 bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
           <div className="sm:w-60">
@@ -51,12 +51,12 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               name="city"
               defaultValue={params.city || ""}
               placeholder="Ciudad o localidad..."
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 rounded-lg border border-neutral-700 bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
           <button
             type="submit"
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+            className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
           >
             Buscar
           </button>
@@ -64,10 +64,10 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
         {/* Events Grid */}
         {events.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto mt-6">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-12 text-center max-w-lg mx-auto mt-6">
             <span className="text-4xl mb-3 block">🎸</span>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No se encontraron recitales</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <h3 className="text-lg font-bold text-white">No se encontraron recitales</h3>
+            <p className="text-sm text-neutral-400 mt-1">
               Prueba cambiando los términos de búsqueda o vuelve a consultar más tarde.
             </p>
           </div>
