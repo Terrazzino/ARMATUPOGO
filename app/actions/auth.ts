@@ -58,6 +58,13 @@ export async function registerUser(input: RegistroInputConConfirm) {
           field: "email",
         });
       }
+
+      if (authError.message.toLowerCase().includes("rate limit")) {
+        throw new ValidationError(
+          "Se ha superado el límite de correos de confirmación de Supabase (máx. 3-4 por hora con el servidor por defecto). Desactiva 'Confirm email' en tu panel de Supabase para desarrollo local o aguarda unos minutos."
+        );
+      }
+
       throw authError;
     }
 
@@ -170,7 +177,6 @@ export async function logoutUser() {
         throw error;
       }
     }
-
   } catch (error) {
     const normalizedError = normalizeError(error);
     return {
