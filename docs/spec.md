@@ -169,11 +169,16 @@ usuarios.id
 El endpoint de modificación del perfil no permitirá modificar directamente:
 
 - `id`;
-- `role`;
+- `role` (rol del usuario);
+- `email`;
 - contraseña;
 - credenciales;
 - tokens;
 - secretos.
+
+Si alguno de esos campos es enviado en el cuerpo del request, el endpoint debe responder `400 Datos inválidos`. No se ignorarán silenciosamente.
+
+La validación de campos prohibidos deberá resolverse mediante el schema de entrada (Zod) en la implementación correspondiente.
 
 Los cambios de email, en caso de implementarse posteriormente, deberán realizarse mediante el mecanismo correspondiente de Supabase Auth y no mediante una modificación arbitraria de la tabla `usuarios`.
 
@@ -538,6 +543,16 @@ Durante el MVP:
 - [ ] Un usuario solamente puede utilizar funcionalidades correspondientes a su rol.
 - [ ] Si el email ya existe o los datos son inválidos, se informa el error.
 
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Campos obligatorios faltantes o con formato inválido (email, contraseña, nombre, apellido, rol) | `400` |
+| Contraseñas que no coinciden | `400` |
+| Rol no válido (distinto de `MUSICO` u `ORGANIZADOR`) | `400` |
+| El email ya se encuentra registrado en Supabase Auth | `409` |
+| Error interno al crear el perfil en la base de datos después del registro en Supabase | `500` |
+
 ---
 
 ## H2 — Iniciar y cerrar sesión
@@ -551,6 +566,16 @@ Durante el MVP:
 - [ ] La sesión puede ser validada desde el servidor.
 - [ ] Existe una acción para cerrar la sesión.
 - [ ] Los endpoints protegidos no confían únicamente en datos enviados por el cliente.
+
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Email o contraseña con formato inválido | `400` |
+| Credenciales incorrectas (email no existe o contraseña equivocada) | `400` |
+| Email no confirmado en Supabase | `400` |
+| Intento de acceder a un endpoint privado sin sesión activa | `401` |
+| Usuario autenticado intenta ejecutar una operación de otro rol | `403` |
 
 ---
 
@@ -567,6 +592,18 @@ Durante el MVP:
 - [ ] Un organizador puede consultar su información pública.
 - [ ] Eliminar un proyecto produce una baja lógica.
 - [ ] Un proyecto inactivo no puede generar nuevas oportunidades.
+
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario autenticado tiene rol `ORGANIZADOR` | `403` |
+| Campos obligatorios faltantes o inválidos (nombre, género) | `400` |
+| Caché aproximado negativo o superior al límite | `400` |
+| URLs de enlaces con formato inválido | `400` |
+| Intentar modificar o eliminar un proyecto que no pertenece al usuario | `403` |
+| El proyecto solicitado no existe | `404` |
 
 ---
 
@@ -593,6 +630,23 @@ Además:
 - [ ] El evento se crea como publicado.
 - [ ] Solamente el propietario puede modificarlo o cancelarlo.
 
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario autenticado tiene rol `MUSICO` | `403` |
+| Campos obligatorios faltantes o inválidos (título, fechas, ubicación, cantidad requerida) | `400` |
+| `ends_at` no es posterior a `starts_at` | `400` |
+| Cantidad de proyectos requeridos menor a 1 | `400` |
+| Caché ofrecido negativo o superior al límite | `400` |
+| Intentar modificar o cancelar un evento que no pertenece al usuario | `403` |
+| El evento solicitado no existe | `404` |
+| Intentar modificar `starts_at` o `ends_at` cuando existen contrataciones activas (`NEGOCIANDO` o `ACORDADO`) | `409` |
+| Intentar reducir `required_projects_count` por debajo de la cantidad de cupos ocupados | `409` |
+| Intentar cancelar un evento que ya está `CANCELADO` | `409` |
+| Intentar cancelar un evento que ya comenzó | `409` |
+
 ---
 
 H5 — Buscar y postularse a un evento
@@ -609,6 +663,38 @@ H5 — Buscar y postularse a un evento
 * [ ] El organizador puede aceptar o rechazar cada postulación.
 * [ ] Las postulaciones pendientes no reservan disponibilidad horaria del músico.
 * [ ] La existencia de varias postulaciones del mismo músico para un evento no implica múltiples reservas ni múltiples contrataciones.
+* [ ] El músico puede cancelar una postulación propia mientras esté en estado `PENDIENTE`.
+
+### Cancelación de postulación por el músico
+
+```text
+POST /api/postulaciones/:postulacionId/cancelacion
+```
+
+Reglas:
+
+- Solamente el músico propietario del proyecto postulante puede cancelar su postulación.
+- Solo pueden cancelarse postulaciones en estado `PENDIENTE`.
+- La postulación pasa a `CANCELADA`.
+
+Respuesta exitosa: `200 OK` con la postulación resultante en estado `CANCELADA`.
+
+### Casos de error (postular y cancelar)
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario autenticado tiene rol `ORGANIZADOR` al postular | `403` |
+| El proyecto musical no existe o no pertenece al usuario | `403` |
+| El proyecto musical está inactivo | `409` |
+| El evento no existe | `404` |
+| El evento no está `PUBLICADO` | `409` |
+| El evento ya comenzó | `409` |
+| El mismo proyecto ya tiene una postulación para ese evento | `409` |
+| ID de evento o proyecto con formato inválido (no UUID) | `400` |
+| Sin sesión activa al cancelar | `401` |
+| La postulación no existe o no pertenece al usuario | `403` |
+| La postulación no está en estado `PENDIENTE` | `409` |
 
 ---
 
@@ -648,6 +734,20 @@ Además:
 * [ ] las postulaciones canceladas automáticamente no se reactivan si posteriormente se cancela la contratación generada;
 * [ ] toda la operación debe realizarse de forma atómica.
 
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario autenticado tiene rol `MUSICO` | `403` |
+| La postulación no existe | `404` |
+| La postulación pertenece al evento de otro organizador | `403` |
+| La postulación no está en estado `PENDIENTE` | `409` |
+| El evento ya no está `PUBLICADO` | `409` |
+| El músico ya tiene una contratación activa (`NEGOCIANDO` o `ACORDADO`) que se superpone horariamente | `409` |
+| Ya existe una contratación para este proyecto en este evento | `409` |
+| La postulación fue modificada concurrentemente antes de procesar la aceptación | `409` |
+
 ---
 
 ## H7 — Seleccionar directamente un proyecto
@@ -664,6 +764,18 @@ Además:
 - [ ] La operación no ocupa todavía un cupo.
 - [ ] No se puede iniciar una contratación con un proyecto inactivo.
 
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario autenticado tiene rol `MUSICO` | `403` |
+| El evento no existe o no pertenece al organizador | `403` |
+| El proyecto musical no existe | `404` |
+| El proyecto musical está inactivo | `409` |
+| El músico ya tiene una contratación activa (`NEGOCIANDO` o `ACORDADO`) que se superpone horariamente | `409` |
+| Ya existe una postulación o contratación para este proyecto en este evento | `409` |
+
 ---
 
 ## H8 — Negociar el caché
@@ -679,6 +791,20 @@ Además:
 - [ ] Una contraoferta convierte la propuesta anterior en `CONTRAOFERTADA`.
 - [ ] El usuario que creó una oferta no puede aceptarla ni rechazarla.
 - [ ] Una negociación cerrada no acepta nuevas ofertas.
+
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario no es participante de la contratación | `403` |
+| La contratación no existe | `404` |
+| La oferta no existe | `404` |
+| Monto de oferta negativo o superior al límite permitido | `400` |
+| Intentar enviar una oferta cuando la contratación no está `NEGOCIANDO` | `409` |
+| Intentar aceptar o rechazar una oferta que ya no está en estado `PROPUESTA` | `409` |
+| El emisor intenta aceptar o rechazar su propia oferta | `409` |
+| Intentar aceptar o rechazar una oferta cuando la contratación no está `NEGOCIANDO` | `409` |
 
 ---
 
@@ -710,6 +836,20 @@ Además:
 - [ ] el acuerdo es visible para ambas partes;
 - [ ] nuevas ofertas quedan deshabilitadas.
 
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario no es participante de la contratación | `403` |
+| La oferta no existe | `404` |
+| La oferta no está en estado `PROPUESTA` | `409` |
+| La contratación no está en estado `NEGOCIANDO` | `409` |
+| El emisor de la oferta intenta aceptar su propia oferta | `409` |
+| El músico ya tiene otra contratación activa que se superpone horariamente | `409` |
+| El evento ya no tiene cupos disponibles (acordados >= requeridos) | `409` |
+| La oferta o contratación fue modificada concurrentemente antes del acuerdo | `409` |
+
 ---
 
 ## H10 — Cancelar una contratación
@@ -736,6 +876,18 @@ Al cancelar:
 - [ ] deja de bloquear disponibilidad;
 - [ ] deja de ocupar cupo si estaba acordada;
 - [ ] sus ofertas permanecen como historial pero no pueden modificarse.
+
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario no es participante de la contratación | `403` |
+| La contratación no existe | `404` |
+| La contratación ya está `CANCELADO` | `409` |
+| La contratación ya está `COMPLETADO` | `409` |
+| La contratación está `ACORDADO` pero el evento ya comenzó (`ahora >= evento.starts_at`) | `409` |
+| Motivo de cancelación demasiado corto (menos de 5 caracteres) o excede el límite | `400` |
 
 ---
 
@@ -769,6 +921,16 @@ Además:
 - [ ] una contratación completada no puede cancelarse;
 - [ ] completar habilita las valoraciones.
 
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario no es participante de la contratación | `403` |
+| La contratación no existe | `404` |
+| La contratación no está en estado `ACORDADO` | `409` |
+| El evento todavía no finalizó (`evento.ends_at > ahora`) | `409` |
+
 ---
 
 ## H12 — Valorar una contratación
@@ -786,6 +948,18 @@ Además:
 - [ ] El servidor determina automáticamente quién es el destinatario.
 - [ ] El cliente no puede elegir arbitrariamente a quién valorar.
 - [ ] La valoración queda asociada a la contratación.
+
+### Casos de error
+
+| Situación | Código |
+|---|---|
+| Sin sesión activa | `401` |
+| El usuario no es participante de la contratación | `403` |
+| La contratación no existe | `404` |
+| La contratación no está en estado `COMPLETADO` | `409` |
+| El usuario ya valoró esta contratación | `409` |
+| Puntuación fuera del rango 1–5 | `400` |
+| Puntuación no es un número entero | `400` |
 
 ---
 
@@ -813,11 +987,23 @@ Además:
 - [ ] No requiere autenticación.
 - [ ] Solamente muestra eventos publicados y vigentes.
 - [ ] No muestra eventos cancelados.
-- [ ] Los eventos que ya finalizaron no aparecen en la cartelera principal.
+- [ ] Los eventos que ya finalizaron (`ends_at <= ahora`) no aparecen en la cartelera.
+- [ ] Los eventos que ya comenzaron pero todavía no terminaron continúan siendo visibles.
+- [ ] No se exige que `starts_at > ahora` como condición de visibilidad.
 - [ ] Puede consultarse información pública del evento.
 - [ ] Pueden consultarse proyectos con participación acordada.
 - [ ] Pueden consultarse redes y plataformas musicales.
 - [ ] Nunca se exponen negociaciones, ofertas o datos privados.
+
+### Filtro de cartelera
+
+Un evento aparece en la cartelera pública únicamente cuando:
+
+```text
+estado = PUBLICADO
+AND
+ends_at > ahora
+```
 
 ---
 
@@ -1784,6 +1970,7 @@ Para Organizador:
 | `GET` | `/api/postulaciones/:postulacionId` | Obtener detalle | Sí |
 | `POST` | `/api/postulaciones/:postulacionId/aceptar` | Aceptar e iniciar contratación | Sí |
 | `POST` | `/api/postulaciones/:postulacionId/rechazar` | Rechazar | Sí |
+| `POST` | `/api/postulaciones/:postulacionId/cancelacion` | Cancelar postulación propia (músico) | Sí |
 
 ---
 

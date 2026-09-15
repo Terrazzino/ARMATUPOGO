@@ -1,0 +1,544 @@
+### ==============================================================================
+### ARMA TU POGO — ARCHIVO DE PRUEBAS DE API (.http)
+### Para usar con la extensión REST Client de VS Code
+### ==============================================================================
+
+@base = http://localhost:3000
+# @base = https://tu-despliegue-en-vercel.vercel.app
+
+@contentType = application/json
+
+### ------------------------------------------------------------------------------
+### VARIABLES DE CONTEXTO Y USUARIOS DE PRUEBA
+### ------------------------------------------------------------------------------
+### En desarrollo local se utiliza el header x-user-id para autenticar las requests.
+### Para producción con Supabase Auth real, sustituir por Authorization: Bearer <token>.
+
+@musicoUserId = 11111111-1111-1111-1111-111111111111
+@organizadorUserId = 22222222-2222-2222-2222-222222222222
+@otroMusicoUserId = 33333333-3333-3333-3333-333333333333
+@otroOrganizadorUserId = 44444444-4444-4444-4444-444444444444
+
+### ==============================================================================
+### 1. SECCIÓN: USUARIOS (/api/usuarios/me)
+### ==============================================================================
+
+### 1.1. Obtener perfil propio — Caso feliz (200)
+# @name getPerfilMe
+# Qué prueba: Obtener el perfil del usuario autenticado.
+# Status esperado: 200 OK.
+# Por qué: La sesión es válida y existe el usuario en la BD.
+GET {{base}}/api/usuarios/me
+x-user-id: {{musicoUserId}}
+
+### 1.2. Obtener perfil propio — Sin sesión (401)
+# @name getPerfilMeSinAuth
+# Qué prueba: Consulta de perfil sin sesión activa.
+# Status esperado: 401 Unauthorized.
+# Por qué: El endpoint es privado y exige autenticación.
+GET {{base}}/api/usuarios/me
+
+### 1.3. Actualizar perfil propio — Caso feliz (200)
+# @name patchPerfilMe
+# Qué prueba: Modificar campos permitidos (nombre, apellido, biografía, teléfono).
+# Status esperado: 200 OK.
+# Por qué: Datos válidos y usuario autenticado.
+PATCH {{base}}/api/usuarios/me
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "nombre": "Carlos",
+  "apellido": "Santana",
+  "biografia": "Guitarrista y compositor independiente",
+  "telefono": "+54 11 4444-5555"
+}
+
+### 1.4. Actualizar perfil propio — Error 400 por campos no permitidos (id, email, rol)
+# @name patchPerfilMeForbiddenFields
+# Qué prueba: Enviar campos prohibidos en la actualización de perfil.
+# Status esperado: 400 Bad Request.
+# Por qué: La spec exige rechazar con 400 si se intenta mutar rol, email, id o password.
+PATCH {{base}}/api/usuarios/me
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "nombre": "Carlos",
+  "email": "nuevoemail@hacker.com",
+  "rol": "ORGANIZADOR"
+}
+
+
+### ==============================================================================
+### 2. SECCIÓN: PROYECTOS MUSICALES (/api/proyectos)
+### ==============================================================================
+
+### 2.1. Crear proyecto musical — Caso feliz (201)
+# @name crearProyecto
+# Qué prueba: Creación exitosa de un proyecto musical por un músico.
+# Status esperado: 201 Created.
+# Por qué: Rol Músico, campos válidos, proyecto queda activo.
+POST {{base}}/api/proyectos
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "nombre": "Los Pogo Brothers",
+  "genero": "Punk Rock",
+  "descripcion": "Banda de punk rock independiente con 5 años de trayectoria en el circuito underground.",
+  "cacheAproximado": 180000,
+  "ubicacion": "Palermo, CABA",
+  "ciudad": "Buenos Aires",
+  "spotifyUrl": "https://open.spotify.com/artist/example1",
+  "youtubeUrl": "https://youtube.com/example1"
+}
+
+### 2.2. Crear proyecto musical — Error 403 por rol ORGANIZADOR
+# @name crearProyectoRolInvalido
+# Qué prueba: Un organizador intenta crear un proyecto musical.
+# Status esperado: 403 Forbidden.
+# Por qué: Solo los músicos pueden registrar proyectos musicales.
+POST {{base}}/api/proyectos
+Content-Type: {{contentType}}
+x-user-id: {{organizadorUserId}}
+
+{
+  "nombre": "Organizador Intentando Ser Banda",
+  "genero": "Rock"
+}
+
+### 2.3. Crear proyecto musical — Error 400 por datos inválidos (nombre muy corto)
+# @name crearProyectoDatosInvalidos
+# Qué prueba: Envío de nombre con menos de 2 caracteres.
+# Status esperado: 400 Bad Request.
+# Por qué: Zod valida la longitud mínima del nombre artístico.
+POST {{base}}/api/proyectos
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "nombre": "A",
+  "genero": "Rock"
+}
+
+### 2.4. Listar mis proyectos musicales — Caso feliz (200)
+# @name listarMisProyectos
+# Qué prueba: Obtener la lista de proyectos pertenecientes al músico autenticado.
+# Status esperado: 200 OK.
+# Por qué: Rol Músico autenticado.
+GET {{base}}/api/proyectos
+x-user-id: {{musicoUserId}}
+
+### 2.5. Buscar proyectos activos — Caso feliz (200)
+# @name buscarProyectos
+# Qué prueba: Búsqueda con filtros de género y ciudad.
+# Status esperado: 200 OK.
+# Por qué: Usuario autenticado consulta proyectos activos.
+GET {{base}}/api/proyectos/buscar?genero=Punk&ciudad=Buenos+Aires
+x-user-id: {{organizadorUserId}}
+
+@proyectoId = {{crearProyecto.response.body.id}}
+
+### 2.6. Obtener detalle de proyecto — Caso feliz (200)
+# @name getProyectoDetalle
+# Qué prueba: Obtener detalle del proyecto recién creado.
+# Status esperado: 200 OK.
+# Por qué: El proyecto existe en la base de datos.
+GET {{base}}/api/proyectos/{{proyectoId}}
+x-user-id: {{organizadorUserId}}
+
+### 2.7. Obtener detalle de proyecto — Error 404 por ID inexistente
+# @name getProyectoInexistente
+# Qué prueba: Consultar un UUID inexistente.
+# Status esperado: 404 Not Found.
+# Por qué: No existe un proyecto con ese identificador.
+GET {{base}}/api/proyectos/00000000-0000-0000-0000-000000000000
+x-user-id: {{organizadorUserId}}
+
+### 2.8. Modificar proyecto ajeno — Error 403
+# @name patchProyectoAjeno
+# Qué prueba: Un músico intenta modificar el proyecto de otro músico.
+# Status esperado: 403 Forbidden.
+# Por qué: Solamente el propietario tiene permisos de modificación.
+PATCH {{base}}/api/proyectos/{{proyectoId}}
+Content-Type: {{contentType}}
+x-user-id: {{otroMusicoUserId}}
+
+{
+  "nombre": "Hackeando Proyecto Ajeno"
+}
+
+### 2.9. Modificar proyecto propio — Caso feliz (200)
+# @name patchProyectoPropio
+# Qué prueba: Modificar datos del proyecto propio.
+# Status esperado: 200 OK.
+# Por qué: El músico es el propietario del proyecto.
+PATCH {{base}}/api/proyectos/{{proyectoId}}
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "cacheAproximado": 200000,
+  "descripcion": "Descripción actualizada para la gira 2026."
+}
+
+### 2.10. Desactivar proyecto propio — Caso feliz (200)
+# @name deleteProyectoBajaLogica
+# Qué prueba: Desactivación lógica de un proyecto propio.
+# Status esperado: 200 OK.
+# Por qué: El propietario desactiva su proyecto (baja lógica estaActivo = false).
+DELETE {{base}}/api/proyectos/{{proyectoId}}
+x-user-id: {{musicoUserId}}
+
+### 2.11. Reactivar proyecto para continuar el flujo
+PATCH {{base}}/api/proyectos/{{proyectoId}}
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "nombre": "Los Pogo Brothers"
+}
+
+
+### ==============================================================================
+### 3. SECCIÓN: EVENTOS (/api/eventos)
+### ==============================================================================
+
+### 3.1. Publicar evento — Caso feliz (201)
+# @name crearEvento
+# Qué prueba: Un organizador publica un evento con cupo para 2 bandas.
+# Status esperado: 201 Created.
+# Por qué: Rol Organizador, fechas válidas (ends_at > starts_at) y cupo >= 1.
+POST {{base}}/api/eventos
+Content-Type: {{contentType}}
+x-user-id: {{organizadorUserId}}
+
+{
+  "titulo": "Noche de Pogo Fest 2026",
+  "descripcion": "Festival independiente con las mejores bandas de la escena.",
+  "startsAt": "2026-11-20T20:00:00Z",
+  "endsAt": "2026-11-21T02:00:00Z",
+  "ubicacion": "Niceto Vega 5510",
+  "nombreLugar": "Club Pogo",
+  "ciudad": "Buenos Aires",
+  "cantidadMusicosRequerida": 2,
+  "cacheOfrecido": 150000
+}
+
+### 3.2. Publicar evento — Error 400 por fechas invertidas
+# @name crearEventoFechasInvertidas
+# Qué prueba: Intentar publicar un evento con endsAt anterior a startsAt.
+# Status esperado: 400 Bad Request.
+# Por qué: La fecha de finalización debe ser posterior a la de inicio.
+POST {{base}}/api/eventos
+Content-Type: {{contentType}}
+x-user-id: {{organizadorUserId}}
+
+{
+  "titulo": "Evento Imposible en el Tiempo",
+  "startsAt": "2026-11-20T22:00:00Z",
+  "endsAt": "2026-11-20T18:00:00Z",
+  "ubicacion": "Av. Corrientes 1234",
+  "cantidadMusicosRequerida": 1
+}
+
+### 3.3. Publicar evento — Error 403 por rol Músico
+# @name crearEventoRolMusico
+# Qué prueba: Un músico intenta publicar un evento.
+# Status esperado: 403 Forbidden.
+# Por qué: Solo organizadores pueden publicar eventos.
+POST {{base}}/api/eventos
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "titulo": "Intento de Evento por Músico",
+  "startsAt": "2026-11-20T20:00:00Z",
+  "endsAt": "2026-11-21T02:00:00Z",
+  "ubicacion": "Calle 123",
+  "cantidadMusicosRequerida": 1
+}
+
+@eventoId = {{crearEvento.response.body.id}}
+
+### 3.4. Obtener detalle de evento — Caso feliz (200)
+# @name getEventoDetalle
+# Qué prueba: Consultar detalle del evento recién publicado.
+# Status esperado: 200 OK.
+# Por qué: El evento existe y el usuario está autenticado.
+GET {{base}}/api/eventos/{{eventoId}}
+x-user-id: {{musicoUserId}}
+
+### 3.5. Modificar evento ajeno — Error 403
+# @name patchEventoAjeno
+# Qué prueba: Un organizador intenta modificar el evento de otro organizador.
+# Status esperado: 403 Forbidden.
+# Por qué: Solamente el organizador propietario tiene permisos de modificación.
+PATCH {{base}}/api/eventos/{{eventoId}}
+Content-Type: {{contentType}}
+x-user-id: {{otroOrganizadorUserId}}
+
+{
+  "titulo": "Intento de modificar evento ajeno"
+}
+
+
+### ==============================================================================
+### 4. SECCIÓN: POSTULACIONES (/api/eventos/:id/postulaciones y /api/postulaciones)
+### ==============================================================================
+
+### 4.1. Postular proyecto musical a evento — Caso feliz (201)
+# @name postularProyecto
+# Qué prueba: El músico postula su proyecto propio y activo a un evento publicado.
+# Status esperado: 201 Created.
+# Por qué: Rol Músico, proyecto propio activo, evento futuro no iniciado.
+POST {{base}}/api/eventos/{{eventoId}}/postulaciones
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "proyectoMusicalId": "{{proyectoId}}",
+  "initialOfferAmount": 160000,
+  "mensaje": "Nos encantaría participar de la fecha!"
+}
+
+### 4.2. Postular proyecto musical — Error 409 por postulación duplicada
+# @name postularProyectoDuplicado
+# Qué prueba: Re-enviar postulación para el mismo proyecto y evento.
+# Status esperado: 409 Conflict.
+# Por qué: Restricción UNIQUE(eventoId, proyectoMusicalId).
+POST {{base}}/api/eventos/{{eventoId}}/postulaciones
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
+### 4.3. Postular proyecto ajeno — Error 403
+# @name postularProyectoAjeno
+# Qué prueba: Un músico intenta postular un proyecto que no le pertenece.
+# Status esperado: 403 Forbidden.
+# Por qué: El proyecto musical no le pertenece al usuario.
+POST {{base}}/api/eventos/{{eventoId}}/postulaciones
+Content-Type: {{contentType}}
+x-user-id: {{otroMusicoUserId}}
+
+{
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
+### 4.4. Listar postulaciones recibidas en evento — Caso feliz (200)
+# @name listarPostulacionesRecibidas
+# Qué prueba: El organizador consulta postulaciones recibidas en su evento.
+# Status esperado: 200 OK.
+# Por qué: Es el propietario del evento.
+GET {{base}}/api/eventos/{{eventoId}}/postulaciones
+x-user-id: {{organizadorUserId}}
+
+@postulacionId = {{postularProyecto.response.body.id}}
+
+### 4.5. Consultar detalle de postulación — Caso feliz (200)
+# @name getDetallePostulacion
+# Qué prueba: Obtener el detalle de la postulación enviada.
+# Status esperado: 200 OK.
+# Por qué: El usuario es el músico postulante.
+GET {{base}}/api/postulaciones/{{postulacionId}}
+x-user-id: {{musicoUserId}}
+
+### 4.6. Cancelar postulación ajena por otro usuario — Error 403
+# @name cancelarPostulacionAjena
+# Qué prueba: Un usuario ajeno intenta cancelar la postulación.
+# Status esperado: 403 Forbidden.
+# Por qué: Solo el músico propietario puede cancelar su postulación.
+POST {{base}}/api/postulaciones/{{postulacionId}}/cancelacion
+x-user-id: {{otroMusicoUserId}}
+
+
+### ==============================================================================
+### 5. SECCIÓN: ACEPTACIÓN DE POSTULACIÓN Y CONTRATACIONES
+### ==============================================================================
+
+### 5.1. Aceptar postulación — Caso feliz (200)
+# @name aceptarPostulacion
+# Qué prueba: El organizador acepta la postulación.
+# Status esperado: 200 OK.
+# Por qué: Postulación PENDIENTE pasa a ACEPTADA, se valida disponibilidad y se crea contratación NEGOCIANDO.
+POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
+x-user-id: {{organizadorUserId}}
+
+@contratacionId = {{aceptarPostulacion.response.body.contratacion.id}}
+
+### 5.2. Aceptar postulación — Error 409 por postulación ya procesada
+# @name aceptarPostulacionYaProcesada
+# Qué prueba: Intentar aceptar nuevamente una postulación que ya no está PENDIENTE.
+# Status esperado: 409 Conflict.
+# Por qué: La postulación ya se encuentra ACEPTADA.
+POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
+x-user-id: {{organizadorUserId}}
+
+### 5.3. Rechazar postulación que no está PENDIENTE — Error 409
+# @name rechazarPostulacionNoPendiente
+# Qué prueba: Intentar rechazar una postulación ya aceptada.
+# Status esperado: 409 Conflict.
+# Por qué: La postulación ya no puede rechazarse.
+POST {{base}}/api/postulaciones/{{postulacionId}}/rechazar
+x-user-id: {{organizadorUserId}}
+
+### 5.4. Consultar detalle de contratación — Caso feliz (200)
+# @name getContratacionDetalle
+# Qué prueba: Consultar detalle de la contratación creada con su historial de ofertas.
+# Status esperado: 200 OK.
+# Por qué: El usuario es participante de la contratación.
+GET {{base}}/api/contrataciones/{{contratacionId}}
+x-user-id: {{musicoUserId}}
+
+### 5.5. Consultar contratación ajena — Error 403
+# @name getContratacionAjena
+# Qué prueba: Un usuario ajeno intenta acceder a la contratación privada.
+# Status esperado: 403 Forbidden.
+# Por qué: No es participante de la negociación.
+GET {{base}}/api/contrataciones/{{contratacionId}}
+x-user-id: {{otroMusicoUserId}}
+
+
+### ==============================================================================
+### 6. SECCIÓN: OFERTAS Y NEGOCIACIÓN (/api/contrataciones/:id/ofertas)
+### ==============================================================================
+
+### 6.1. Crear primera oferta económica — Caso feliz (201)
+# @name crearOfertaOrganizador
+# Qué prueba: El organizador envía una propuesta de $150.000.
+# Status esperado: 201 Created.
+# Por qué: Contratación NEGOCIANDO, participante válido, monto válido.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+x-user-id: {{organizadorUserId}}
+
+{
+  "monto": 150000,
+  "mensaje": "Te ofrecemos $150.000 de caché por 45 minutos de show."
+}
+
+@oferta1Id = {{crearOfertaOrganizador.response.body.id}}
+
+### 6.2. Aceptar propia oferta — Error 409
+# @name aceptarPropiaOfertaError
+# Qué prueba: El organizador intenta aceptar la oferta que él mismo envió.
+# Status esperado: 409 Conflict.
+# Por qué: El emisor no puede aceptar su propia propuesta; solo la contraparte puede hacerlo.
+POST {{base}}/api/ofertas/{{oferta1Id}}/aceptar
+x-user-id: {{organizadorUserId}}
+
+### 6.3. Rechazar propia oferta — Error 409
+# @name rechazarPropiaOfertaError
+# Qué prueba: El organizador intenta rechazar la oferta que él mismo envió.
+# Status esperado: 409 Conflict.
+# Por qué: El emisor no puede rechazar su propia propuesta.
+POST {{base}}/api/ofertas/{{oferta1Id}}/rechazar
+x-user-id: {{organizadorUserId}}
+
+### 6.4. Contraofertar — Caso feliz (201)
+# @name contraofertarMusico
+# Qué prueba: El músico envía una contraoferta de $175.000.
+# Status esperado: 201 Created.
+# Por qué: La oferta anterior pasa a CONTRAOFERTADA y la nueva queda en PROPUESTA.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "monto": 175000,
+  "mensaje": "Podemos cerrar en $175.000 para cubrir el traslado de los equipos."
+}
+
+@oferta2Id = {{contraofertarMusico.response.body.id}}
+
+### 6.5. Aceptar oferta vigente — Caso feliz (200)
+# @name aceptarOfertaVigente
+# Qué prueba: El organizador acepta la contraoferta de $175.000 del músico.
+# Status esperado: 200 OK.
+# Por qué: Se validan cupos y disponibilidad, oferta pasa a ACEPTADA, contrato a ACORDADO con agreed_amount = $175.000.
+POST {{base}}/api/ofertas/{{oferta2Id}}/aceptar
+x-user-id: {{organizadorUserId}}
+
+### 6.6. Enviar oferta en contratación ACORDADA — Error 409
+# @name crearOfertaEnContratoAcordado
+# Qué prueba: Intentar ofertar en una contratación ya cerrada.
+# Status esperado: 409 Conflict.
+# Por qué: Una contratación en estado ACORDADO no admite nuevas ofertas.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "monto": 190000
+}
+
+
+### ==============================================================================
+### 7. SECCIÓN: VALORACIONES Y FINALIZACIÓN
+### ==============================================================================
+
+### 7.1. Intentar valorar contratación no completada — Error 409
+# @name crearValoracionAntesDeCompletar
+# Qué prueba: Intentar crear una valoración sobre una contratación en estado ACORDADO.
+# Status esperado: 409 Conflict.
+# Por qué: Solo las contrataciones en estado COMPLETADO pueden recibir valoraciones.
+POST {{base}}/api/contrataciones/{{contratacionId}}/valoraciones
+Content-Type: {{contentType}}
+x-user-id: {{musicoUserId}}
+
+{
+  "puntaje": 5,
+  "comentario": "Excelente fecha!"
+}
+
+### 7.2. Completar contratación — Error 409 si el evento aún no finalizó
+# @name completarEventoFuturo
+# Qué prueba: Intentar completar una contratación antes de que llegue ends_at del evento.
+# Status esperado: 409 Conflict.
+# Por qué: El evento todavía no finalizó (ends_at > ahora).
+POST {{base}}/api/contrataciones/{{contratacionId}}/completar
+x-user-id: {{organizadorUserId}}
+
+### 7.3. Consultar reputación de usuario — Caso feliz (200)
+# @name getReputacionUsuario
+# Qué prueba: Consultar el promedio de valoraciones y total de un usuario.
+# Status esperado: 200 OK.
+# Por qué: El usuario existe en la base de datos.
+GET {{base}}/api/usuarios/{{organizadorUserId}}/valoraciones
+
+### 7.4. Consultar reputación de proyecto — Caso feliz (200)
+# @name getReputacionProyecto
+# Qué prueba: Consultar el promedio de valoraciones y total de un proyecto musical.
+# Status esperado: 200 OK.
+# Por qué: El proyecto existe en la base de datos.
+GET {{base}}/api/proyectos/{{proyectoId}}/valoraciones
+
+
+### ==============================================================================
+### 8. SECCIÓN: API PÚBLICA (Sin autenticación)
+### ==============================================================================
+
+### 8.1. Consultar Cartelera Pública — Caso feliz (200)
+# @name getCarteleraPublica
+# Qué prueba: Consulta pública de eventos vigentes no finalizados (ends_at > ahora).
+# Status esperado: 200 OK.
+# Por qué: No requiere autenticación y muestra proyectos confirmados (ACORDADO) sin exponer ofertas privadas.
+GET {{base}}/api/publico/eventos
+
+### 8.2. Consultar Detalle Público de Evento — Caso feliz (200)
+# @name getDetallePublicoEvento
+# Qué prueba: Consulta pública del evento por ID.
+# Status esperado: 200 OK.
+# Por qué: El evento está publicado.
+GET {{base}}/api/publico/eventos/{{eventoId}}
+
+### 8.3. Consultar Perfil Público de Proyecto Musical — Caso feliz (200)
+# @name getPerfilPublicoProyecto
+# Qué prueba: Consulta pública de un proyecto musical activo.
+# Status esperado: 200 OK.
+# Por qué: El proyecto está activo y es público.
+GET {{base}}/api/publico/proyectos/{{proyectoId}}
