@@ -65,27 +65,46 @@ export const loginSchema = z.object({
   password: z.string().min(1, "La contraseña es obligatoria"),
 });
 
-export const actualizarPerfilSchema = z.object({
-  nombre: z
-    .string()
-    .trim()
-    .min(VALIDATION_LIMITS.NAME_MIN_LENGTH)
-    .max(VALIDATION_LIMITS.NAME_MAX_LENGTH)
-    .optional(),
-  apellido: z
-    .string()
-    .trim()
-    .min(VALIDATION_LIMITS.NAME_MIN_LENGTH)
-    .max(VALIDATION_LIMITS.NAME_MAX_LENGTH)
-    .optional(),
-  biografia: z
-    .string()
-    .trim()
-    .max(VALIDATION_LIMITS.DESCRIPTION_MAX_LENGTH)
-    .optional()
-    .or(z.literal("")),
-  telefono: z.string().trim().max(30).optional().or(z.literal("")),
-});
+export const actualizarPerfilSchema = z
+  .object({
+    nombre: z
+      .string()
+      .trim()
+      .min(
+        VALIDATION_LIMITS.NAME_MIN_LENGTH,
+        `El nombre debe tener al menos ${VALIDATION_LIMITS.NAME_MIN_LENGTH} caracteres`
+      )
+      .max(
+        VALIDATION_LIMITS.NAME_MAX_LENGTH,
+        `El nombre supera el límite de caracteres`
+      )
+      .optional(),
+    apellido: z
+      .string()
+      .trim()
+      .min(
+        VALIDATION_LIMITS.NAME_MIN_LENGTH,
+        `El apellido debe tener al menos ${VALIDATION_LIMITS.NAME_MIN_LENGTH} caracteres`
+      )
+      .max(
+        VALIDATION_LIMITS.NAME_MAX_LENGTH,
+        `El apellido supera el límite de caracteres`
+      )
+      .optional(),
+    biografia: z
+      .string()
+      .trim()
+      .max(
+        VALIDATION_LIMITS.DESCRIPTION_MAX_LENGTH,
+        `La biografía supera el límite de caracteres`
+      )
+      .optional()
+      .or(z.literal("")),
+    telefono: z.string().trim().max(30, "El teléfono supera el límite de caracteres").optional().or(z.literal("")),
+    fotoPerfilUrl: z.string().url("URL de foto de perfil inválida").optional().or(z.literal("")),
+  })
+  .strict();
+
 
 export type RegistroInput = z.infer<typeof registroSchema>;
 export type RegistroInputConConfirm = z.infer<typeof registroSchemaConConfirm>;
