@@ -139,19 +139,18 @@ Authorization: Bearer {{musicoAccessToken}}
 # @name buscarProyectos
 # Qué prueba: Búsqueda con filtros de género y ciudad.
 # Status esperado: 200 OK.
-# Por qué: Usuario autenticado consulta proyectos activos.
+# Por qué: La búsqueda es pública y devuelve solamente proyectos activos.
 GET {{base}}/api/proyectos/buscar?genero=Punk&ciudad=Buenos+Aires
-Authorization: Bearer {{organizadorAccessToken}}
 
 @proyectoId = {{crearProyecto.response.body.id}}
 
-### 2.6. Obtener detalle de proyecto — Caso feliz (200)
+### 2.6. Obtener detalle privado propio — Caso feliz (200)
 # @name getProyectoDetalle
-# Qué prueba: Obtener detalle del proyecto recién creado.
+# Qué prueba: El músico obtiene el detalle privado de su proyecto.
 # Status esperado: 200 OK.
-# Por qué: El proyecto existe en la base de datos.
+# Por qué: El proyecto pertenece al usuario autenticado.
 GET {{base}}/api/proyectos/{{proyectoId}}
-Authorization: Bearer {{organizadorAccessToken}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 2.7. Obtener detalle de proyecto — Error 404 por ID inexistente
 # @name getProyectoInexistente
@@ -159,13 +158,13 @@ Authorization: Bearer {{organizadorAccessToken}}
 # Status esperado: 404 Not Found.
 # Por qué: No existe un proyecto con ese identificador.
 GET {{base}}/api/proyectos/00000000-0000-0000-0000-000000000000
-Authorization: Bearer {{organizadorAccessToken}}
+Authorization: Bearer {{musicoAccessToken}}
 
-### 2.8. Modificar proyecto ajeno — Error 403
+### 2.8. Modificar proyecto ajeno — Error 404
 # @name patchProyectoAjeno
 # Qué prueba: Un músico intenta modificar el proyecto de otro músico.
-# Status esperado: 403 Forbidden.
-# Por qué: Solamente el propietario tiene permisos de modificación.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela si el proyecto existe cuando pertenece a otra persona.
 PATCH {{base}}/api/proyectos/{{proyectoId}}
 Content-Type: {{contentType}}
 Authorization: Bearer {{otroMusicoAccessToken}}
@@ -173,6 +172,13 @@ Authorization: Bearer {{otroMusicoAccessToken}}
 {
   "nombre": "Hackeando Proyecto Ajeno"
 }
+
+### 2.8.b. Listar proyectos con rol ORGANIZADOR — Error 403
+# @name listarProyectosRolInvalido
+# Qué prueba: Un organizador intenta acceder a una operación exclusiva de músicos.
+# Status esperado: 403 Forbidden.
+GET {{base}}/api/proyectos
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 2.9. Modificar proyecto propio — Caso feliz (200)
 # @name patchProyectoPropio
@@ -188,7 +194,13 @@ Authorization: Bearer {{musicoAccessToken}}
   "descripcion": "Descripción actualizada para la gira 2026."
 }
 
-### 2.10. Desactivar proyecto propio — Caso feliz (200)
+### 2.10. Detalle público de proyecto activo — Caso feliz (200)
+# @name getProyectoPublicoActivo
+# Qué prueba: El perfil público no requiere token.
+# Status esperado: 200 OK.
+GET {{base}}/api/publico/proyectos/{{proyectoId}}
+
+### 2.11. Desactivar proyecto propio — Caso feliz (200)
 # @name deleteProyectoBajaLogica
 # Qué prueba: Desactivación lógica de un proyecto propio.
 # Status esperado: 200 OK.
@@ -196,14 +208,26 @@ Authorization: Bearer {{musicoAccessToken}}
 DELETE {{base}}/api/proyectos/{{proyectoId}}
 Authorization: Bearer {{musicoAccessToken}}
 
-### 2.11. Reactivar proyecto para continuar el flujo
-PATCH {{base}}/api/proyectos/{{proyectoId}}
+### 2.12. Detalle público de proyecto inactivo — Error 404
+# @name getProyectoPublicoInactivo
+# Qué prueba: Un proyecto inactivo no es visible públicamente.
+# Status esperado: 404 Not Found.
+GET {{base}}/api/publico/proyectos/{{proyectoId}}
+
+### 2.13. Crear otro proyecto activo para continuar el flujo manual
+# @name recrearProyectoActivo
+POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
 Authorization: Bearer {{musicoAccessToken}}
 
 {
-  "nombre": "Los Pogo Brothers"
+  "nombre": "Los Pogo Brothers II",
+  "genero": "Punk Rock",
+  "descripcion": "Proyecto activo utilizado por las pruebas posteriores.",
+  "ciudad": "Buenos Aires"
 }
+
+@proyectoId = {{recrearProyectoActivo.response.body.id}}
 
 
 ### ==============================================================================

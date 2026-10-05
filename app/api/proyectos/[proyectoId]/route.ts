@@ -1,11 +1,14 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
-  getAuthenticatedUser,
+  apiErrorResponse,
+  requireAuthenticatedUser,
   uuidSchema,
   zodErrorResponse,
-  errorResponse,
 } from "@/lib/api-helpers";
+import { ownedProjectWhere, requireRole } from "@/lib/authorization";
+import { NotFoundError, ValidationError } from "@/lib/errors";
+import { projectUpdateData } from "@/lib/project-access";
 import { proyectoMusicalSchema } from "@/lib/validations/projects";
 
 interface RouteParams {
@@ -14,14 +17,17 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const user = await requireAuthenticatedUser(request);
+    requireRole(user, "MUSICO");
+
     const { proyectoId } = await params;
     const parsedId = uuidSchema.safeParse(proyectoId);
     if (!parsedId.success) {
       return zodErrorResponse(parsedId.error);
     }
 
-    const project = await prisma.proyectoMusical.findUnique({
-      where: { id: parsedId.data },
+    const project = await prisma.proyectoMusical.findFirst({
+      where: ownedProjectWhere(parsedId.data, user.id),
       include: {
         usuario: {
           select: {
@@ -48,27 +54,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    if (!project) {
-      return errorResponse("Proyecto musical no encontrado", 404);
-    }
+    if (!project) throw new NotFoundError("Proyecto musical");
 
     return Response.json(project, { status: 200 });
   } catch (error) {
-    console.error("GET /api/proyectos/:proyectoId error:", error);
-    return errorResponse("Error interno del servidor", 500);
+    return apiErrorResponse(error);
   }
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
-      return errorResponse("Autenticación requerida", 401);
-    }
-
-    if (user.rol !== "MUSICO") {
-      return errorResponse("Solo los músicos pueden modificar proyectos", 403);
-    }
+    const user = await requireAuthenticatedUser(request);
+    requireRole(user, "MUSICO");
 
     const { proyectoId } = await params;
     const parsedId = uuidSchema.safeParse(proyectoId);
@@ -76,23 +73,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return zodErrorResponse(parsedId.error);
     }
 
-    const existing = await prisma.proyectoMusical.findUnique({
-      where: { id: parsedId.data },
+    const existing = await prisma.proyectoMusical.findFirst({
+      where: ownedProjectWhere(parsedId.data, user.id),
     });
 
-    if (!existing) {
-      return errorResponse("Proyecto musical no encontrado", 404);
-    }
-
-    if (existing.usuarioId !== user.id) {
-      return errorResponse("No tienes permisos para modificar este proyecto", 403);
-    }
+    if (!existing) throw new NotFoundError("Proyecto musical");
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
-      return errorResponse("Cuerpo de solicitud inválido", 400);
+      throw new ValidationError("Cuerpo de solicitud inválido");
     }
 
     const parsed = proyectoMusicalSchema.partial().safeParse(body);
@@ -100,45 +91,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return zodErrorResponse(parsed.error);
     }
 
-    const data = parsed.data;
-
     const updated = await prisma.proyectoMusical.update({
-      where: { id: parsedId.data },
-      data: {
-        ...(data.nombre !== undefined && { nombre: data.nombre }),
-        ...(data.genero !== undefined && { genero: data.genero }),
-        ...(data.descripcion !== undefined && { descripcion: data.descripcion || null }),
-        ...(data.cacheAproximado !== undefined && { cacheAproximado: data.cacheAproximado ?? null }),
-        ...(data.ubicacion !== undefined && { ubicacion: data.ubicacion || null }),
-        ...(data.ciudad !== undefined && { ciudad: data.ciudad || null }),
-        ...(data.imagenUrl !== undefined && { imagenUrl: data.imagenUrl || null }),
-        ...(data.spotifyUrl !== undefined && { spotifyUrl: data.spotifyUrl || null }),
-        ...(data.youtubeUrl !== undefined && { youtubeUrl: data.youtubeUrl || null }),
-        ...(data.instagramUrl !== undefined && { instagramUrl: data.instagramUrl || null }),
-        ...(data.sitioWebUrl !== undefined && { sitioWebUrl: data.sitioWebUrl || null }),
-        ...(data.enlacesPersonalizados !== undefined && {
-          enlacesPersonalizados: data.enlacesPersonalizados,
-        }),
-      },
+      where: { id: parsedId.data, usuarioId: user.id },
+      data: projectUpdateData(parsed.data),
     });
 
     return Response.json(updated, { status: 200 });
   } catch (error) {
-    console.error("PATCH /api/proyectos/:proyectoId error:", error);
-    return errorResponse("Error interno del servidor", 500);
+    return apiErrorResponse(error);
   }
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
-      return errorResponse("Autenticación requerida", 401);
-    }
-
-    if (user.rol !== "MUSICO") {
-      return errorResponse("Solo los músicos pueden desactivar proyectos", 403);
-    }
+    const user = await requireAuthenticatedUser(request);
+    requireRole(user, "MUSICO");
 
     const { proyectoId } = await params;
     const parsedId = uuidSchema.safeParse(proyectoId);
@@ -146,28 +113,21 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return zodErrorResponse(parsedId.error);
     }
 
-    const existing = await prisma.proyectoMusical.findUnique({
-      where: { id: parsedId.data },
+    const existing = await prisma.proyectoMusical.findFirst({
+      where: ownedProjectWhere(parsedId.data, user.id),
     });
 
-    if (!existing) {
-      return errorResponse("Proyecto musical no encontrado", 404);
-    }
-
-    if (existing.usuarioId !== user.id) {
-      return errorResponse("No tienes permisos para modificar este proyecto", 403);
-    }
+    if (!existing) throw new NotFoundError("Proyecto musical");
 
     // Baja lógica
     const updated = await prisma.proyectoMusical.update({
-      where: { id: parsedId.data },
+      where: { id: parsedId.data, usuarioId: user.id },
       data: { estaActivo: false },
     });
 
     return Response.json(updated, { status: 200 });
   } catch (error) {
-    console.error("DELETE /api/proyectos/:proyectoId error:", error);
-    return errorResponse("Error interno del servidor", 500);
+    return apiErrorResponse(error);
   }
 }
 

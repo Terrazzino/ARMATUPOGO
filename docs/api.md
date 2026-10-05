@@ -22,6 +22,8 @@
   - `/aceptar`, `/rechazar`, `/cancelar`, `/completar`
 - Los IDs son UUIDs.
 - Todos los endpoints privados requieren sesión válida de Supabase Auth.
+- Los endpoints privados aceptan la cookie de Supabase SSR o `Authorization: Bearer <access_token>`.
+- `x-user-id` no es un mecanismo de autenticación válido en ningún entorno.
 - Toda mutación valida primero con Zod, luego verifica autorización, luego aplica reglas de dominio.
 
 ---
@@ -45,10 +47,14 @@
 |---|---|---|---|---|
 | `GET` | `/api/proyectos` | Lista los proyectos propios del músico | `MUSICO` | 401, 403 |
 | `POST` | `/api/proyectos` | Crea un nuevo proyecto musical | `MUSICO` | 400, 401, 403 |
-| `GET` | `/api/proyectos/buscar` | Busca proyectos activos (para organizadores o público) | Autenticado | 401 |
-| `GET` | `/api/proyectos/:proyectoId` | Obtiene el detalle de un proyecto | Según contexto | 404 |
+| `GET` | `/api/proyectos/buscar` | Busca exclusivamente proyectos activos | Público | — |
+| `GET` | `/api/proyectos/:proyectoId` | Obtiene el detalle privado de un proyecto propio, activo o inactivo | `MUSICO` propietario | 401, 403, 404 |
 | `PATCH` | `/api/proyectos/:proyectoId` | Actualiza un proyecto propio | `MUSICO` | 400, 401, 403, 404 |
 | `DELETE` | `/api/proyectos/:proyectoId` | Desactiva un proyecto propio (baja lógica) | `MUSICO` | 401, 403, 404 |
+
+Para las operaciones privadas, un proyecto ajeno y uno inexistente producen el mismo
+`404`. La consulta incorpora simultáneamente el ID del proyecto y el ID del usuario
+autenticado para no revelar la existencia de recursos de otro músico.
 
 ---
 
@@ -119,6 +125,7 @@
 | `GET` | `/api/publico/eventos` | Cartelera pública: eventos con `estado = PUBLICADO` y `ends_at > ahora`. Incluye eventos en curso. |
 | `GET` | `/api/publico/eventos/:eventoId` | Detalle público de un evento con proyectos confirmados |
 | `GET` | `/api/publico/proyectos/:proyectoId` | Perfil público de un proyecto musical activo |
+| `GET` | `/api/proyectos/buscar` | Búsqueda pública de proyectos musicales activos |
 
 Estos endpoints **nunca** devuelven: ofertas, negociaciones, postulaciones, datos privados, tokens ni credenciales.
 
@@ -214,9 +221,12 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | `POST /api/proyectos` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
 | `POST /api/proyectos` | Rol `ORGANIZADOR` | `403` | "Solo los músicos pueden registrar proyectos" | autorización/autenticación |
 | `POST /api/proyectos` | Campos inválidos (nombre, género) | `400` | "Datos inválidos" + detalles | Zod |
-| `PATCH /api/proyectos/:id` | Proyecto no pertenece al usuario | `403` | "No tienes permisos para modificar este proyecto" | autorización/autenticación |
+| `GET /api/proyectos/:id` | Rol `ORGANIZADOR` | `403` | "No tienes permisos para esta acción" | autorización |
+| `GET /api/proyectos/:id` | Proyecto ajeno o inexistente | `404` | "Proyecto musical no encontrado" | consulta con ownership |
+| `PATCH /api/proyectos/:id` | Proyecto ajeno o inexistente | `404` | "Proyecto musical no encontrado" | consulta con ownership |
 | `DELETE /api/proyectos/:id` | Proyecto no existe | `404` | "Proyecto musical no encontrado" | consulta |
-| `DELETE /api/proyectos/:id` | Proyecto de otro usuario | `403` | "No tienes permisos para modificar este proyecto" | autorización/autenticación |
+| `DELETE /api/proyectos/:id` | Proyecto de otro usuario | `404` | "Proyecto musical no encontrado" | consulta con ownership |
+| `GET /api/publico/proyectos/:id` | Proyecto inactivo o inexistente | `404` | "Proyecto musical no encontrado" | consulta pública |
 
 ---
 

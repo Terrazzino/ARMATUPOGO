@@ -602,7 +602,7 @@ Durante el MVP:
 | Campos obligatorios faltantes o inválidos (nombre, género) | `400` |
 | Caché aproximado negativo o superior al límite | `400` |
 | URLs de enlaces con formato inválido | `400` |
-| Intentar modificar o eliminar un proyecto que no pertenece al usuario | `403` |
+| Intentar consultar, modificar o eliminar un proyecto que no pertenece al músico autenticado | `404` |
 | El proyecto solicitado no existe | `404` |
 
 ---
@@ -1927,12 +1927,17 @@ No existen endpoints propios de registro y login porque esas operaciones utiliza
 |---|---|---|---|
 | `GET` | `/api/proyectos` | Obtener proyectos propios | Sí |
 | `POST` | `/api/proyectos` | Crear proyecto | Sí |
-| `GET` | `/api/proyectos/buscar` | Buscar proyectos activos | Sí |
-| `GET` | `/api/proyectos/:proyectoId` | Obtener detalle | Según contexto |
+| `GET` | `/api/proyectos/buscar` | Buscar proyectos activos | No |
+| `GET` | `/api/proyectos/:proyectoId` | Obtener detalle privado de un proyecto propio, activo o inactivo | Sí, `MUSICO` propietario |
 | `PATCH` | `/api/proyectos/:proyectoId` | Actualizar proyecto propio | Sí |
 | `DELETE` | `/api/proyectos/:proyectoId` | Desactivar proyecto propio | Sí |
 
 `DELETE` representa una baja lógica.
+
+La búsqueda pública solamente devuelve proyectos con `estaActivo = true`. El detalle
+público se consulta mediante `/api/publico/proyectos/:proyectoId` y también exige
+`estaActivo = true`. Para no revelar la existencia de recursos ajenos, un proyecto que
+no pertenece al músico autenticado responde `404`, igual que un proyecto inexistente.
 
 ---
 
