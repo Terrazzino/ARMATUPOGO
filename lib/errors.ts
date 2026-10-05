@@ -73,9 +73,24 @@ export class ConflictError extends AppError {
  * Error interno del servidor
  */
 export class InternalServerError extends AppError {
-  constructor(message: string = "Error interno del servidor") {
-    super("INTERNAL_SERVER_ERROR", message, 500);
+  constructor() {
+    super("INTERNAL_SERVER_ERROR", "Error interno del servidor", 500);
     this.name = "InternalServerError";
+  }
+}
+
+/**
+ * La identidad fue validada por Supabase, pero no tiene un perfil local asociado.
+ * Es una inconsistencia interna, no una ausencia de autenticación.
+ */
+export class UserProfileNotFoundError extends AppError {
+  constructor() {
+    super(
+      "USER_PROFILE_NOT_FOUND",
+      "No se pudo cargar el perfil del usuario autenticado",
+      500
+    );
+    this.name = "UserProfileNotFoundError";
   }
 }
 
@@ -91,7 +106,7 @@ export function isAppError(error: unknown): error is AppError {
  */
 export function normalizeError(error: unknown): AppError {
   if (isAppError(error)) {
-    return error;
+    return error.statusCode >= 500 ? new InternalServerError() : error;
   }
 
   // Si es un error de redirección de Next.js (lanzado por redirect()), se relanza para que Next.js realice la navegación
@@ -105,22 +120,11 @@ export function normalizeError(error: unknown): AppError {
     throw error;
   }
 
-  if (error instanceof Error) {
-    if (error.message === "NEXT_REDIRECT") {
-      throw error;
-    }
-
-    if (
-      error.message.includes("fetch failed") ||
-      (error as { cause?: { code?: string } }).cause?.code === "ENOTFOUND"
-    ) {
-      return new InternalServerError(
-        "No se pudo conectar con el servidor de autenticación (Supabase). Verifica que NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY estén configuradas con tu proyecto real en el archivo .env.local y que el proyecto de Supabase esté activo."
-      );
-    }
-
-    return new InternalServerError(error.message);
+  if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+    throw error;
   }
 
-  return new InternalServerError("Error desconocido");
+  // Los errores inesperados pueden contener datos de infraestructura, consultas o
+  // credenciales. El detalle se conserva solamente en los logs del servidor.
+  return new InternalServerError();
 }

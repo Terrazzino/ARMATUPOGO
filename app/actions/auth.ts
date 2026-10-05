@@ -18,6 +18,7 @@ import {
   type LoginInput,
 } from "@/lib/validations/auth";
 import { normalizeError, ValidationError } from "@/lib/errors";
+import { getAuthenticatedUser } from "@/lib/api-helpers";
 
 /**
  * Registra un nuevo usuario en Supabase Auth y crea su perfil en PostgreSQL vía Prisma (modelo Usuario)
@@ -193,27 +194,5 @@ export async function logoutUser() {
  * Obtiene el usuario autenticado desde Prisma (modelo Usuario)
  */
 export async function getCurrentUser() {
-  try {
-    const supabase = await createClient();
-    if (!supabase) {
-      return null;
-    }
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      return null;
-    }
-
-    const usuario = await prisma.usuario.findUnique({
-      where: { id: user.id },
-    });
-
-    return usuario;
-  } catch {
-    return null;
-  }
+  return getAuthenticatedUser();
 }

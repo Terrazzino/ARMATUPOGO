@@ -9,15 +9,20 @@
 @contentType = application/json
 
 ### ------------------------------------------------------------------------------
-### VARIABLES DE CONTEXTO Y USUARIOS DE PRUEBA
+### VARIABLES DE CONTEXTO, USUARIOS Y TOKENS DE PRUEBA
 ### ------------------------------------------------------------------------------
-### En desarrollo local se utiliza el header x-user-id para autenticar las requests.
-### Para producción con Supabase Auth real, sustituir por Authorization: Bearer <token>.
+### Obtener access tokens iniciando sesión con cada cuenta en Supabase Auth.
+### x-user-id no es un mecanismo admitido en ningún entorno.
 
 @musicoUserId = 11111111-1111-1111-1111-111111111111
 @organizadorUserId = 22222222-2222-2222-2222-222222222222
 @otroMusicoUserId = 33333333-3333-3333-3333-333333333333
 @otroOrganizadorUserId = 44444444-4444-4444-4444-444444444444
+
+@musicoAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
+@organizadorAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
+@otroMusicoAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
+@otroOrganizadorAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
 
 ### ==============================================================================
 ### 1. SECCIÓN: USUARIOS (/api/usuarios/me)
@@ -29,7 +34,7 @@
 # Status esperado: 200 OK.
 # Por qué: La sesión es válida y existe el usuario en la BD.
 GET {{base}}/api/usuarios/me
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 1.2. Obtener perfil propio — Sin sesión (401)
 # @name getPerfilMeSinAuth
@@ -45,7 +50,7 @@ GET {{base}}/api/usuarios/me
 # Por qué: Datos válidos y usuario autenticado.
 PATCH {{base}}/api/usuarios/me
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "Carlos",
@@ -61,7 +66,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: La spec exige rechazar con 400 si se intenta mutar rol, email, id o password.
 PATCH {{base}}/api/usuarios/me
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "Carlos",
@@ -81,7 +86,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Rol Músico, campos válidos, proyecto queda activo.
 POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "Los Pogo Brothers",
@@ -101,7 +106,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Solo los músicos pueden registrar proyectos musicales.
 POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "nombre": "Organizador Intentando Ser Banda",
@@ -115,7 +120,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: Zod valida la longitud mínima del nombre artístico.
 POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "A",
@@ -128,7 +133,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Rol Músico autenticado.
 GET {{base}}/api/proyectos
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 2.5. Buscar proyectos activos — Caso feliz (200)
 # @name buscarProyectos
@@ -136,7 +141,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Usuario autenticado consulta proyectos activos.
 GET {{base}}/api/proyectos/buscar?genero=Punk&ciudad=Buenos+Aires
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 @proyectoId = {{crearProyecto.response.body.id}}
 
@@ -146,7 +151,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 200 OK.
 # Por qué: El proyecto existe en la base de datos.
 GET {{base}}/api/proyectos/{{proyectoId}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 2.7. Obtener detalle de proyecto — Error 404 por ID inexistente
 # @name getProyectoInexistente
@@ -154,7 +159,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 404 Not Found.
 # Por qué: No existe un proyecto con ese identificador.
 GET {{base}}/api/proyectos/00000000-0000-0000-0000-000000000000
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 2.8. Modificar proyecto ajeno — Error 403
 # @name patchProyectoAjeno
@@ -163,7 +168,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: Solamente el propietario tiene permisos de modificación.
 PATCH {{base}}/api/proyectos/{{proyectoId}}
 Content-Type: {{contentType}}
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 {
   "nombre": "Hackeando Proyecto Ajeno"
@@ -176,7 +181,7 @@ x-user-id: {{otroMusicoUserId}}
 # Por qué: El músico es el propietario del proyecto.
 PATCH {{base}}/api/proyectos/{{proyectoId}}
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "cacheAproximado": 200000,
@@ -189,12 +194,12 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: El propietario desactiva su proyecto (baja lógica estaActivo = false).
 DELETE {{base}}/api/proyectos/{{proyectoId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 2.11. Reactivar proyecto para continuar el flujo
 PATCH {{base}}/api/proyectos/{{proyectoId}}
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "Los Pogo Brothers"
@@ -212,7 +217,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Rol Organizador, fechas válidas (ends_at > starts_at) y cupo >= 1.
 POST {{base}}/api/eventos
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "titulo": "Noche de Pogo Fest 2026",
@@ -233,7 +238,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: La fecha de finalización debe ser posterior a la de inicio.
 POST {{base}}/api/eventos
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "titulo": "Evento Imposible en el Tiempo",
@@ -250,7 +255,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: Solo organizadores pueden publicar eventos.
 POST {{base}}/api/eventos
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "titulo": "Intento de Evento por Músico",
@@ -268,7 +273,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: El evento existe y el usuario está autenticado.
 GET {{base}}/api/eventos/{{eventoId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 3.5. Modificar evento ajeno — Error 403
 # @name patchEventoAjeno
@@ -277,7 +282,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Solamente el organizador propietario tiene permisos de modificación.
 PATCH {{base}}/api/eventos/{{eventoId}}
 Content-Type: {{contentType}}
-x-user-id: {{otroOrganizadorUserId}}
+Authorization: Bearer {{otroOrganizadorAccessToken}}
 
 {
   "titulo": "Intento de modificar evento ajeno"
@@ -295,7 +300,7 @@ x-user-id: {{otroOrganizadorUserId}}
 # Por qué: Rol Músico, proyecto propio activo, evento futuro no iniciado.
 POST {{base}}/api/eventos/{{eventoId}}/postulaciones
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "proyectoMusicalId": "{{proyectoId}}",
@@ -310,7 +315,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Restricción UNIQUE(eventoId, proyectoMusicalId).
 POST {{base}}/api/eventos/{{eventoId}}/postulaciones
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "proyectoMusicalId": "{{proyectoId}}"
@@ -323,7 +328,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: El proyecto musical no le pertenece al usuario.
 POST {{base}}/api/eventos/{{eventoId}}/postulaciones
 Content-Type: {{contentType}}
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 {
   "proyectoMusicalId": "{{proyectoId}}"
@@ -335,7 +340,7 @@ x-user-id: {{otroMusicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Es el propietario del evento.
 GET {{base}}/api/eventos/{{eventoId}}/postulaciones
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 @postulacionId = {{postularProyecto.response.body.id}}
 
@@ -345,7 +350,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 200 OK.
 # Por qué: El usuario es el músico postulante.
 GET {{base}}/api/postulaciones/{{postulacionId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 4.6. Cancelar postulación ajena por otro usuario — Error 403
 # @name cancelarPostulacionAjena
@@ -353,7 +358,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 403 Forbidden.
 # Por qué: Solo el músico propietario puede cancelar su postulación.
 POST {{base}}/api/postulaciones/{{postulacionId}}/cancelacion
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 
 ### ==============================================================================
@@ -366,7 +371,7 @@ x-user-id: {{otroMusicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Postulación PENDIENTE pasa a ACEPTADA, se valida disponibilidad y se crea contratación NEGOCIANDO.
 POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 @contratacionId = {{aceptarPostulacion.response.body.contratacion.id}}
 
@@ -376,7 +381,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: La postulación ya se encuentra ACEPTADA.
 POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 5.3. Rechazar postulación que no está PENDIENTE — Error 409
 # @name rechazarPostulacionNoPendiente
@@ -384,7 +389,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: La postulación ya no puede rechazarse.
 POST {{base}}/api/postulaciones/{{postulacionId}}/rechazar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 5.4. Consultar detalle de contratación — Caso feliz (200)
 # @name getContratacionDetalle
@@ -392,7 +397,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 200 OK.
 # Por qué: El usuario es participante de la contratación.
 GET {{base}}/api/contrataciones/{{contratacionId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 5.5. Consultar contratación ajena — Error 403
 # @name getContratacionAjena
@@ -400,7 +405,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 403 Forbidden.
 # Por qué: No es participante de la negociación.
 GET {{base}}/api/contrataciones/{{contratacionId}}
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 
 ### ==============================================================================
@@ -414,7 +419,7 @@ x-user-id: {{otroMusicoUserId}}
 # Por qué: Contratación NEGOCIANDO, participante válido, monto válido.
 POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "monto": 150000,
@@ -429,7 +434,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: El emisor no puede aceptar su propia propuesta; solo la contraparte puede hacerlo.
 POST {{base}}/api/ofertas/{{oferta1Id}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 6.3. Rechazar propia oferta — Error 409
 # @name rechazarPropiaOfertaError
@@ -437,7 +442,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: El emisor no puede rechazar su propia propuesta.
 POST {{base}}/api/ofertas/{{oferta1Id}}/rechazar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 6.4. Contraofertar — Caso feliz (201)
 # @name contraofertarMusico
@@ -446,7 +451,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: La oferta anterior pasa a CONTRAOFERTADA y la nueva queda en PROPUESTA.
 POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "monto": 175000,
@@ -461,7 +466,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Se validan cupos y disponibilidad, oferta pasa a ACEPTADA, contrato a ACORDADO con agreed_amount = $175.000.
 POST {{base}}/api/ofertas/{{oferta2Id}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 6.6. Enviar oferta en contratación ACORDADA — Error 409
 # @name crearOfertaEnContratoAcordado
@@ -470,7 +475,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: Una contratación en estado ACORDADO no admite nuevas ofertas.
 POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "monto": 190000
@@ -488,7 +493,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Solo las contrataciones en estado COMPLETADO pueden recibir valoraciones.
 POST {{base}}/api/contrataciones/{{contratacionId}}/valoraciones
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "puntaje": 5,
@@ -501,7 +506,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: El evento todavía no finalizó (ends_at > ahora).
 POST {{base}}/api/contrataciones/{{contratacionId}}/completar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 7.3. Consultar reputación de usuario — Caso feliz (200)
 # @name getReputacionUsuario
