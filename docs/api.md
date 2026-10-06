@@ -410,5 +410,6 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | Operación | Situación | Status | Qué ve el usuario | Quién lo agarra |
 |---|---|---|---|---|
 | Cualquier endpoint | Error interno inesperado | `500` | "Error interno del servidor" | catch del handler |
+| Cualquier endpoint dependiente de auth | Servicio de autenticación caído o timeout agotado | `503` | "Servicio de autenticación no disponible temporalmente" | authService / handler |
 | Cualquier endpoint con ID | UUID con formato inválido | `400` | "Datos inválidos" | Zod |
 

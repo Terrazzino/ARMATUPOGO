@@ -80,6 +80,31 @@ export class InternalServerError extends AppError {
 }
 
 /**
+ * Error cuando un servicio externo esencial no está disponible o falla por timeout/red.
+ * Representa indisponibilidad temporal (HTTP 503).
+ */
+export class ServiceUnavailableError extends AppError {
+  constructor(
+    message: string = "Servicio de autenticación no disponible temporalmente"
+  ) {
+    super("SERVICE_UNAVAILABLE", message, 503);
+    this.name = "ServiceUnavailableError";
+  }
+}
+
+/**
+ * Error cuando la configuración requerida para un servicio externo está ausente o incompleta.
+ */
+export class ConfigurationError extends AppError {
+  constructor(
+    message: string = "Error de configuración del servicio de autenticación"
+  ) {
+    super("CONFIGURATION_ERROR", message, 500);
+    this.name = "ConfigurationError";
+  }
+}
+
+/**
  * La identidad fue validada por Supabase, pero no tiene un perfil local asociado.
  * Es una inconsistencia interna, no una ausencia de autenticación.
  */
@@ -106,6 +131,9 @@ export function isAppError(error: unknown): error is AppError {
  */
 export function normalizeError(error: unknown): AppError {
   if (isAppError(error)) {
+    if (error.statusCode === 503) {
+      return error;
+    }
     return error.statusCode >= 500 ? new InternalServerError() : error;
   }
 

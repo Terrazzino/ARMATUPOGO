@@ -31,8 +31,22 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  );
+
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Si no hay credenciales, permitir acceso (no está configurado aún)
+    // Si no hay credenciales, las rutas públicas continúan, pero las rutas protegidas NUNCA quedan expuestas
+    if (isProtectedRoute) {
+      console.error(
+        "[Middleware] Intento de acceso a ruta protegida sin credenciales de Supabase:",
+        pathname
+      );
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.set("error", "config_missing");
+      return NextResponse.redirect(url);
+    }
     return response;
   }
 
@@ -47,15 +61,42 @@ export async function middleware(request: NextRequest) {
         });
       },
     },
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+        const timeoutSignal = AbortSignal.timeout(5000);
+        const signal = init?.signal
+          ? AbortSignal.any([init.signal, timeoutSignal])
+          : timeoutSignal;
+        return fetch(input, {
+          ...init,
+          signal,
+        });
+      },
+    },
   });
 
-  // Obtener sesión del usuario
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Obtener sesión del usuario de forma resiliente
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data?.user) {
+      user = data.user;
+    }
+  } catch (error) {
+    console.error("[Middleware] Fallo al consultar Supabase Auth:", {
+      pathname,
+      errorName: error instanceof Error ? error.name : typeof error,
+    });
+    if (isProtectedRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.set("error", "auth_unavailable");
+      return NextResponse.redirect(url);
+    }
+  }
 
   // Proteger rutas que requieren autenticación
-  if (PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (isProtectedRoute) {
     if (!user) {
       // Redirigir a login si no está autenticado
       const url = request.nextUrl.clone();
