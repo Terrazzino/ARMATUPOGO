@@ -375,6 +375,16 @@ Authorization: Bearer {{musicoAccessToken}}
   "mensaje": "Nos encantaría participar de la fecha!"
 }
 
+### 4.1.b. Postularse sin sesión — Error 401
+# @name postularProyectoSinSesion
+# Status esperado: 401 Unauthorized.
+POST {{base}}/api/eventos/{{eventoId}}/postulaciones
+Content-Type: {{contentType}}
+
+{
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
 ### 4.2. Postular proyecto musical — Error 409 por postulación duplicada
 # @name postularProyectoDuplicado
 # Qué prueba: Re-enviar postulación para el mismo proyecto y evento.
@@ -388,11 +398,11 @@ Authorization: Bearer {{musicoAccessToken}}
   "proyectoMusicalId": "{{proyectoId}}"
 }
 
-### 4.3. Postular proyecto ajeno — Error 403
+### 4.3. Postular proyecto ajeno — Error 404
 # @name postularProyectoAjeno
 # Qué prueba: Un músico intenta postular un proyecto que no le pertenece.
-# Status esperado: 403 Forbidden.
-# Por qué: El proyecto musical no le pertenece al usuario.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela la existencia de proyectos pertenecientes a otro músico.
 POST {{base}}/api/eventos/{{eventoId}}/postulaciones
 Content-Type: {{contentType}}
 Authorization: Bearer {{otroMusicoAccessToken}}
@@ -409,6 +419,12 @@ Authorization: Bearer {{otroMusicoAccessToken}}
 GET {{base}}/api/eventos/{{eventoId}}/postulaciones
 Authorization: Bearer {{organizadorAccessToken}}
 
+### 4.4.b. Listar postulaciones de evento ajeno — Error 404
+# @name listarPostulacionesEventoAjeno
+# Status esperado: 404 Not Found.
+GET {{base}}/api/eventos/{{eventoId}}/postulaciones
+Authorization: Bearer {{otroOrganizadorAccessToken}}
+
 @postulacionId = {{postularProyecto.response.body.id}}
 
 ### 4.5. Consultar detalle de postulación — Caso feliz (200)
@@ -419,13 +435,25 @@ Authorization: Bearer {{organizadorAccessToken}}
 GET {{base}}/api/postulaciones/{{postulacionId}}
 Authorization: Bearer {{musicoAccessToken}}
 
-### 4.6. Cancelar postulación ajena por otro usuario — Error 403
+### 4.5.b. Consultar detalle de postulación ajena — Error 404
+# @name getDetallePostulacionAjena
+# Status esperado: 404 Not Found.
+GET {{base}}/api/postulaciones/{{postulacionId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 4.6. Cancelar postulación ajena por otro músico — Error 404
 # @name cancelarPostulacionAjena
 # Qué prueba: Un usuario ajeno intenta cancelar la postulación.
-# Status esperado: 403 Forbidden.
-# Por qué: Solo el músico propietario puede cancelar su postulación.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela la existencia de postulaciones pertenecientes a otro músico.
 POST {{base}}/api/postulaciones/{{postulacionId}}/cancelacion
 Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 4.7. Cancelar postulación con rol ORGANIZADOR — Error 403
+# @name cancelarPostulacionRolOrganizador
+# Status esperado: 403 Forbidden.
+POST {{base}}/api/postulaciones/{{postulacionId}}/cancelacion
+Authorization: Bearer {{organizadorAccessToken}}
 
 
 ### ==============================================================================
@@ -439,6 +467,18 @@ Authorization: Bearer {{otroMusicoAccessToken}}
 # Por qué: Postulación PENDIENTE pasa a ACEPTADA, se valida disponibilidad y se crea contratación NEGOCIANDO.
 POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
 Authorization: Bearer {{organizadorAccessToken}}
+
+### 5.1.b. Aceptar postulación con rol MÚSICO — Error 403
+# @name aceptarPostulacionRolMusico
+# Status esperado: 403 Forbidden.
+POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
+Authorization: Bearer {{musicoAccessToken}}
+
+### 5.1.c. Aceptar postulación de evento ajeno — Error 404
+# @name aceptarPostulacionEventoAjeno
+# Status esperado: 404 Not Found.
+POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
+Authorization: Bearer {{otroOrganizadorAccessToken}}
 
 @contratacionId = {{aceptarPostulacion.response.body.contratacion.id}}
 

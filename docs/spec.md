@@ -685,7 +685,7 @@ Respuesta exitosa: `200 OK` con la postulación resultante en estado `CANCELADA`
 |---|---|
 | Sin sesión activa | `401` |
 | El usuario autenticado tiene rol `ORGANIZADOR` al postular | `403` |
-| El proyecto musical no existe o no pertenece al usuario | `403` |
+| El proyecto musical no existe o no pertenece al usuario | `404` |
 | El proyecto musical está inactivo | `409` |
 | El evento no existe | `404` |
 | El evento no está `PUBLICADO` | `409` |
@@ -693,7 +693,7 @@ Respuesta exitosa: `200 OK` con la postulación resultante en estado `CANCELADA`
 | El mismo proyecto ya tiene una postulación para ese evento | `409` |
 | ID de evento o proyecto con formato inválido (no UUID) | `400` |
 | Sin sesión activa al cancelar | `401` |
-| La postulación no existe o no pertenece al usuario | `403` |
+| La postulación no existe o no pertenece al usuario | `404` |
 | La postulación no está en estado `PENDIENTE` | `409` |
 
 ---
@@ -741,7 +741,7 @@ Además:
 | Sin sesión activa | `401` |
 | El usuario autenticado tiene rol `MUSICO` | `403` |
 | La postulación no existe | `404` |
-| La postulación pertenece al evento de otro organizador | `403` |
+| La postulación pertenece al evento de otro organizador | `404` |
 | La postulación no está en estado `PENDIENTE` | `409` |
 | El evento ya no está `PUBLICADO` | `409` |
 | El músico ya tiene una contratación activa (`NEGOCIANDO` o `ACORDADO`) que se superpone horariamente | `409` |
@@ -1980,6 +1980,19 @@ acepta modificaciones directas de `estado`.
 | `POST` | `/api/postulaciones/:postulacionId/aceptar` | Aceptar e iniciar contratación | Sí |
 | `POST` | `/api/postulaciones/:postulacionId/rechazar` | Rechazar | Sí |
 | `POST` | `/api/postulaciones/:postulacionId/cancelacion` | Cancelar postulación propia (músico) | Sí |
+
+### Autorización y ownership de postulaciones
+
+Un músico solamente puede postular proyectos propios y cancelar postulaciones cuyo
+`musicoId` coincida con su usuario autenticado. Un organizador solamente puede listar,
+aceptar o rechazar postulaciones vinculadas a eventos cuyo `organizadorId` coincida con
+su usuario autenticado. El detalle es accesible únicamente para el músico postulante o
+el organizador propietario del evento.
+
+El rol incorrecto responde `403`. Un proyecto, evento o postulación ajenos responden
+`404`, igual que un recurso inexistente, para no revelar su existencia. La aceptación
+crea la contratación `NEGOCIANDO` dentro de la misma transacción y deriva todas las
+identidades de la sesión y de las relaciones persistidas.
 
 ---
 

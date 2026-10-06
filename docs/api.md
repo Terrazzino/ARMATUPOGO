@@ -81,10 +81,17 @@ flujo para pasar a `CANCELADO` es `/api/eventos/:eventoId/cancelar`.
 | `GET` | `/api/eventos/:eventoId/postulaciones` | Lista las postulaciones recibidas en un evento propio | `ORGANIZADOR` | 401, 403, 404 |
 | `POST` | `/api/eventos/:eventoId/postulaciones` | Postula un proyecto propio y activo al evento | `MUSICO` | 400, 401, 403, 404, 409 |
 | `GET` | `/api/postulaciones` | Lista las postulaciones del usuario autenticado | Cualquiera | 401 |
-| `GET` | `/api/postulaciones/:postulacionId` | Obtiene el detalle de una postulación | Autenticado | 401, 403, 404 |
+| `GET` | `/api/postulaciones/:postulacionId` | Obtiene el detalle de una postulación relacionada con el usuario | Participante | 401, 404 |
 | `POST` | `/api/postulaciones/:postulacionId/aceptar` | Acepta una postulación e inicia una contratación `NEGOCIANDO` | `ORGANIZADOR` | 401, 403, 404, 409 |
 | `POST` | `/api/postulaciones/:postulacionId/rechazar` | Rechaza una postulación pendiente | `ORGANIZADOR` | 401, 403, 404, 409 |
 | `POST` | `/api/postulaciones/:postulacionId/cancelacion` | Cancela una postulación propia en estado `PENDIENTE`. Responde `200 OK` con la postulación resultante (`CANCELADA`). | `MUSICO` | 401, 403, 404, 409 |
+
+El músico solamente puede postular proyectos propios y cancelar postulaciones propias.
+El organizador solamente puede consultar, aceptar y rechazar postulaciones recibidas en
+eventos propios. Todas estas relaciones se incorporan al filtro de Prisma; un proyecto,
+evento o postulación ajenos responden `404`, igual que un recurso inexistente. `403` se
+reserva para un rol incorrecto. Al aceptar, la contratación `NEGOCIANDO` se crea en la
+misma transacción y sus identidades se derivan de la sesión y de la postulación.
 
 ---
 
@@ -262,14 +269,14 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 |---|---|---|---|---|
 | `POST /api/eventos/:id/postulaciones` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
 | `POST /api/eventos/:id/postulaciones` | Rol `ORGANIZADOR` | `403` | "Solo los músicos pueden postular proyectos" | autorización/autenticación |
-| `POST /api/eventos/:id/postulaciones` | Proyecto no existe o no pertenece al usuario | `403` | "El proyecto musical no te pertenece" | autorización/autenticación |
+| `POST /api/eventos/:id/postulaciones` | Proyecto no existe o no pertenece al usuario | `404` | "Proyecto musical no encontrado" | consulta con ownership |
 | `POST /api/eventos/:id/postulaciones` | Proyecto inactivo | `409` | "El proyecto musical no está activo" | regla de dominio |
 | `POST /api/eventos/:id/postulaciones` | Evento no existe | `404` | "Evento no encontrado" | consulta |
 | `POST /api/eventos/:id/postulaciones` | Evento no está `PUBLICADO` | `409` | "El evento no está disponible para recibir postulaciones" | regla de dominio |
 | `POST /api/eventos/:id/postulaciones` | Evento ya comenzó | `409` | "El evento ya no acepta postulaciones" | regla de dominio |
 | `POST /api/eventos/:id/postulaciones` | Postulación duplicada (mismo proyecto y evento) | `409` | "Ya existe una postulación para este proyecto en este evento" | regla de dominio |
 | `POST /api/postulaciones/:id/cancelacion` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
-| `POST /api/postulaciones/:id/cancelacion` | Postulación no existe o no pertenece al usuario | `403` | "No tienes permiso para cancelar esta postulación" | autorización/autenticación |
+| `POST /api/postulaciones/:id/cancelacion` | Postulación no existe o no pertenece al usuario | `404` | "Postulación no encontrada" | consulta con ownership |
 | `POST /api/postulaciones/:id/cancelacion` | Postulación no está en estado `PENDIENTE` | `409` | "La postulación ya no puede cancelarse" | regla de dominio |
 
 ---
@@ -281,7 +288,7 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | `POST /api/postulaciones/:id/aceptar` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
 | `POST /api/postulaciones/:id/aceptar` | Rol `MUSICO` | `403` | "Solo los organizadores pueden aceptar postulaciones" | autorización/autenticación |
 | `POST /api/postulaciones/:id/aceptar` | Postulación no existe | `404` | "Postulación no encontrada" | consulta |
-| `POST /api/postulaciones/:id/aceptar` | Postulación de otro organizador | `403` | "No puedes aceptar postulaciones de otro organizador" | autorización/autenticación |
+| `POST /api/postulaciones/:id/aceptar` | Postulación de otro organizador | `404` | "Postulación no encontrada" | consulta con ownership transitivo del evento |
 | `POST /api/postulaciones/:id/aceptar` | Postulación no está `PENDIENTE` | `409` | "La postulación ya no está pendiente" | regla de dominio |
 | `POST /api/postulaciones/:id/aceptar` | Evento no está `PUBLICADO` | `409` | "El evento ya no admite postulaciones" | regla de dominio |
 | `POST /api/postulaciones/:id/aceptar` | Músico con contratación activa superpuesta | `409` | "El músico no está disponible en ese horario" | regla de dominio |

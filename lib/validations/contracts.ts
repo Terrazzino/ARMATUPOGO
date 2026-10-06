@@ -13,6 +13,15 @@ export const crearContratacionSchema = z.object({
 
 export const postulacionIdSchema = z.string().uuid("ID de postulación inválido");
 
+export const crearPostulacionSchema = z
+  .object({
+    eventoId: z.string().uuid("ID de evento inválido"),
+    proyectoMusicalId: z.string().uuid("ID de proyecto musical inválido"),
+    mensaje: z.string().trim().max(1000).optional().or(z.literal("")),
+    initialOfferAmount: z.number().min(0).optional(),
+  })
+  .strict();
+
 export const cancelarContratacionSchema = z.object({
   contratacionId: z.string().uuid("ID de contratación inválido"),
   motivoCancelacion: z
