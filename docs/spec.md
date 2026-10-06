@@ -770,7 +770,7 @@ Además:
 |---|---|
 | Sin sesión activa | `401` |
 | El usuario autenticado tiene rol `MUSICO` | `403` |
-| El evento no existe o no pertenece al organizador | `403` |
+| El evento no existe o no pertenece al organizador | `404` |
 | El proyecto musical no existe | `404` |
 | El proyecto musical está inactivo | `409` |
 | El músico ya tiene una contratación activa (`NEGOCIANDO` o `ACORDADO`) que se superpone horariamente | `409` |
@@ -882,7 +882,7 @@ Al cancelar:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La contratación ya está `CANCELADO` | `409` |
 | La contratación ya está `COMPLETADO` | `409` |
@@ -926,7 +926,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La contratación no está en estado `ACORDADO` | `409` |
 | El evento todavía no finalizó (`evento.ends_at > ahora`) | `409` |
@@ -2015,6 +2015,19 @@ Las contrataciones originadas por postulaciones se crean mediante:
 ```text
 POST /api/postulaciones/:postulacionId/aceptar
 ```
+
+### Autorización y participantes
+
+Las contrataciones solamente son visibles y gestionables por el músico y el organizador
+registrados como participantes. El listado se filtra por `musicoId` para `MUSICO` y por
+`organizadorId` para `ORGANIZADOR`. Una contratación ajena responde `404`, igual que una
+inexistente.
+
+La contratación directa solamente puede iniciarla un `ORGANIZADOR`. El evento debe
+pertenecer al usuario autenticado; un evento ajeno responde `404`. `organizadorId` y
+`creadoPorId` se derivan de la sesión, mientras que `musicoId` se deriva del propietario
+persistido del proyecto. Cancelar y completar requieren participación en la contratación.
+Ningún ID de actor o rol se acepta como identidad confiable desde el cliente.
 
 ---
 

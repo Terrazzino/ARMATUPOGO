@@ -101,9 +101,15 @@ misma transacción y sus identidades se derivan de la sesión y de la postulaci�
 |---|---|---|---|---|
 | `GET` | `/api/contrataciones` | Lista las contrataciones del usuario autenticado | Cualquiera | 401 |
 | `POST` | `/api/contrataciones` | Inicia una contratación directa (selección directa del organizador) | `ORGANIZADOR` | 400, 401, 403, 404, 409 |
-| `GET` | `/api/contrataciones/:contratacionId` | Obtiene el detalle de una contratación con historial de ofertas | Participante | 401, 403, 404 |
-| `POST` | `/api/contrataciones/:contratacionId/cancelar` | Cancela una contratación `NEGOCIANDO` o `ACORDADO` (antes de que empiece el evento) | Participante | 400, 401, 403, 404, 409 |
-| `POST` | `/api/contrataciones/:contratacionId/completar` | Marca la contratación `ACORDADO` como `COMPLETADO` después de `evento.ends_at` | Participante | 401, 403, 404, 409 |
+| `GET` | `/api/contrataciones/:contratacionId` | Obtiene el detalle de una contratación con historial de ofertas | Participante | 401, 404 |
+| `POST` | `/api/contrataciones/:contratacionId/cancelar` | Cancela una contratación `NEGOCIANDO` o `ACORDADO` (antes de que empiece el evento) | Participante | 400, 401, 404, 409 |
+| `POST` | `/api/contrataciones/:contratacionId/completar` | Marca la contratación `ACORDADO` como `COMPLETADO` después de `evento.ends_at` | Participante | 401, 404, 409 |
+
+El listado se limita al campo de participante correspondiente al rol autenticado. El
+detalle, la cancelación y la finalización incorporan la participación directamente en
+la consulta; una contratación ajena responde `404`. En una contratación directa, el
+evento debe pertenecer al organizador autenticado, `musicoId` proviene del propietario
+del proyecto y los IDs de organizador y creador provienen de la sesión.
 
 ---
 
@@ -304,7 +310,7 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 |---|---|---|---|---|
 | `POST /api/contrataciones` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
 | `POST /api/contrataciones` | Rol `MUSICO` | `403` | "Solo los organizadores pueden iniciar contrataciones directas" | autorización/autenticación |
-| `POST /api/contrataciones` | Evento no existe o no pertenece al organizador | `403` | "El evento no te pertenece" | autorización/autenticación |
+| `POST /api/contrataciones` | Evento no existe o no pertenece al organizador | `404` | "Evento no encontrado" | consulta con ownership |
 | `POST /api/contrataciones` | Proyecto no existe | `404` | "Proyecto musical no encontrado" | consulta |
 | `POST /api/contrataciones` | Proyecto inactivo | `409` | "El proyecto musical no está activo" | regla de dominio |
 | `POST /api/contrataciones` | Músico con contratación activa superpuesta | `409` | "El músico no está disponible en ese horario" | regla de dominio |
@@ -347,7 +353,7 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | Operación | Situación | Status | Qué ve el usuario | Quién lo agarra |
 |---|---|---|---|---|
 | `POST /api/contrataciones/:id/cancelar` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
-| `POST /api/contrataciones/:id/cancelar` | Usuario no es participante | `403` | "No tienes permiso para cancelar esta contratación" | autorización/autenticación |
+| `POST /api/contrataciones/:id/cancelar` | Usuario no es participante | `404` | "Contratación no encontrada" | consulta con participación |
 | `POST /api/contrataciones/:id/cancelar` | Contratación no existe | `404` | "Contratación no encontrada" | consulta |
 | `POST /api/contrataciones/:id/cancelar` | Ya está `CANCELADO` | `409` | "La contratación ya está cancelada" | regla de dominio |
 | `POST /api/contrataciones/:id/cancelar` | Ya está `COMPLETADO` | `409` | "La contratación ya está completada y no puede cancelarse" | regla de dominio |
@@ -361,7 +367,7 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | Operación | Situación | Status | Qué ve el usuario | Quién lo agarra |
 |---|---|---|---|---|
 | `POST /api/contrataciones/:id/completar` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
-| `POST /api/contrataciones/:id/completar` | Usuario no es participante | `403` | "No formas parte de esta contratación" | autorización/autenticación |
+| `POST /api/contrataciones/:id/completar` | Usuario no es participante | `404` | "Contratación no encontrada" | consulta con participación |
 | `POST /api/contrataciones/:id/completar` | Contratación no existe | `404` | "Contratación no encontrada" | consulta |
 | `POST /api/contrataciones/:id/completar` | Estado distinto de `ACORDADO` | `409` | "Solo se puede completar una contratación acordada" | regla de dominio |
 | `POST /api/contrataciones/:id/completar` | El evento todavía no finalizó | `409` | "El evento todavía no finalizó" | regla de dominio |

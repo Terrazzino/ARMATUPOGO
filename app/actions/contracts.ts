@@ -11,10 +11,12 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/app/actions/auth";
 import { requireAuthenticatedUser } from "@/lib/api-helpers";
-import { requireRole } from "@/lib/authorization";
+import { participatingContractWhere, requireRole } from "@/lib/authorization";
 import { crearOfertaSchema, type CrearOfertaInput } from "@/lib/validations/offers";
 import {
   cancelarContratacionSchema,
+  contratacionIdSchema,
+  crearContratacionSchema,
   crearPostulacionSchema,
   postulacionIdSchema,
   type CancelarContratacionInput,
@@ -26,6 +28,14 @@ import {
   createPostulationForMusician,
   rejectOwnedPostulation,
 } from "@/lib/postulation-access";
+import {
+  cancelParticipatingContract,
+  completeParticipatingContract,
+  contractDetailInclude,
+  contractListInclude,
+  contractsForUserWhere,
+  createDirectContract,
+} from "@/lib/contract-access";
 
 function validatePostulationId(postulationId: string) {
   const parsed = postulacionIdSchema.safeParse(postulationId);
@@ -91,81 +101,25 @@ export async function inviteProject(
   initialMessage?: string
 ) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("Debes iniciar sesión para invitar artistas");
-    }
+    const user = await requireAuthenticatedUser();
+    requireRole(user, "ORGANIZADOR");
 
-    if (user.rol !== "ORGANIZADOR") {
-      throw new AuthorizationError("Solo los organizadores pueden invitar artistas a sus eventos");
-    }
-
-    const event = await prisma.evento.findUnique({
-      where: { id: eventoId },
+    const parsed = crearContratacionSchema.safeParse({
+      eventoId,
+      proyectoMusicalId,
+      initialOfferAmount,
+      initialMessage,
     });
-
-    if (!event || event.organizadorId !== user.id) {
-      throw new AuthorizationError("El evento no te pertenece");
+    if (!parsed.success) {
+      throw new ValidationError("Datos de contratación inválidos");
     }
 
-    const project = await prisma.proyectoMusical.findUnique({
-      where: { id: proyectoMusicalId },
-    });
-
-    if (!project) {
-      throw new NotFoundError("Proyecto musical");
-    }
-
-    if (!project.estaActivo) {
-      throw new ValidationError("El proyecto musical no está activo");
-    }
-
-    const existingPostulation = await prisma.postulacion.findUnique({
-      where: {
-        eventoId_proyectoMusicalId: {
-          eventoId,
-          proyectoMusicalId,
-        },
-      },
-    });
-
-    const existingContract = await prisma.contratacion.findUnique({
-      where: {
-        eventoId_proyectoMusicalId: {
-          eventoId,
-          proyectoMusicalId,
-        },
-      },
-    });
-
-    if (existingPostulation || existingContract) {
-      throw new ConflictError("Ya existe una postulación o contratación previa para este proyecto en este evento");
-    }
-
-    const hasInitialOffer = initialOfferAmount !== undefined && initialOfferAmount > 0;
-
-    const contract = await prisma.contratacion.create({
-      data: {
-        eventoId,
-        proyectoMusicalId,
-        organizadorId: user.id,
-        musicoId: project.usuarioId,
-        creadoPorId: user.id,
-        estado: "NEGOCIANDO",
-        ofertas: hasInitialOffer
-          ? {
-              create: {
-                remitenteId: user.id,
-                monto: initialOfferAmount,
-                mensaje: initialMessage || null,
-                estado: "PROPUESTA",
-              },
-            }
-          : undefined,
-      },
-      include: {
-        ofertas: true,
-      },
+    const contract = await createDirectContract({
+      eventId: parsed.data.eventoId,
+      projectId: parsed.data.proyectoMusicalId,
+      organizerId: user.id,
+      initialOfferAmount: parsed.data.initialOfferAmount,
+      initialMessage: parsed.data.initialMessage,
     });
 
     revalidatePath("/dashboard/organizer");
@@ -526,36 +480,17 @@ export async function rejectOffer(ofertaId: string) {
  */
 export async function cancelContract(input: CancelarContratacionInput) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("No autenticado");
+    const user = await requireAuthenticatedUser();
+
+    const parsed = cancelarContratacionSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new ValidationError("Datos de cancelación inválidos");
     }
 
-    const validated = cancelarContratacionSchema.parse(input);
-
-    const contract = await prisma.contratacion.findUnique({
-      where: { id: validated.contratacionId },
-    });
-
-    if (!contract) {
-      throw new NotFoundError("Contratación");
-    }
-
-    if (contract.organizadorId !== user.id && contract.musicoId !== user.id) {
-      throw new AuthorizationError("No tienes permiso para cancelar esta contratación");
-    }
-
-    if (contract.estado === "CANCELADO" || contract.estado === "COMPLETADO") {
-      throw new ValidationError(`La contratación ya está ${contract.estado}`);
-    }
-
-    const updated = await prisma.contratacion.update({
-      where: { id: contract.id },
-      data: {
-        estado: "CANCELADO",
-        fechaCancelacion: new Date(),
-        motivoCancelacion: validated.motivoCancelacion,
-      },
+    const updated = await cancelParticipatingContract({
+      contractId: parsed.data.contratacionId,
+      userId: user.id,
+      cancellationReason: parsed.data.motivoCancelacion,
     });
 
     revalidatePath("/dashboard/musician");
@@ -579,131 +514,60 @@ export async function cancelContract(input: CancelarContratacionInput) {
  * Obtiene las contrataciones del usuario autenticado (músico u organizador)
  */
 export async function getMyContracts() {
-  try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return [];
-    }
+  const user = await requireAuthenticatedUser();
 
-    const contracts = await prisma.contratacion.findMany({
-      where: {
-        OR: [
-          { musicoId: user.id },
-          { organizadorId: user.id },
-        ],
-      },
-      orderBy: { actualizadoEn: "desc" },
-      include: {
-        evento: {
-          select: {
-            id: true,
-            titulo: true,
-            startsAt: true,
-            endsAt: true,
-            ubicacion: true,
-            estado: true,
-          },
-        },
-        proyectoMusical: {
-          select: {
-            id: true,
-            nombre: true,
-            genero: true,
-            imagenUrl: true,
-          },
-        },
-        organizador: {
-          select: {
-            nombre: true,
-            apellido: true,
-          },
-        },
-        musico: {
-          select: {
-            nombre: true,
-            apellido: true,
-          },
-        },
-        ofertas: {
-          orderBy: { creadoEn: "desc" },
-          take: 1,
-        },
-      },
-    });
+  const contracts = await prisma.contratacion.findMany({
+    where: contractsForUserWhere(user.rol, user.id),
+    orderBy: { actualizadoEn: "desc" },
+    include: contractListInclude,
+  });
 
-    return contracts.map((contract) => ({
-      ...contract,
-      montoPactado: contract.montoPactado?.toNumber() ?? null,
-      ofertas: contract.ofertas.map((offer) => ({
-        ...offer,
-        monto: offer.monto.toNumber(),
-      })),
-    }));
-  } catch (error) {
-    console.warn("Could not fetch my contracts:", (error as Error).message);
-    return [];
-  }
+  return contracts.map((contract) => ({
+    ...contract,
+    montoPactado: contract.montoPactado?.toNumber() ?? null,
+    ofertas: contract.ofertas.map((offer) => ({
+      ...offer,
+      monto: offer.monto.toNumber(),
+    })),
+  }));
 }
 
 /**
  * Obtiene el detalle completo de una contratación con su historial de ofertas
  */
 export async function getContractById(contratacionId: string) {
+  const user = await requireAuthenticatedUser();
+  const parsedId = contratacionIdSchema.safeParse(contratacionId);
+  if (!parsedId.success) throw new ValidationError("ID de contratación inválido");
+
+  const contract = await prisma.contratacion.findFirst({
+    where: participatingContractWhere(parsedId.data, user.id),
+    include: contractDetailInclude,
+  });
+  if (!contract) throw new NotFoundError("Contratación");
+  return contract;
+}
+
+/** Marca una contratación acordada como completada después del evento. */
+export async function completeContract(contratacionId: string) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return null;
-    }
+    const user = await requireAuthenticatedUser();
+    const parsedId = contratacionIdSchema.safeParse(contratacionId);
+    if (!parsedId.success) throw new ValidationError("ID de contratación inválido");
 
-    const contract = await prisma.contratacion.findUnique({
-      where: { id: contratacionId },
-      include: {
-        evento: true,
-        proyectoMusical: true,
-        organizador: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            email: true,
-          },
-        },
-        musico: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            email: true,
-          },
-        },
-        ofertas: {
-          orderBy: { creadoEn: "asc" },
-          include: {
-            remitente: {
-              select: {
-                id: true,
-                nombre: true,
-                apellido: true,
-                rol: true,
-              },
-            },
-          },
-        },
-        valoraciones: true,
-      },
-    });
+    const updated = await completeParticipatingContract(parsedId.data, user.id);
 
-    if (!contract) return null;
+    revalidatePath("/dashboard/musician");
+    revalidatePath("/dashboard/organizer");
 
-    // Verificar pertenencia
-    if (contract.organizadorId !== user.id && contract.musicoId !== user.id) {
-      return null;
-    }
-
-    return contract;
+    return { success: true, data: updated };
   } catch (error) {
-    console.warn("Could not fetch contract by ID:", (error as Error).message);
-    return null;
+    const normalized = normalizeError(error);
+    return {
+      error: true,
+      message: normalized.message,
+      code: normalized.code,
+    };
   }
 }
 

@@ -482,6 +482,41 @@ Authorization: Bearer {{otroOrganizadorAccessToken}}
 
 @contratacionId = {{aceptarPostulacion.response.body.contratacion.id}}
 
+### 5.1.d. Iniciar contratación directa sin sesión — Error 401
+# @name crearContratacionDirectaSinSesion
+# Status esperado: 401 Unauthorized.
+POST {{base}}/api/contrataciones
+Content-Type: {{contentType}}
+
+{
+  "eventoId": "{{eventoId}}",
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
+### 5.1.e. Iniciar contratación directa con rol MÚSICO — Error 403
+# @name crearContratacionDirectaRolMusico
+# Status esperado: 403 Forbidden.
+POST {{base}}/api/contrataciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "eventoId": "{{eventoId}}",
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
+### 5.1.f. Iniciar contratación directa con evento ajeno — Error 404
+# @name crearContratacionDirectaEventoAjeno
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{otroOrganizadorAccessToken}}
+
+{
+  "eventoId": "{{eventoId}}",
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
 ### 5.2. Aceptar postulación — Error 409 por postulación ya procesada
 # @name aceptarPostulacionYaProcesada
 # Qué prueba: Intentar aceptar nuevamente una postulación que ya no está PENDIENTE.
@@ -506,12 +541,29 @@ Authorization: Bearer {{organizadorAccessToken}}
 GET {{base}}/api/contrataciones/{{contratacionId}}
 Authorization: Bearer {{musicoAccessToken}}
 
-### 5.5. Consultar contratación ajena — Error 403
+### 5.5. Consultar contratación ajena — Error 404
 # @name getContratacionAjena
 # Qué prueba: Un usuario ajeno intenta acceder a la contratación privada.
-# Status esperado: 403 Forbidden.
-# Por qué: No es participante de la negociación.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela la existencia de negociaciones ajenas.
 GET {{base}}/api/contrataciones/{{contratacionId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 5.6. Cancelar contratación ajena — Error 404
+# @name cancelarContratacionAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones/{{contratacionId}}/cancelar
+Content-Type: {{contentType}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+{
+  "motivoCancelacion": "Intento sobre una contratación ajena"
+}
+
+### 5.7. Completar contratación ajena — Error 404
+# @name completarContratacionAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones/{{contratacionId}}/completar
 Authorization: Bearer {{otroMusicoAccessToken}}
 
 
