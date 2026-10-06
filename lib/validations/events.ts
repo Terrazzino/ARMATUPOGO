@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { VALIDATION_LIMITS, EVENT_STATES } from "@/lib/constants";
+import { VALIDATION_LIMITS } from "@/lib/constants";
 
 export const eventoSchema = z.object({
   titulo: z
@@ -56,8 +56,7 @@ export const eventoSchema = z.object({
     .max(VALIDATION_LIMITS.MAX_PRICE, "El monto supera el límite permitido")
     .optional()
     .nullable(),
-  estado: z.enum(EVENT_STATES).optional().default("PUBLICADO"),
   bannerUrl: z.string().url("URL de banner inválida").optional().or(z.literal("")),
-});
+}).strict();
 
 export type EventoInput = z.infer<typeof eventoSchema>;

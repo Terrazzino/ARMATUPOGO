@@ -62,11 +62,15 @@ autenticado para no revelar la existencia de recursos de otro músico.
 
 | Método | Ruta | Qué hace | Rol | Errores posibles |
 |---|---|---|---|---|
-| `GET` | `/api/eventos` | Lista eventos según rol: propios si organizador, disponibles si músico | Cualquiera | 401 |
+| `GET` | `/api/eventos` | Lista exclusivamente los eventos propios del organizador | `ORGANIZADOR` | 401, 403 |
 | `POST` | `/api/eventos` | Publica un nuevo evento | `ORGANIZADOR` | 400, 401, 403 |
-| `GET` | `/api/eventos/:eventoId` | Obtiene el detalle de un evento | Autenticado | 401, 404 |
+| `GET` | `/api/eventos/:eventoId` | Detalle privado de un evento propio, publicado o cancelado | `ORGANIZADOR` propietario | 401, 403, 404 |
 | `PATCH` | `/api/eventos/:eventoId` | Actualiza un evento propio | `ORGANIZADOR` | 400, 401, 403, 404, 409 |
 | `POST` | `/api/eventos/:eventoId/cancelar` | Cancela un evento propio y sus procesos activos | `ORGANIZADOR` | 401, 403, 404, 409 |
+
+Los músicos consultan eventos mediante la API pública. En operaciones privadas,
+un evento ajeno y uno inexistente producen `404`. `PATCH` no acepta `estado`; el único
+flujo para pasar a `CANCELADO` es `/api/eventos/:eventoId/cancelar`.
 
 ---
 
@@ -123,7 +127,7 @@ autenticado para no revelar la existencia de recursos de otro músico.
 | Método | Ruta | Qué hace |
 |---|---|---|
 | `GET` | `/api/publico/eventos` | Cartelera pública: eventos con `estado = PUBLICADO` y `ends_at > ahora`. Incluye eventos en curso. |
-| `GET` | `/api/publico/eventos/:eventoId` | Detalle público de un evento con proyectos confirmados |
+| `GET` | `/api/publico/eventos/:eventoId` | Detalle público de un evento `PUBLICADO` con proyectos confirmados; `CANCELADO` devuelve 404 |
 | `GET` | `/api/publico/proyectos/:proyectoId` | Perfil público de un proyecto musical activo |
 | `GET` | `/api/proyectos/buscar` | Búsqueda pública de proyectos musicales activos |
 
@@ -238,12 +242,17 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | `POST /api/eventos` | Rol `MUSICO` | `403` | "Solo los organizadores pueden publicar eventos" | autorización/autenticación |
 | `POST /api/eventos` | Campos obligatorios inválidos | `400` | "Datos inválidos" + detalles | Zod |
 | `POST /api/eventos` | `ends_at` no posterior a `starts_at` | `400` | "La fecha de finalización debe ser posterior a la de inicio" | Zod o regla de dominio |
-| `PATCH /api/eventos/:id` | Evento no pertenece al usuario | `403` | "No tienes permisos para modificar este evento" | autorización/autenticación |
+| `GET /api/eventos/:id` | Rol `MUSICO` | `403` | "No tienes permisos para esta acción" | autorización |
+| `GET /api/eventos/:id` | Evento ajeno o inexistente | `404` | "Evento no encontrado" | consulta con ownership |
+| `PATCH /api/eventos/:id` | Evento ajeno o inexistente | `404` | "Evento no encontrado" | consulta con ownership |
+| `PATCH /api/eventos/:id` | Intenta establecer `estado` directamente | `400` | "Datos inválidos" | Zod |
 | `PATCH /api/eventos/:id` | Intenta modificar fechas con contratos activos | `409` | "No se pueden modificar las fechas con contrataciones activas" | regla de dominio |
 | `PATCH /api/eventos/:id` | Reduce cupos por debajo de los acordados | `409` | "No se pueden reducir los cupos por debajo de los ya acordados" | regla de dominio |
 | `POST /api/eventos/:id/cancelar` | Evento no existe | `404` | "Evento no encontrado" | consulta |
+| `POST /api/eventos/:id/cancelar` | Evento de otro organizador | `404` | "Evento no encontrado" | consulta con ownership |
 | `POST /api/eventos/:id/cancelar` | Evento ya está `CANCELADO` | `409` | "El evento ya está cancelado" | regla de dominio |
 | `POST /api/eventos/:id/cancelar` | Evento ya comenzó | `409` | "No se puede cancelar un evento que ya comenzó" | regla de dominio |
+| `GET /api/publico/eventos/:id` | Evento cancelado o inexistente | `404` | "Evento no encontrado" | consulta pública |
 
 ---
 

@@ -640,7 +640,7 @@ Además:
 | `ends_at` no es posterior a `starts_at` | `400` |
 | Cantidad de proyectos requeridos menor a 1 | `400` |
 | Caché ofrecido negativo o superior al límite | `400` |
-| Intentar modificar o cancelar un evento que no pertenece al usuario | `403` |
+| Intentar consultar, modificar o cancelar un evento que pertenece a otro organizador | `404` |
 | El evento solicitado no existe | `404` |
 | Intentar modificar `starts_at` o `ends_at` cuando existen contrataciones activas (`NEGOCIANDO` o `ACORDADO`) | `409` |
 | Intentar reducir `required_projects_count` por debajo de la cantidad de cupos ocupados | `409` |
@@ -1945,23 +1945,27 @@ no pertenece al músico autenticado responde `404`, igual que un proyecto inexis
 
 | Método | Endpoint | Descripción | Auth |
 |---|---|---|---|
-| `GET` | `/api/eventos` | Obtener eventos correspondientes al rol | Sí |
+| `GET` | `/api/eventos` | Obtener eventos propios del organizador | Sí, `ORGANIZADOR` |
 | `POST` | `/api/eventos` | Crear evento publicado | Sí |
-| `GET` | `/api/eventos/:eventoId` | Obtener detalle | Sí |
+| `GET` | `/api/eventos/:eventoId` | Obtener detalle privado de un evento propio, publicado o cancelado | Sí, `ORGANIZADOR` propietario |
 | `PATCH` | `/api/eventos/:eventoId` | Actualizar evento propio | Sí |
 | `POST` | `/api/eventos/:eventoId/cancelar` | Cancelar evento | Sí |
 
-### `GET /api/eventos`
+### Visibilidad y ownership de eventos
 
-Para Músico:
+`GET /api/eventos` es el listado privado del organizador y solamente devuelve eventos
+con `organizadorId` igual al usuario autenticado. Los músicos y el público consultan
+la cartelera mediante `GET /api/publico/eventos`.
 
-- eventos publicados;
-- eventos disponibles;
-- eventos futuros o vigentes según filtros.
+Las operaciones privadas incorporan `id` y `organizadorId` en la consulta. Un evento
+ajeno responde `404`, igual que uno inexistente. Un usuario `MUSICO` recibe `403` antes
+de consultar el recurso.
 
-Para Organizador:
-
-- eventos propios.
+El modelo solamente posee `PUBLICADO` y `CANCELADO`. La cartelera pública muestra
+eventos `PUBLICADO` cuyo `endsAt` es posterior al momento de la consulta. El detalle
+público exige `PUBLICADO`; un evento `CANCELADO` responde `404`. La cancelación se
+realiza exclusivamente mediante `POST /api/eventos/:eventoId/cancelar`; `PATCH` no
+acepta modificaciones directas de `estado`.
 
 ---
 
