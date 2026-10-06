@@ -55,6 +55,6 @@ export const proyectoMusicalSchema = z.object({
     )
     .optional()
     .default([]),
-});
+}).strict();
 
 export type ProyectoMusicalInput = z.infer<typeof proyectoMusicalSchema>;

@@ -1,34 +1,32 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, zodErrorResponse, errorResponse } from "@/lib/api-helpers";
+import {
+  apiErrorResponse,
+  requireAuthenticatedUser,
+  zodErrorResponse,
+} from "@/lib/api-helpers";
+import { ValidationError } from "@/lib/errors";
 import { actualizarPerfilSchema } from "@/lib/validations/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
-      return errorResponse("Autenticación requerida", 401);
-    }
+    const user = await requireAuthenticatedUser(request);
 
     return Response.json(user, { status: 200 });
   } catch (error) {
-    console.error("GET /api/usuarios/me error:", error);
-    return errorResponse("Error interno del servidor", 500);
+    return apiErrorResponse(error);
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
-      return errorResponse("Autenticación requerida", 401);
-    }
+    const user = await requireAuthenticatedUser(request);
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
-      return errorResponse("Cuerpo de solicitud inválido", 400);
+      throw new ValidationError("Cuerpo de solicitud inválido");
     }
 
     const parsed = actualizarPerfilSchema.safeParse(body);
@@ -51,8 +49,7 @@ export async function PATCH(request: NextRequest) {
 
     return Response.json(updatedUser, { status: 200 });
   } catch (error) {
-    console.error("PATCH /api/usuarios/me error:", error);
-    return errorResponse("Error interno del servidor", 500);
+    return apiErrorResponse(error);
   }
 }
 

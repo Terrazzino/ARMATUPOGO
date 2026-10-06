@@ -20,7 +20,6 @@ export function CreateEventModal() {
     resolver: zodResolver(eventoSchema),
     defaultValues: {
       cantidadMusicosRequerida: 2,
-      estado: "PUBLICADO",
     },
   });
 

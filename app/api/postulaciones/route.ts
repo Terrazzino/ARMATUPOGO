@@ -1,87 +1,26 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, errorResponse } from "@/lib/api-helpers";
+import {
+  apiErrorResponse,
+  requireAuthenticatedUser,
+} from "@/lib/api-helpers";
+import { postulationListInclude } from "@/lib/postulation-access";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
-      return errorResponse("Autenticación requerida", 401);
-    }
+    const user = await requireAuthenticatedUser(request);
 
-    let postulaciones;
+    const postulations = await prisma.postulacion.findMany({
+      where:
+        user.rol === "ORGANIZADOR"
+          ? { evento: { organizadorId: user.id } }
+          : { musicoId: user.id },
+      orderBy: { creadoEn: "desc" },
+      include: postulationListInclude,
+    });
 
-    if (user.rol === "ORGANIZADOR") {
-      postulaciones = await prisma.postulacion.findMany({
-        where: {
-          evento: { organizadorId: user.id },
-        },
-        orderBy: { creadoEn: "desc" },
-        include: {
-          evento: {
-            select: {
-              id: true,
-              titulo: true,
-              startsAt: true,
-              endsAt: true,
-              ubicacion: true,
-            },
-          },
-          proyectoMusical: {
-            select: {
-              id: true,
-              nombre: true,
-              genero: true,
-              imagenUrl: true,
-            },
-          },
-          musico: {
-            select: {
-              id: true,
-              nombre: true,
-              apellido: true,
-            },
-          },
-          contratacion: {
-            select: { id: true, estado: true },
-          },
-        },
-      });
-    } else {
-      postulaciones = await prisma.postulacion.findMany({
-        where: {
-          musicoId: user.id,
-        },
-        orderBy: { creadoEn: "desc" },
-        include: {
-          evento: {
-            select: {
-              id: true,
-              titulo: true,
-              startsAt: true,
-              endsAt: true,
-              ubicacion: true,
-            },
-          },
-          proyectoMusical: {
-            select: {
-              id: true,
-              nombre: true,
-              genero: true,
-              imagenUrl: true,
-            },
-          },
-          contratacion: {
-            select: { id: true, estado: true },
-          },
-        },
-      });
-    }
-
-    return Response.json(postulaciones, { status: 200 });
+    return Response.json(postulations, { status: 200 });
   } catch (error) {
-    console.error("GET /api/postulaciones error:", error);
-    return errorResponse("Error interno del servidor", 500);
+    return apiErrorResponse(error);
   }
 }
-

@@ -1,94 +1,48 @@
 /**
- * Server Actions para Valoraciones y Reputación
- * 
- * @see docs/spec.md H8, H9
- * @see AGENTS.md § 7. ARQUITECTURA & § 10. AUTORIZACIÓN
+ * Server Actions para Valoraciones y Reputación.
+ *
+ * @see docs/spec.md H12, H13
  */
 
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/app/actions/auth";
-import { crearValoracionSchema, type CrearValoracionInput } from "@/lib/validations/ratings";
-import { normalizeError, AuthorizationError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
+import { requireAuthenticatedUser } from "@/lib/api-helpers";
+import { normalizeError, ValidationError } from "@/lib/errors";
+import {
+  createRatingForParticipant,
+  getPublicProjectReputation,
+  getPublicUserReputation,
+  getRatingsForParticipant,
+} from "@/lib/rating-access";
+import {
+  crearValoracionSchema,
+  valoracionTargetIdSchema,
+  type CrearValoracionInput,
+} from "@/lib/validations/ratings";
 
-/**
- * Crea una valoración mutua post-evento
- */
 export async function createRating(input: CrearValoracionInput) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("Debes iniciar sesión para valorar");
+    const user = await requireAuthenticatedUser();
+    const parsed = crearValoracionSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new ValidationError("Datos de valoración inválidos");
     }
 
-    const validated = crearValoracionSchema.parse(input);
-
-    const contract = await prisma.contratacion.findUnique({
-      where: { id: validated.contratacionId },
-      include: {
-        evento: true,
-        proyectoMusical: true,
-      },
-    });
-
-    if (!contract) {
-      throw new NotFoundError("Contratación");
-    }
-
-    // 1. Las valoraciones se habilitan únicamente al completar la contratación.
-    if (contract.estado !== "COMPLETADO") {
-      throw new ValidationError("Solo se pueden valorar contrataciones completadas");
-    }
-
-    // 2. Validar que el usuario sea participante
-    const isMusician = contract.musicoId === user.id;
-    const isOrganizer = contract.organizadorId === user.id;
-
-    if (!isMusician && !isOrganizer) {
-      throw new AuthorizationError("No participaste de esta contratación");
-    }
-
-    // 3. Determinar destinatarioId y proyectoDestinatarioId automáticamente
-    const destinatarioId = isMusician ? contract.organizadorId : contract.musicoId;
-    const proyectoDestinatarioId = isOrganizer ? contract.proyectoMusicalId : null;
-
-    // 4. Validar que no exista valoración previa de este autor para este contrato
-    const existing = await prisma.valoracion.findUnique({
-      where: {
-        contratacionId_autorId: {
-          contratacionId: contract.id,
-          autorId: user.id,
-        },
-      },
-    });
-
-    if (existing) {
-      throw new ConflictError("Ya realizaste una valoración para esta contratación");
-    }
-
-    const rating = await prisma.valoracion.create({
-      data: {
-        contratacionId: contract.id,
-        autorId: user.id,
-        destinatarioId,
-        proyectoDestinatarioId,
-        puntaje: validated.puntaje,
-        comentario: validated.comentario || null,
-      },
+    const rating = await createRatingForParticipant({
+      contractId: parsed.data.contratacionId,
+      userId: user.id,
+      score: parsed.data.puntaje,
+      comment: parsed.data.comentario,
     });
 
     revalidatePath("/dashboard/musician");
     revalidatePath("/dashboard/organizer");
-    if (proyectoDestinatarioId) {
-      revalidatePath(`/projects/${proyectoDestinatarioId}`);
+    if (rating.proyectoDestinatarioId) {
+      revalidatePath(`/projects/${rating.proyectoDestinatarioId}`);
     }
 
-    return {
-      success: true,
-      data: rating,
-    };
+    return { success: true, data: rating };
   } catch (error) {
     const normalized = normalizeError(error);
     return {
@@ -99,76 +53,48 @@ export async function createRating(input: CrearValoracionInput) {
   }
 }
 
-/**
- * Obtiene las valoraciones recibidas por un usuario y calcula su reputación
- */
+/** Obtiene valoraciones solamente si el usuario participa de la contratación. */
+export async function getContractRatings(contratacionId: string) {
+  const user = await requireAuthenticatedUser();
+  const parsedId = valoracionTargetIdSchema.safeParse(contratacionId);
+  if (!parsedId.success) {
+    throw new ValidationError("ID de contratación inválido");
+  }
+  return getRatingsForParticipant(parsedId.data, user.id);
+}
+
+/** Obtiene la reputación pública recibida por un usuario. */
 export async function getUserReputation(userId: string) {
   try {
-    const ratings = await prisma.valoracion.findMany({
-      where: { destinatarioId: userId },
-      orderBy: { creadoEn: "desc" },
-      include: {
-        autor: {
-          select: {
-            nombre: true,
-            apellido: true,
-            fotoPerfilUrl: true,
-          },
-        },
-      },
-    });
+    const parsedId = valoracionTargetIdSchema.safeParse(userId);
+    if (!parsedId.success) throw new ValidationError("ID de usuario inválido");
 
-    const total = ratings.length;
-    const averageScore = total > 0 ? ratings.reduce((acc, r) => acc + r.puntaje, 0) / total : 0;
-
+    const reputation = await getPublicUserReputation(parsedId.data);
     return {
-      total,
-      averageScore: Number(averageScore.toFixed(1)),
-      ratings,
+      total: reputation.total,
+      averageScore: reputation.promedio,
+      ratings: reputation.valoraciones,
     };
   } catch (error) {
     console.warn("Could not fetch user reputation:", (error as Error).message);
-    return {
-      total: 0,
-      averageScore: 0,
-      ratings: [],
-    };
+    return { total: 0, averageScore: 0, ratings: [] };
   }
 }
 
-/**
- * Obtiene las valoraciones recibidas por un proyecto musical específico
- */
+/** Obtiene la reputación pública de un proyecto musical activo. */
 export async function getProjectReputation(projectId: string) {
   try {
-    const ratings = await prisma.valoracion.findMany({
-      where: { proyectoDestinatarioId: projectId },
-      orderBy: { creadoEn: "desc" },
-      include: {
-        autor: {
-          select: {
-            nombre: true,
-            apellido: true,
-            fotoPerfilUrl: true,
-          },
-        },
-      },
-    });
+    const parsedId = valoracionTargetIdSchema.safeParse(projectId);
+    if (!parsedId.success) throw new ValidationError("ID de proyecto inválido");
 
-    const total = ratings.length;
-    const averageScore = total > 0 ? ratings.reduce((acc, r) => acc + r.puntaje, 0) / total : 0;
-
+    const reputation = await getPublicProjectReputation(parsedId.data);
     return {
-      total,
-      averageScore: Number(averageScore.toFixed(1)),
-      ratings,
+      total: reputation.total,
+      averageScore: reputation.promedio,
+      ratings: reputation.valoraciones,
     };
   } catch (error) {
     console.warn("Could not fetch project reputation:", (error as Error).message);
-    return {
-      total: 0,
-      averageScore: 0,
-      ratings: [],
-    };
+    return { total: 0, averageScore: 0, ratings: [] };
   }
 }

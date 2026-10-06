@@ -127,12 +127,18 @@ export default async function OrganizerDashboardPage() {
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                      <Link
-                        href={`/events/${event.id}`}
-                        className="text-xs font-semibold text-neutral-300 hover:text-red-400 hover:underline"
-                      >
-                        Ver Ficha Pública →
-                      </Link>
+                      {event.estado === "PUBLICADO" ? (
+                        <Link
+                          href={`/events/${event.id}`}
+                          className="text-xs font-semibold text-neutral-300 hover:text-red-400 hover:underline"
+                        >
+                          Ver Ficha Pública →
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-neutral-500">
+                          No visible públicamente
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

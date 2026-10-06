@@ -1,7 +1,7 @@
 /**
- * Server Actions para Eventos
- * 
- * @see docs/spec.md H3, H4, H10
+ * Server Actions para Eventos.
+ *
+ * @see docs/spec.md H4
  * @see AGENTS.md § 7. ARQUITECTURA & § 10. AUTORIZACIÓN
  */
 
@@ -9,51 +9,38 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import type { Prisma, EstadoEvento } from "@prisma/client";
-import { getCurrentUser } from "@/app/actions/auth";
+import { requireAuthenticatedUser } from "@/lib/api-helpers";
+import { ownedEventWhere, requireRole } from "@/lib/authorization";
+import { normalizeError, NotFoundError } from "@/lib/errors";
 import { eventoSchema, type EventoInput } from "@/lib/validations/events";
-import { normalizeError, AuthorizationError, NotFoundError } from "@/lib/errors";
+import {
+  cancelOwnedEvent,
+  eventCreateData,
+  eventUpdateData,
+  privateEventInclude,
+  publicEventDetailSelect,
+  publicEventListSelect,
+  publicEventListWhere,
+  validateEventDates,
+  validateEventUpdate,
+} from "@/lib/event-access";
 
-/**
- * Crea un nuevo evento para el organizador autenticado
- */
 export async function createEvent(input: EventoInput) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("Debes iniciar sesión para publicar un evento");
-    }
-
-    if (user.rol !== "ORGANIZADOR") {
-      throw new AuthorizationError("Solo los usuarios con rol de Organizador pueden publicar eventos");
-    }
+    const user = await requireAuthenticatedUser();
+    requireRole(user, "ORGANIZADOR");
 
     const validatedData = eventoSchema.parse(input);
+    validateEventDates(validatedData);
 
     const event = await prisma.evento.create({
-      data: {
-        organizadorId: user.id,
-        titulo: validatedData.titulo,
-        descripcion: validatedData.descripcion || null,
-        startsAt: new Date(validatedData.startsAt),
-        endsAt: new Date(validatedData.endsAt),
-        ubicacion: validatedData.ubicacion,
-        nombreLugar: validatedData.nombreLugar || null,
-        ciudad: validatedData.ciudad || null,
-        cantidadMusicosRequerida: validatedData.cantidadMusicosRequerida,
-        cacheOfrecido: validatedData.cacheOfrecido ?? null,
-        estado: (validatedData.estado as EstadoEvento) || "PUBLICADO",
-        bannerUrl: validatedData.bannerUrl || null,
-      },
+      data: eventCreateData(user.id, validatedData),
     });
 
     revalidatePath("/dashboard/organizer");
     revalidatePath("/events");
 
-    return {
-      success: true,
-      data: event,
-    };
+    return { success: true, data: event };
   } catch (error) {
     const normalized = normalizeError(error);
     return {
@@ -64,55 +51,30 @@ export async function createEvent(input: EventoInput) {
   }
 }
 
-/**
- * Actualiza un evento existente (solo el organizador propietario)
- */
 export async function updateEvent(id: string, input: Partial<EventoInput>) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("No autenticado");
-    }
+    const user = await requireAuthenticatedUser();
+    requireRole(user, "ORGANIZADOR");
 
-    const existing = await prisma.evento.findUnique({
-      where: { id },
+    const existing = await prisma.evento.findFirst({
+      where: ownedEventWhere(id, user.id),
+      include: { contrataciones: { select: { estado: true } } },
     });
-
-    if (!existing) {
-      throw new NotFoundError("Evento");
-    }
-
-    if (existing.organizadorId !== user.id) {
-      throw new AuthorizationError("No tienes permisos para modificar este evento");
-    }
+    if (!existing) throw new NotFoundError("Evento");
 
     const validatedData = eventoSchema.partial().parse(input);
+    validateEventUpdate(existing, validatedData);
 
     const updated = await prisma.evento.update({
-      where: { id },
-      data: {
-        ...(validatedData.titulo !== undefined && { titulo: validatedData.titulo }),
-        ...(validatedData.descripcion !== undefined && { descripcion: validatedData.descripcion || null }),
-        ...(validatedData.startsAt !== undefined && { startsAt: new Date(validatedData.startsAt) }),
-        ...(validatedData.endsAt !== undefined && { endsAt: new Date(validatedData.endsAt) }),
-        ...(validatedData.ubicacion !== undefined && { ubicacion: validatedData.ubicacion }),
-        ...(validatedData.nombreLugar !== undefined && { nombreLugar: validatedData.nombreLugar || null }),
-        ...(validatedData.ciudad !== undefined && { ciudad: validatedData.ciudad || null }),
-        ...(validatedData.cantidadMusicosRequerida !== undefined && { cantidadMusicosRequerida: validatedData.cantidadMusicosRequerida }),
-        ...(validatedData.cacheOfrecido !== undefined && { cacheOfrecido: validatedData.cacheOfrecido ?? null }),
-        ...(validatedData.estado !== undefined && { estado: validatedData.estado as EstadoEvento }),
-        ...(validatedData.bannerUrl !== undefined && { bannerUrl: validatedData.bannerUrl || null }),
-      },
+      where: { id, organizadorId: user.id },
+      data: eventUpdateData(validatedData),
     });
 
     revalidatePath("/dashboard/organizer");
     revalidatePath(`/events/${id}`);
     revalidatePath("/events");
 
-    return {
-      success: true,
-      data: updated,
-    };
+    return { success: true, data: updated };
   } catch (error) {
     const normalized = normalizeError(error);
     return {
@@ -123,43 +85,18 @@ export async function updateEvent(id: string, input: Partial<EventoInput>) {
   }
 }
 
-/**
- * Cancela un evento
- */
 export async function cancelEvent(id: string) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("No autenticado");
-    }
+    const user = await requireAuthenticatedUser();
+    requireRole(user, "ORGANIZADOR");
 
-    const existing = await prisma.evento.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
-      throw new NotFoundError("Evento");
-    }
-
-    if (existing.organizadorId !== user.id) {
-      throw new AuthorizationError("No tienes permisos para cancelar este evento");
-    }
-
-    const updated = await prisma.evento.update({
-      where: { id },
-      data: {
-        estado: "CANCELADO",
-      },
-    });
+    const updated = await cancelOwnedEvent(id, user.id);
 
     revalidatePath("/dashboard/organizer");
     revalidatePath(`/events/${id}`);
     revalidatePath("/events");
 
-    return {
-      success: true,
-      data: updated,
-    };
+    return { success: true, data: updated };
   } catch (error) {
     const normalized = normalizeError(error);
     return {
@@ -170,144 +107,54 @@ export async function cancelEvent(id: string) {
   }
 }
 
-/**
- * Obtiene los eventos creados por el organizador autenticado
- */
 export async function getMyEvents() {
-  try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return [];
-    }
+  const user = await requireAuthenticatedUser();
+  requireRole(user, "ORGANIZADOR");
 
-    const events = await prisma.evento.findMany({
-      where: { organizadorId: user.id },
-      orderBy: { startsAt: "asc" },
-      include: {
-        contrataciones: {
-          select: {
-            id: true,
-            estado: true,
-            montoPactado: true,
-            proyectoMusical: {
-              select: {
-                id: true,
-                nombre: true,
-                genero: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return events;
-  } catch (error) {
-    console.warn("Could not fetch my events:", (error as Error).message);
-    return [];
-  }
+  return prisma.evento.findMany({
+    where: { organizadorId: user.id },
+    orderBy: { startsAt: "asc" },
+    include: privateEventInclude,
+  });
 }
 
-/**
- * Obtiene un evento por ID
- */
+/** Obtiene el detalle privado de un evento propio, incluso si está cancelado. */
+export async function getMyEventById(id: string) {
+  const user = await requireAuthenticatedUser();
+  requireRole(user, "ORGANIZADOR");
+
+  const event = await prisma.evento.findFirst({
+    where: ownedEventWhere(id, user.id),
+    include: privateEventInclude,
+  });
+
+  if (!event) throw new NotFoundError("Evento");
+  return event;
+}
+
+/** Obtiene un evento PUBLICADO para la página pública de detalle. */
 export async function getEventById(id: string) {
   try {
-    const event = await prisma.evento.findUnique({
-      where: { id },
-      include: {
-        organizador: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            fotoPerfilUrl: true,
-          },
-        },
-        contrataciones: {
-          where: {
-            estado: "ACORDADO",
-          },
-          include: {
-            proyectoMusical: {
-              select: {
-                id: true,
-                nombre: true,
-                genero: true,
-                imagenUrl: true,
-                spotifyUrl: true,
-                youtubeUrl: true,
-                instagramUrl: true,
-                sitioWebUrl: true,
-              },
-            },
-          },
-        },
-        entradas: true,
-      },
+    return await prisma.evento.findFirst({
+      where: { id, estado: "PUBLICADO" },
+      select: publicEventDetailSelect,
     });
-
-    return event;
   } catch (error) {
     console.warn("Could not fetch event by ID:", (error as Error).message);
     return null;
   }
 }
 
-/**
- * Cartelera pública de eventos con filtros
- */
 export async function getPublicEvents(filters?: {
   city?: string;
   search?: string;
-  status?: EstadoEvento;
 }) {
   try {
-    const where: Prisma.EventoWhereInput = {
-      estado: filters?.status || "PUBLICADO",
-    };
-
-    if (filters?.city) {
-      where.ciudad = { contains: filters.city, mode: "insensitive" };
-    }
-
-    if (filters?.search) {
-      where.OR = [
-        { titulo: { contains: filters.search, mode: "insensitive" } },
-        { descripcion: { contains: filters.search, mode: "insensitive" } },
-        { ubicacion: { contains: filters.search, mode: "insensitive" } },
-        { nombreLugar: { contains: filters.search, mode: "insensitive" } },
-      ];
-    }
-
-    const events = await prisma.evento.findMany({
-      where,
+    return await prisma.evento.findMany({
+      where: publicEventListWhere(new Date(), filters),
       orderBy: { startsAt: "asc" },
-      include: {
-        organizador: {
-          select: {
-            nombre: true,
-            apellido: true,
-          },
-        },
-        contrataciones: {
-          where: { estado: "ACORDADO" },
-          select: {
-            id: true,
-            proyectoMusical: {
-              select: {
-                id: true,
-                nombre: true,
-                genero: true,
-                imagenUrl: true,
-              },
-            },
-          },
-        },
-      },
+      select: publicEventListSelect,
     });
-
-    return events;
   } catch (error) {
     console.warn("Could not fetch public events:", (error as Error).message);
     return [];

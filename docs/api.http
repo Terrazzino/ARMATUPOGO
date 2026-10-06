@@ -9,15 +9,22 @@
 @contentType = application/json
 
 ### ------------------------------------------------------------------------------
-### VARIABLES DE CONTEXTO Y USUARIOS DE PRUEBA
+### VARIABLES DE CONTEXTO, USUARIOS Y TOKENS DE PRUEBA
 ### ------------------------------------------------------------------------------
-### En desarrollo local se utiliza el header x-user-id para autenticar las requests.
-### Para producción con Supabase Auth real, sustituir por Authorization: Bearer <token>.
+### Obtener access tokens iniciando sesión con cada cuenta en Supabase Auth.
+### x-user-id no es un mecanismo admitido en ningún entorno.
 
 @musicoUserId = 11111111-1111-1111-1111-111111111111
 @organizadorUserId = 22222222-2222-2222-2222-222222222222
 @otroMusicoUserId = 33333333-3333-3333-3333-333333333333
 @otroOrganizadorUserId = 44444444-4444-4444-4444-444444444444
+@contratacionAjenaId = REEMPLAZAR_CON_UUID_DE_CONTRATACION_AJENA
+@proyectoInactivoId = REEMPLAZAR_CON_UUID_DE_PROYECTO_INACTIVO
+
+@musicoAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
+@organizadorAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
+@otroMusicoAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
+@otroOrganizadorAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
 
 ### ==============================================================================
 ### 1. SECCIÓN: USUARIOS (/api/usuarios/me)
@@ -29,7 +36,7 @@
 # Status esperado: 200 OK.
 # Por qué: La sesión es válida y existe el usuario en la BD.
 GET {{base}}/api/usuarios/me
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 1.2. Obtener perfil propio — Sin sesión (401)
 # @name getPerfilMeSinAuth
@@ -45,7 +52,7 @@ GET {{base}}/api/usuarios/me
 # Por qué: Datos válidos y usuario autenticado.
 PATCH {{base}}/api/usuarios/me
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "Carlos",
@@ -61,7 +68,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: La spec exige rechazar con 400 si se intenta mutar rol, email, id o password.
 PATCH {{base}}/api/usuarios/me
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "Carlos",
@@ -81,7 +88,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Rol Músico, campos válidos, proyecto queda activo.
 POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "Los Pogo Brothers",
@@ -101,7 +108,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Solo los músicos pueden registrar proyectos musicales.
 POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "nombre": "Organizador Intentando Ser Banda",
@@ -115,7 +122,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: Zod valida la longitud mínima del nombre artístico.
 POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "nombre": "A",
@@ -128,25 +135,24 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Rol Músico autenticado.
 GET {{base}}/api/proyectos
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 2.5. Buscar proyectos activos — Caso feliz (200)
 # @name buscarProyectos
 # Qué prueba: Búsqueda con filtros de género y ciudad.
 # Status esperado: 200 OK.
-# Por qué: Usuario autenticado consulta proyectos activos.
+# Por qué: La búsqueda es pública y devuelve solamente proyectos activos.
 GET {{base}}/api/proyectos/buscar?genero=Punk&ciudad=Buenos+Aires
-x-user-id: {{organizadorUserId}}
 
 @proyectoId = {{crearProyecto.response.body.id}}
 
-### 2.6. Obtener detalle de proyecto — Caso feliz (200)
+### 2.6. Obtener detalle privado propio — Caso feliz (200)
 # @name getProyectoDetalle
-# Qué prueba: Obtener detalle del proyecto recién creado.
+# Qué prueba: El músico obtiene el detalle privado de su proyecto.
 # Status esperado: 200 OK.
-# Por qué: El proyecto existe en la base de datos.
+# Por qué: El proyecto pertenece al usuario autenticado.
 GET {{base}}/api/proyectos/{{proyectoId}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 ### 2.7. Obtener detalle de proyecto — Error 404 por ID inexistente
 # @name getProyectoInexistente
@@ -154,20 +160,27 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 404 Not Found.
 # Por qué: No existe un proyecto con ese identificador.
 GET {{base}}/api/proyectos/00000000-0000-0000-0000-000000000000
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
-### 2.8. Modificar proyecto ajeno — Error 403
+### 2.8. Modificar proyecto ajeno — Error 404
 # @name patchProyectoAjeno
 # Qué prueba: Un músico intenta modificar el proyecto de otro músico.
-# Status esperado: 403 Forbidden.
-# Por qué: Solamente el propietario tiene permisos de modificación.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela si el proyecto existe cuando pertenece a otra persona.
 PATCH {{base}}/api/proyectos/{{proyectoId}}
 Content-Type: {{contentType}}
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 {
   "nombre": "Hackeando Proyecto Ajeno"
 }
+
+### 2.8.b. Listar proyectos con rol ORGANIZADOR — Error 403
+# @name listarProyectosRolInvalido
+# Qué prueba: Un organizador intenta acceder a una operación exclusiva de músicos.
+# Status esperado: 403 Forbidden.
+GET {{base}}/api/proyectos
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 2.9. Modificar proyecto propio — Caso feliz (200)
 # @name patchProyectoPropio
@@ -176,34 +189,66 @@ x-user-id: {{otroMusicoUserId}}
 # Por qué: El músico es el propietario del proyecto.
 PATCH {{base}}/api/proyectos/{{proyectoId}}
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "cacheAproximado": 200000,
   "descripcion": "Descripción actualizada para la gira 2026."
 }
 
-### 2.10. Desactivar proyecto propio — Caso feliz (200)
+### 2.10. Detalle público de proyecto activo — Caso feliz (200)
+# @name getProyectoPublicoActivo
+# Qué prueba: El perfil público no requiere token.
+# Status esperado: 200 OK.
+GET {{base}}/api/publico/proyectos/{{proyectoId}}
+
+### 2.11. Desactivar proyecto propio — Caso feliz (200)
 # @name deleteProyectoBajaLogica
 # Qué prueba: Desactivación lógica de un proyecto propio.
 # Status esperado: 200 OK.
 # Por qué: El propietario desactiva su proyecto (baja lógica estaActivo = false).
 DELETE {{base}}/api/proyectos/{{proyectoId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
-### 2.11. Reactivar proyecto para continuar el flujo
-PATCH {{base}}/api/proyectos/{{proyectoId}}
+### 2.12. Detalle público de proyecto inactivo — Error 404
+# @name getProyectoPublicoInactivo
+# Qué prueba: Un proyecto inactivo no es visible públicamente.
+# Status esperado: 404 Not Found.
+GET {{base}}/api/publico/proyectos/{{proyectoId}}
+
+### 2.13. Crear otro proyecto activo para continuar el flujo manual
+# @name recrearProyectoActivo
+POST {{base}}/api/proyectos
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
-  "nombre": "Los Pogo Brothers"
+  "nombre": "Los Pogo Brothers II",
+  "genero": "Punk Rock",
+  "descripcion": "Proyecto activo utilizado por las pruebas posteriores.",
+  "ciudad": "Buenos Aires"
 }
+
+@proyectoId = {{recrearProyectoActivo.response.body.id}}
 
 
 ### ==============================================================================
 ### 3. SECCIÓN: EVENTOS (/api/eventos)
 ### ==============================================================================
+
+### 3.0. Publicar evento sin sesión — Error 401
+# @name crearEventoSinSesion
+# Status esperado: 401 Unauthorized.
+POST {{base}}/api/eventos
+Content-Type: {{contentType}}
+
+{
+  "titulo": "Evento sin sesión",
+  "startsAt": "2026-11-20T20:00:00Z",
+  "endsAt": "2026-11-21T02:00:00Z",
+  "ubicacion": "Calle 123",
+  "cantidadMusicosRequerida": 1
+}
 
 ### 3.1. Publicar evento — Caso feliz (201)
 # @name crearEvento
@@ -212,7 +257,7 @@ x-user-id: {{musicoUserId}}
 # Por qué: Rol Organizador, fechas válidas (ends_at > starts_at) y cupo >= 1.
 POST {{base}}/api/eventos
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "titulo": "Noche de Pogo Fest 2026",
@@ -233,7 +278,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: La fecha de finalización debe ser posterior a la de inicio.
 POST {{base}}/api/eventos
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "titulo": "Evento Imposible en el Tiempo",
@@ -250,7 +295,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: Solo organizadores pueden publicar eventos.
 POST {{base}}/api/eventos
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "titulo": "Intento de Evento por Músico",
@@ -261,27 +306,56 @@ x-user-id: {{musicoUserId}}
 }
 
 @eventoId = {{crearEvento.response.body.id}}
+@eventoCanceladoId = REEMPLAZAR_CON_UUID_DE_EVENTO_CANCELADO
 
-### 3.4. Obtener detalle de evento — Caso feliz (200)
+### 3.4. Obtener detalle privado propio — Caso feliz (200)
 # @name getEventoDetalle
 # Qué prueba: Consultar detalle del evento recién publicado.
 # Status esperado: 200 OK.
-# Por qué: El evento existe y el usuario está autenticado.
+# Por qué: El organizador autenticado es el propietario.
 GET {{base}}/api/eventos/{{eventoId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
-### 3.5. Modificar evento ajeno — Error 403
-# @name patchEventoAjeno
-# Qué prueba: Un organizador intenta modificar el evento de otro organizador.
-# Status esperado: 403 Forbidden.
-# Por qué: Solamente el organizador propietario tiene permisos de modificación.
+### 3.5. Modificar evento propio — Caso feliz (200)
+# @name patchEventoPropio
 PATCH {{base}}/api/eventos/{{eventoId}}
 Content-Type: {{contentType}}
-x-user-id: {{otroOrganizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
+
+{
+  "titulo": "Noche de Pogo Fest 2026 - Actualizada"
+}
+
+### 3.6. Modificar evento ajeno — Error 404
+# @name patchEventoAjeno
+# Qué prueba: Un organizador intenta modificar el evento de otro organizador.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela la existencia de eventos pertenecientes a otra persona.
+PATCH {{base}}/api/eventos/{{eventoId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{otroOrganizadorAccessToken}}
 
 {
   "titulo": "Intento de modificar evento ajeno"
 }
+
+### 3.7. Intentar cancelar mediante PATCH — Error 400
+# @name patchEventoEstadoProhibido
+PATCH {{base}}/api/eventos/{{eventoId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{organizadorAccessToken}}
+
+{
+  "estado": "CANCELADO"
+}
+
+### 3.8. Detalle público de evento publicado — Caso feliz (200)
+# @name getEventoPublicoPublicado
+GET {{base}}/api/publico/eventos/{{eventoId}}
+
+### 3.9. Detalle público de evento cancelado — Error 404
+# @name getEventoPublicoCancelado
+GET {{base}}/api/publico/eventos/{{eventoCanceladoId}}
 
 
 ### ==============================================================================
@@ -295,12 +369,22 @@ x-user-id: {{otroOrganizadorUserId}}
 # Por qué: Rol Músico, proyecto propio activo, evento futuro no iniciado.
 POST {{base}}/api/eventos/{{eventoId}}/postulaciones
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "proyectoMusicalId": "{{proyectoId}}",
   "initialOfferAmount": 160000,
   "mensaje": "Nos encantaría participar de la fecha!"
+}
+
+### 4.1.b. Postularse sin sesión — Error 401
+# @name postularProyectoSinSesion
+# Status esperado: 401 Unauthorized.
+POST {{base}}/api/eventos/{{eventoId}}/postulaciones
+Content-Type: {{contentType}}
+
+{
+  "proyectoMusicalId": "{{proyectoId}}"
 }
 
 ### 4.2. Postular proyecto musical — Error 409 por postulación duplicada
@@ -310,20 +394,20 @@ x-user-id: {{musicoUserId}}
 # Por qué: Restricción UNIQUE(eventoId, proyectoMusicalId).
 POST {{base}}/api/eventos/{{eventoId}}/postulaciones
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "proyectoMusicalId": "{{proyectoId}}"
 }
 
-### 4.3. Postular proyecto ajeno — Error 403
+### 4.3. Postular proyecto ajeno — Error 404
 # @name postularProyectoAjeno
 # Qué prueba: Un músico intenta postular un proyecto que no le pertenece.
-# Status esperado: 403 Forbidden.
-# Por qué: El proyecto musical no le pertenece al usuario.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela la existencia de proyectos pertenecientes a otro músico.
 POST {{base}}/api/eventos/{{eventoId}}/postulaciones
 Content-Type: {{contentType}}
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 {
   "proyectoMusicalId": "{{proyectoId}}"
@@ -335,7 +419,13 @@ x-user-id: {{otroMusicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Es el propietario del evento.
 GET {{base}}/api/eventos/{{eventoId}}/postulaciones
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
+
+### 4.4.b. Listar postulaciones de evento ajeno — Error 404
+# @name listarPostulacionesEventoAjeno
+# Status esperado: 404 Not Found.
+GET {{base}}/api/eventos/{{eventoId}}/postulaciones
+Authorization: Bearer {{otroOrganizadorAccessToken}}
 
 @postulacionId = {{postularProyecto.response.body.id}}
 
@@ -345,15 +435,27 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 200 OK.
 # Por qué: El usuario es el músico postulante.
 GET {{base}}/api/postulaciones/{{postulacionId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
-### 4.6. Cancelar postulación ajena por otro usuario — Error 403
+### 4.5.b. Consultar detalle de postulación ajena — Error 404
+# @name getDetallePostulacionAjena
+# Status esperado: 404 Not Found.
+GET {{base}}/api/postulaciones/{{postulacionId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 4.6. Cancelar postulación ajena por otro músico — Error 404
 # @name cancelarPostulacionAjena
 # Qué prueba: Un usuario ajeno intenta cancelar la postulación.
-# Status esperado: 403 Forbidden.
-# Por qué: Solo el músico propietario puede cancelar su postulación.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela la existencia de postulaciones pertenecientes a otro músico.
 POST {{base}}/api/postulaciones/{{postulacionId}}/cancelacion
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 4.7. Cancelar postulación con rol ORGANIZADOR — Error 403
+# @name cancelarPostulacionRolOrganizador
+# Status esperado: 403 Forbidden.
+POST {{base}}/api/postulaciones/{{postulacionId}}/cancelacion
+Authorization: Bearer {{organizadorAccessToken}}
 
 
 ### ==============================================================================
@@ -366,9 +468,56 @@ x-user-id: {{otroMusicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Postulación PENDIENTE pasa a ACEPTADA, se valida disponibilidad y se crea contratación NEGOCIANDO.
 POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
+
+### 5.1.b. Aceptar postulación con rol MÚSICO — Error 403
+# @name aceptarPostulacionRolMusico
+# Status esperado: 403 Forbidden.
+POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
+Authorization: Bearer {{musicoAccessToken}}
+
+### 5.1.c. Aceptar postulación de evento ajeno — Error 404
+# @name aceptarPostulacionEventoAjeno
+# Status esperado: 404 Not Found.
+POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
+Authorization: Bearer {{otroOrganizadorAccessToken}}
 
 @contratacionId = {{aceptarPostulacion.response.body.contratacion.id}}
+
+### 5.1.d. Iniciar contratación directa sin sesión — Error 401
+# @name crearContratacionDirectaSinSesion
+# Status esperado: 401 Unauthorized.
+POST {{base}}/api/contrataciones
+Content-Type: {{contentType}}
+
+{
+  "eventoId": "{{eventoId}}",
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
+### 5.1.e. Iniciar contratación directa con rol MÚSICO — Error 403
+# @name crearContratacionDirectaRolMusico
+# Status esperado: 403 Forbidden.
+POST {{base}}/api/contrataciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "eventoId": "{{eventoId}}",
+  "proyectoMusicalId": "{{proyectoId}}"
+}
+
+### 5.1.f. Iniciar contratación directa con evento ajeno — Error 404
+# @name crearContratacionDirectaEventoAjeno
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{otroOrganizadorAccessToken}}
+
+{
+  "eventoId": "{{eventoId}}",
+  "proyectoMusicalId": "{{proyectoId}}"
+}
 
 ### 5.2. Aceptar postulación — Error 409 por postulación ya procesada
 # @name aceptarPostulacionYaProcesada
@@ -376,7 +525,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: La postulación ya se encuentra ACEPTADA.
 POST {{base}}/api/postulaciones/{{postulacionId}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 5.3. Rechazar postulación que no está PENDIENTE — Error 409
 # @name rechazarPostulacionNoPendiente
@@ -384,7 +533,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: La postulación ya no puede rechazarse.
 POST {{base}}/api/postulaciones/{{postulacionId}}/rechazar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 5.4. Consultar detalle de contratación — Caso feliz (200)
 # @name getContratacionDetalle
@@ -392,20 +541,47 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 200 OK.
 # Por qué: El usuario es participante de la contratación.
 GET {{base}}/api/contrataciones/{{contratacionId}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
-### 5.5. Consultar contratación ajena — Error 403
+### 5.5. Consultar contratación ajena — Error 404
 # @name getContratacionAjena
 # Qué prueba: Un usuario ajeno intenta acceder a la contratación privada.
-# Status esperado: 403 Forbidden.
-# Por qué: No es participante de la negociación.
+# Status esperado: 404 Not Found.
+# Por qué: No se revela la existencia de negociaciones ajenas.
 GET {{base}}/api/contrataciones/{{contratacionId}}
-x-user-id: {{otroMusicoUserId}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 5.6. Cancelar contratación ajena — Error 404
+# @name cancelarContratacionAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones/{{contratacionId}}/cancelar
+Content-Type: {{contentType}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+{
+  "motivoCancelacion": "Intento sobre una contratación ajena"
+}
+
+### 5.7. Completar contratación ajena — Error 404
+# @name completarContratacionAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones/{{contratacionId}}/completar
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 
 ### ==============================================================================
 ### 6. SECCIÓN: OFERTAS Y NEGOCIACIÓN (/api/contrataciones/:id/ofertas)
 ### ==============================================================================
+
+### 6.0. Crear oferta sin sesión — Error 401
+# @name crearOfertaSinSesion
+# Status esperado: 401 Unauthorized.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+
+{
+  "monto": 150000
+}
 
 ### 6.1. Crear primera oferta económica — Caso feliz (201)
 # @name crearOfertaOrganizador
@@ -414,7 +590,7 @@ x-user-id: {{otroMusicoUserId}}
 # Por qué: Contratación NEGOCIANDO, participante válido, monto válido.
 POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
 Content-Type: {{contentType}}
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 {
   "monto": 150000,
@@ -423,13 +599,60 @@ x-user-id: {{organizadorUserId}}
 
 @oferta1Id = {{crearOfertaOrganizador.response.body.id}}
 
+### 6.1.b. Consultar historial como participante — Caso feliz (200)
+# @name getHistorialOfertas
+# Status esperado: 200 OK.
+GET {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Authorization: Bearer {{musicoAccessToken}}
+
+### 6.1.c. Consultar historial de contratación ajena — Error 404
+# @name getHistorialOfertasAjeno
+# Status esperado: 404 Not Found.
+GET {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 6.1.d. Crear oferta en contratación ajena — Error 404
+# @name crearOfertaContratacionAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+{
+  "monto": 170000
+}
+
+### 6.1.e. Intentar enviar remitenteId — Error 400
+# @name crearOfertaConRemitente
+# Status esperado: 400 Bad Request.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "monto": 170000,
+  "remitenteId": "00000000-0000-0000-0000-000000000000"
+}
+
+### 6.1.f. Aceptar oferta ajena — Error 404
+# @name aceptarOfertaAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/ofertas/{{oferta1Id}}/aceptar
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 6.1.g. Rechazar oferta ajena — Error 404
+# @name rechazarOfertaAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/ofertas/{{oferta1Id}}/rechazar
+Authorization: Bearer {{otroMusicoAccessToken}}
+
 ### 6.2. Aceptar propia oferta — Error 409
 # @name aceptarPropiaOfertaError
 # Qué prueba: El organizador intenta aceptar la oferta que él mismo envió.
 # Status esperado: 409 Conflict.
 # Por qué: El emisor no puede aceptar su propia propuesta; solo la contraparte puede hacerlo.
 POST {{base}}/api/ofertas/{{oferta1Id}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 6.3. Rechazar propia oferta — Error 409
 # @name rechazarPropiaOfertaError
@@ -437,7 +660,7 @@ x-user-id: {{organizadorUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: El emisor no puede rechazar su propia propuesta.
 POST {{base}}/api/ofertas/{{oferta1Id}}/rechazar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 6.4. Contraofertar — Caso feliz (201)
 # @name contraofertarMusico
@@ -446,7 +669,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: La oferta anterior pasa a CONTRAOFERTADA y la nueva queda en PROPUESTA.
 POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "monto": 175000,
@@ -461,7 +684,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 200 OK.
 # Por qué: Se validan cupos y disponibilidad, oferta pasa a ACEPTADA, contrato a ACORDADO con agreed_amount = $175.000.
 POST {{base}}/api/ofertas/{{oferta2Id}}/aceptar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 6.6. Enviar oferta en contratación ACORDADA — Error 409
 # @name crearOfertaEnContratoAcordado
@@ -470,7 +693,7 @@ x-user-id: {{organizadorUserId}}
 # Por qué: Una contratación en estado ACORDADO no admite nuevas ofertas.
 POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "monto": 190000
@@ -488,11 +711,47 @@ x-user-id: {{musicoUserId}}
 # Por qué: Solo las contrataciones en estado COMPLETADO pueden recibir valoraciones.
 POST {{base}}/api/contrataciones/{{contratacionId}}/valoraciones
 Content-Type: {{contentType}}
-x-user-id: {{musicoUserId}}
+Authorization: Bearer {{musicoAccessToken}}
 
 {
   "puntaje": 5,
   "comentario": "Excelente fecha!"
+}
+
+### 7.1.1. Consultar valoraciones privadas sin sesión — Error 401
+# @name getValoracionesSinAuth
+# Status esperado: 401 Unauthorized.
+GET {{base}}/api/contrataciones/{{contratacionId}}/valoraciones
+
+### 7.1.2. Consultar valoraciones de contratación ajena — Error 404
+# @name getValoracionesAjenas
+# Status esperado: 404 Not Found; no revela si la contratación existe.
+GET {{base}}/api/contrataciones/{{contratacionAjenaId}}/valoraciones
+Authorization: Bearer {{musicoAccessToken}}
+
+### 7.1.3. Crear valoración en contratación ajena — Error 404
+# @name crearValoracionAjena
+# Status esperado: 404 Not Found; autor y destinatario no provienen del body.
+POST {{base}}/api/contrataciones/{{contratacionAjenaId}}/valoraciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "puntaje": 5,
+  "comentario": "No debe crearse"
+}
+
+### 7.1.4. Intentar elegir identidades — Error 400
+# @name crearValoracionConIdentidadManipulada
+# Status esperado: 400 Bad Request porque el body es estricto.
+POST {{base}}/api/contrataciones/{{contratacionId}}/valoraciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "puntaje": 5,
+  "autorId": "{{otroMusicoUserId}}",
+  "destinatarioId": "{{otroOrganizadorUserId}}"
 }
 
 ### 7.2. Completar contratación — Error 409 si el evento aún no finalizó
@@ -501,7 +760,7 @@ x-user-id: {{musicoUserId}}
 # Status esperado: 409 Conflict.
 # Por qué: El evento todavía no finalizó (ends_at > ahora).
 POST {{base}}/api/contrataciones/{{contratacionId}}/completar
-x-user-id: {{organizadorUserId}}
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 7.3. Consultar reputación de usuario — Caso feliz (200)
 # @name getReputacionUsuario
@@ -516,6 +775,11 @@ GET {{base}}/api/usuarios/{{organizadorUserId}}/valoraciones
 # Status esperado: 200 OK.
 # Por qué: El proyecto existe en la base de datos.
 GET {{base}}/api/proyectos/{{proyectoId}}/valoraciones
+
+### 7.5. Consultar reputación de proyecto inactivo — Error 404
+# @name getReputacionProyectoInactivo
+# Status esperado: 404 Not Found porque solo los proyectos activos son públicos.
+GET {{base}}/api/proyectos/{{proyectoInactivoId}}/valoraciones
 
 
 ### ==============================================================================

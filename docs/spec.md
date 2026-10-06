@@ -602,7 +602,7 @@ Durante el MVP:
 | Campos obligatorios faltantes o inválidos (nombre, género) | `400` |
 | Caché aproximado negativo o superior al límite | `400` |
 | URLs de enlaces con formato inválido | `400` |
-| Intentar modificar o eliminar un proyecto que no pertenece al usuario | `403` |
+| Intentar consultar, modificar o eliminar un proyecto que no pertenece al músico autenticado | `404` |
 | El proyecto solicitado no existe | `404` |
 
 ---
@@ -640,7 +640,7 @@ Además:
 | `ends_at` no es posterior a `starts_at` | `400` |
 | Cantidad de proyectos requeridos menor a 1 | `400` |
 | Caché ofrecido negativo o superior al límite | `400` |
-| Intentar modificar o cancelar un evento que no pertenece al usuario | `403` |
+| Intentar consultar, modificar o cancelar un evento que pertenece a otro organizador | `404` |
 | El evento solicitado no existe | `404` |
 | Intentar modificar `starts_at` o `ends_at` cuando existen contrataciones activas (`NEGOCIANDO` o `ACORDADO`) | `409` |
 | Intentar reducir `required_projects_count` por debajo de la cantidad de cupos ocupados | `409` |
@@ -685,7 +685,7 @@ Respuesta exitosa: `200 OK` con la postulación resultante en estado `CANCELADA`
 |---|---|
 | Sin sesión activa | `401` |
 | El usuario autenticado tiene rol `ORGANIZADOR` al postular | `403` |
-| El proyecto musical no existe o no pertenece al usuario | `403` |
+| El proyecto musical no existe o no pertenece al usuario | `404` |
 | El proyecto musical está inactivo | `409` |
 | El evento no existe | `404` |
 | El evento no está `PUBLICADO` | `409` |
@@ -693,7 +693,7 @@ Respuesta exitosa: `200 OK` con la postulación resultante en estado `CANCELADA`
 | El mismo proyecto ya tiene una postulación para ese evento | `409` |
 | ID de evento o proyecto con formato inválido (no UUID) | `400` |
 | Sin sesión activa al cancelar | `401` |
-| La postulación no existe o no pertenece al usuario | `403` |
+| La postulación no existe o no pertenece al usuario | `404` |
 | La postulación no está en estado `PENDIENTE` | `409` |
 
 ---
@@ -741,7 +741,7 @@ Además:
 | Sin sesión activa | `401` |
 | El usuario autenticado tiene rol `MUSICO` | `403` |
 | La postulación no existe | `404` |
-| La postulación pertenece al evento de otro organizador | `403` |
+| La postulación pertenece al evento de otro organizador | `404` |
 | La postulación no está en estado `PENDIENTE` | `409` |
 | El evento ya no está `PUBLICADO` | `409` |
 | El músico ya tiene una contratación activa (`NEGOCIANDO` o `ACORDADO`) que se superpone horariamente | `409` |
@@ -770,7 +770,7 @@ Además:
 |---|---|
 | Sin sesión activa | `401` |
 | El usuario autenticado tiene rol `MUSICO` | `403` |
-| El evento no existe o no pertenece al organizador | `403` |
+| El evento no existe o no pertenece al organizador | `404` |
 | El proyecto musical no existe | `404` |
 | El proyecto musical está inactivo | `409` |
 | El músico ya tiene una contratación activa (`NEGOCIANDO` o `ACORDADO`) que se superpone horariamente | `409` |
@@ -797,7 +797,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La oferta no existe | `404` |
 | Monto de oferta negativo o superior al límite permitido | `400` |
@@ -841,7 +841,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La oferta no existe | `404` |
 | La oferta no está en estado `PROPUESTA` | `409` |
 | La contratación no está en estado `NEGOCIANDO` | `409` |
@@ -882,7 +882,7 @@ Al cancelar:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La contratación ya está `CANCELADO` | `409` |
 | La contratación ya está `COMPLETADO` | `409` |
@@ -926,7 +926,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La contratación no está en estado `ACORDADO` | `409` |
 | El evento todavía no finalizó (`evento.ends_at > ahora`) | `409` |
@@ -954,7 +954,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La contratación no está en estado `COMPLETADO` | `409` |
 | El usuario ya valoró esta contratación | `409` |
@@ -1927,12 +1927,17 @@ No existen endpoints propios de registro y login porque esas operaciones utiliza
 |---|---|---|---|
 | `GET` | `/api/proyectos` | Obtener proyectos propios | Sí |
 | `POST` | `/api/proyectos` | Crear proyecto | Sí |
-| `GET` | `/api/proyectos/buscar` | Buscar proyectos activos | Sí |
-| `GET` | `/api/proyectos/:proyectoId` | Obtener detalle | Según contexto |
+| `GET` | `/api/proyectos/buscar` | Buscar proyectos activos | No |
+| `GET` | `/api/proyectos/:proyectoId` | Obtener detalle privado de un proyecto propio, activo o inactivo | Sí, `MUSICO` propietario |
 | `PATCH` | `/api/proyectos/:proyectoId` | Actualizar proyecto propio | Sí |
 | `DELETE` | `/api/proyectos/:proyectoId` | Desactivar proyecto propio | Sí |
 
 `DELETE` representa una baja lógica.
+
+La búsqueda pública solamente devuelve proyectos con `estaActivo = true`. El detalle
+público se consulta mediante `/api/publico/proyectos/:proyectoId` y también exige
+`estaActivo = true`. Para no revelar la existencia de recursos ajenos, un proyecto que
+no pertenece al músico autenticado responde `404`, igual que un proyecto inexistente.
 
 ---
 
@@ -1940,23 +1945,27 @@ No existen endpoints propios de registro y login porque esas operaciones utiliza
 
 | Método | Endpoint | Descripción | Auth |
 |---|---|---|---|
-| `GET` | `/api/eventos` | Obtener eventos correspondientes al rol | Sí |
+| `GET` | `/api/eventos` | Obtener eventos propios del organizador | Sí, `ORGANIZADOR` |
 | `POST` | `/api/eventos` | Crear evento publicado | Sí |
-| `GET` | `/api/eventos/:eventoId` | Obtener detalle | Sí |
+| `GET` | `/api/eventos/:eventoId` | Obtener detalle privado de un evento propio, publicado o cancelado | Sí, `ORGANIZADOR` propietario |
 | `PATCH` | `/api/eventos/:eventoId` | Actualizar evento propio | Sí |
 | `POST` | `/api/eventos/:eventoId/cancelar` | Cancelar evento | Sí |
 
-### `GET /api/eventos`
+### Visibilidad y ownership de eventos
 
-Para Músico:
+`GET /api/eventos` es el listado privado del organizador y solamente devuelve eventos
+con `organizadorId` igual al usuario autenticado. Los músicos y el público consultan
+la cartelera mediante `GET /api/publico/eventos`.
 
-- eventos publicados;
-- eventos disponibles;
-- eventos futuros o vigentes según filtros.
+Las operaciones privadas incorporan `id` y `organizadorId` en la consulta. Un evento
+ajeno responde `404`, igual que uno inexistente. Un usuario `MUSICO` recibe `403` antes
+de consultar el recurso.
 
-Para Organizador:
-
-- eventos propios.
+El modelo solamente posee `PUBLICADO` y `CANCELADO`. La cartelera pública muestra
+eventos `PUBLICADO` cuyo `endsAt` es posterior al momento de la consulta. El detalle
+público exige `PUBLICADO`; un evento `CANCELADO` responde `404`. La cancelación se
+realiza exclusivamente mediante `POST /api/eventos/:eventoId/cancelar`; `PATCH` no
+acepta modificaciones directas de `estado`.
 
 ---
 
@@ -1971,6 +1980,19 @@ Para Organizador:
 | `POST` | `/api/postulaciones/:postulacionId/aceptar` | Aceptar e iniciar contratación | Sí |
 | `POST` | `/api/postulaciones/:postulacionId/rechazar` | Rechazar | Sí |
 | `POST` | `/api/postulaciones/:postulacionId/cancelacion` | Cancelar postulación propia (músico) | Sí |
+
+### Autorización y ownership de postulaciones
+
+Un músico solamente puede postular proyectos propios y cancelar postulaciones cuyo
+`musicoId` coincida con su usuario autenticado. Un organizador solamente puede listar,
+aceptar o rechazar postulaciones vinculadas a eventos cuyo `organizadorId` coincida con
+su usuario autenticado. El detalle es accesible únicamente para el músico postulante o
+el organizador propietario del evento.
+
+El rol incorrecto responde `403`. Un proyecto, evento o postulación ajenos responden
+`404`, igual que un recurso inexistente, para no revelar su existencia. La aceptación
+crea la contratación `NEGOCIANDO` dentro de la misma transacción y deriva todas las
+identidades de la sesión y de las relaciones persistidas.
 
 ---
 
@@ -1994,6 +2016,19 @@ Las contrataciones originadas por postulaciones se crean mediante:
 POST /api/postulaciones/:postulacionId/aceptar
 ```
 
+### Autorización y participantes
+
+Las contrataciones solamente son visibles y gestionables por el músico y el organizador
+registrados como participantes. El listado se filtra por `musicoId` para `MUSICO` y por
+`organizadorId` para `ORGANIZADOR`. Una contratación ajena responde `404`, igual que una
+inexistente.
+
+La contratación directa solamente puede iniciarla un `ORGANIZADOR`. El evento debe
+pertenecer al usuario autenticado; un evento ajeno responde `404`. `organizadorId` y
+`creadoPorId` se derivan de la sesión, mientras que `musicoId` se deriva del propietario
+persistido del proyecto. Cancelar y completar requieren participación en la contratación.
+Ningún ID de actor o rol se acepta como identidad confiable desde el cliente.
+
 ---
 
 ## 23.6. Ofertas
@@ -2005,6 +2040,18 @@ POST /api/postulaciones/:postulacionId/aceptar
 | `POST` | `/api/ofertas/:ofertaId/aceptar` | Aceptar propuesta vigente | Sí |
 | `POST` | `/api/ofertas/:ofertaId/rechazar` | Rechazar propuesta vigente | Sí |
 
+### Autorización de ofertas
+
+Solamente los participantes de una contratación pueden consultar su historial y crear
+ofertas. La participación se incorpora a la consulta; una contratación u oferta ajena
+responde `404`, igual que un recurso inexistente. `remitenteId` siempre se deriva del
+usuario autenticado y no se acepta desde el cliente.
+
+Aceptar o rechazar corresponde exclusivamente a la contraparte. Un participante que
+intenta resolver su propia oferta recibe `409`. La aceptación conserva la validación de
+disponibilidad y cupos y realiza atómicamente la transición de la oferta a `ACEPTADA`,
+de la contratación a `ACORDADO` y el registro del monto y fecha acordados.
+
 ---
 
 ## 23.7. Valoraciones
@@ -2013,8 +2060,21 @@ POST /api/postulaciones/:postulacionId/aceptar
 |---|---|---|---|
 | `POST` | `/api/contrataciones/:contratacionId/valoraciones` | Crear valoración | Sí |
 | `GET` | `/api/contrataciones/:contratacionId/valoraciones` | Obtener valoraciones de la contratación | Sí |
-| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Consultar reputación de usuario | Según contexto |
-| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Consultar reputación del proyecto | Según contexto |
+| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Consultar reputación de usuario | No |
+| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Consultar reputación de proyecto activo | No |
+
+Las valoraciones de una contratación son privadas y solamente pueden consultarlas o
+crearlas sus participantes. La participación forma parte de la consulta; una contratación
+ajena responde `404`, igual que una inexistente. Para crear una valoración, la contratación
+debe estar `COMPLETADO`. El autor se deriva de la sesión y el destinatario —incluido el
+proyecto destinatario cuando valora el organizador— se deriva de la contratación. El body
+solamente admite puntuación y comentario.
+
+La restricción `UNIQUE(contract_id, author_id)` garantiza una valoración por participante
+y contratación; una repetición responde `409`. La reputación de usuarios y de proyectos
+activos es pública. Expone puntuación, comentario, fecha y los datos públicos mínimos del
+autor (id, nombre, apellido y foto de perfil), sin datos privados de la contratación ni de
+sus participantes. Un proyecto inactivo no expone su reputación mediante esta ruta pública.
 
 ---
 
