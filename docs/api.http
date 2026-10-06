@@ -18,6 +18,8 @@
 @organizadorUserId = 22222222-2222-2222-2222-222222222222
 @otroMusicoUserId = 33333333-3333-3333-3333-333333333333
 @otroOrganizadorUserId = 44444444-4444-4444-4444-444444444444
+@contratacionAjenaId = REEMPLAZAR_CON_UUID_DE_CONTRATACION_AJENA
+@proyectoInactivoId = REEMPLAZAR_CON_UUID_DE_PROYECTO_INACTIVO
 
 @musicoAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
 @organizadorAccessToken = REEMPLAZAR_CON_ACCESS_TOKEN_SUPABASE
@@ -716,6 +718,42 @@ Authorization: Bearer {{musicoAccessToken}}
   "comentario": "Excelente fecha!"
 }
 
+### 7.1.1. Consultar valoraciones privadas sin sesión — Error 401
+# @name getValoracionesSinAuth
+# Status esperado: 401 Unauthorized.
+GET {{base}}/api/contrataciones/{{contratacionId}}/valoraciones
+
+### 7.1.2. Consultar valoraciones de contratación ajena — Error 404
+# @name getValoracionesAjenas
+# Status esperado: 404 Not Found; no revela si la contratación existe.
+GET {{base}}/api/contrataciones/{{contratacionAjenaId}}/valoraciones
+Authorization: Bearer {{musicoAccessToken}}
+
+### 7.1.3. Crear valoración en contratación ajena — Error 404
+# @name crearValoracionAjena
+# Status esperado: 404 Not Found; autor y destinatario no provienen del body.
+POST {{base}}/api/contrataciones/{{contratacionAjenaId}}/valoraciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "puntaje": 5,
+  "comentario": "No debe crearse"
+}
+
+### 7.1.4. Intentar elegir identidades — Error 400
+# @name crearValoracionConIdentidadManipulada
+# Status esperado: 400 Bad Request porque el body es estricto.
+POST {{base}}/api/contrataciones/{{contratacionId}}/valoraciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "puntaje": 5,
+  "autorId": "{{otroMusicoUserId}}",
+  "destinatarioId": "{{otroOrganizadorUserId}}"
+}
+
 ### 7.2. Completar contratación — Error 409 si el evento aún no finalizó
 # @name completarEventoFuturo
 # Qué prueba: Intentar completar una contratación antes de que llegue ends_at del evento.
@@ -737,6 +775,11 @@ GET {{base}}/api/usuarios/{{organizadorUserId}}/valoraciones
 # Status esperado: 200 OK.
 # Por qué: El proyecto existe en la base de datos.
 GET {{base}}/api/proyectos/{{proyectoId}}/valoraciones
+
+### 7.5. Consultar reputación de proyecto inactivo — Error 404
+# @name getReputacionProyectoInactivo
+# Status esperado: 404 Not Found porque solo los proyectos activos son públicos.
+GET {{base}}/api/proyectos/{{proyectoInactivoId}}/valoraciones
 
 
 ### ==============================================================================

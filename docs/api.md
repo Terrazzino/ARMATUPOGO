@@ -134,10 +134,21 @@ disponibilidad y cupos y registra el acuerdo.
 
 | Método | Ruta | Qué hace | Rol | Errores posibles |
 |---|---|---|---|---|
-| `POST` | `/api/contrataciones/:contratacionId/valoraciones` | Crea una valoración de una contratación `COMPLETADO` | Participante | 400, 401, 403, 404, 409 |
-| `GET` | `/api/contrataciones/:contratacionId/valoraciones` | Lista las valoraciones de una contratación | Participante | 401, 403, 404 |
-| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Consulta la reputación de un usuario | Según contexto | 404 |
-| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Consulta la reputación de un proyecto | Según contexto | 404 |
+| `POST` | `/api/contrataciones/:contratacionId/valoraciones` | Crea una valoración de una contratación `COMPLETADO` | Participante | 400, 401, 404, 409 |
+| `GET` | `/api/contrataciones/:contratacionId/valoraciones` | Lista las valoraciones de una contratación | Participante | 401, 404 |
+| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Consulta reputación pública de un usuario | Público | 400, 404 |
+| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Consulta reputación pública de un proyecto activo | Público | 400, 404 |
+
+La consulta y creación privadas incorporan la participación a la consulta de la contratación;
+un recurso ajeno o inexistente responde `404`. La creación deriva `autorId` de la sesión y
+`destinatarioId`/`proyectoDestinatarioId` de la contratación. El body es estricto y admite
+solamente `puntaje` y `comentario`. La contratación debe estar `COMPLETADO` y el constraint
+`UNIQUE(contract_id, author_id)` impide duplicados, que responden `409`.
+
+La reputación pública no requiere sesión. Devuelve total, promedio y valoraciones con
+puntaje, comentario, fecha y datos públicos mínimos del autor (id, nombre, apellido y foto),
+sin email, teléfono ni información interna de la contratación. Los proyectos inactivos
+responden `404`, igual que los inexistentes.
 
 ---
 
@@ -386,7 +397,7 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | Operación | Situación | Status | Qué ve el usuario | Quién lo agarra |
 |---|---|---|---|---|
 | `POST /api/contrataciones/:id/valoraciones` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
-| `POST /api/contrataciones/:id/valoraciones` | Usuario no es participante | `403` | "No participaste de esta contratación" | autorización/autenticación |
+| `POST /api/contrataciones/:id/valoraciones` | Usuario no es participante | `404` | "Contratación no encontrada" | consulta con participación |
 | `POST /api/contrataciones/:id/valoraciones` | Contratación no existe | `404` | "Contratación no encontrada" | consulta |
 | `POST /api/contrataciones/:id/valoraciones` | Contratación no está `COMPLETADO` | `409` | "Solo se pueden valorar contrataciones completadas" | regla de dominio |
 | `POST /api/contrataciones/:id/valoraciones` | El usuario ya valoró esta contratación | `409` | "Ya realizaste una valoración para esta contratación" | regla de dominio |

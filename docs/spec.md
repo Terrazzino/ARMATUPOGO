@@ -954,7 +954,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La contratación no está en estado `COMPLETADO` | `409` |
 | El usuario ya valoró esta contratación | `409` |
@@ -2060,8 +2060,21 @@ de la contratación a `ACORDADO` y el registro del monto y fecha acordados.
 |---|---|---|---|
 | `POST` | `/api/contrataciones/:contratacionId/valoraciones` | Crear valoración | Sí |
 | `GET` | `/api/contrataciones/:contratacionId/valoraciones` | Obtener valoraciones de la contratación | Sí |
-| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Consultar reputación de usuario | Según contexto |
-| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Consultar reputación del proyecto | Según contexto |
+| `GET` | `/api/usuarios/:usuarioId/valoraciones` | Consultar reputación de usuario | No |
+| `GET` | `/api/proyectos/:proyectoId/valoraciones` | Consultar reputación de proyecto activo | No |
+
+Las valoraciones de una contratación son privadas y solamente pueden consultarlas o
+crearlas sus participantes. La participación forma parte de la consulta; una contratación
+ajena responde `404`, igual que una inexistente. Para crear una valoración, la contratación
+debe estar `COMPLETADO`. El autor se deriva de la sesión y el destinatario —incluido el
+proyecto destinatario cuando valora el organizador— se deriva de la contratación. El body
+solamente admite puntuación y comentario.
+
+La restricción `UNIQUE(contract_id, author_id)` garantiza una valoración por participante
+y contratación; una repetición responde `409`. La reputación de usuarios y de proyectos
+activos es pública. Expone puntuación, comentario, fecha y los datos públicos mínimos del
+autor (id, nombre, apellido y foto de perfil), sin datos privados de la contratación ni de
+sus participantes. Un proyecto inactivo no expone su reputación mediante esta ruta pública.
 
 ---
 

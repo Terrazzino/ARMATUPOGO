@@ -7,8 +7,9 @@
 import { z } from "zod";
 import { VALIDATION_LIMITS } from "@/lib/constants";
 
-export const crearValoracionSchema = z.object({
-  contratacionId: z.string().uuid("ID de contratación inválido"),
+export const valoracionTargetIdSchema = z.string().uuid("ID inválido");
+
+export const crearValoracionBodySchema = z.object({
   puntaje: z
     .number()
     .int("El puntaje debe ser un número entero")
@@ -29,6 +30,10 @@ export const crearValoracionSchema = z.object({
     )
     .optional()
     .or(z.literal("")),
-});
+}).strict();
+
+export const crearValoracionSchema = crearValoracionBodySchema.extend({
+  contratacionId: z.string().uuid("ID de contratación inválido"),
+}).strict();
 
 export type CrearValoracionInput = z.infer<typeof crearValoracionSchema>;
