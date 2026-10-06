@@ -306,7 +306,13 @@ Authorization: Bearer {{musicoAccessToken}}
 }
 
 @eventoId = {{crearEvento.response.body.id}}
-@eventoCanceladoId = REEMPLAZAR_CON_UUID_DE_EVENTO_CANCELADO
+
+### 3.3.b. Listar eventos propios del organizador — Caso feliz (200)
+# @name getMisEventos
+# Qué prueba: El organizador lista exclusivamente sus eventos propios.
+# Status esperado: 200 OK.
+GET {{base}}/api/eventos
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 3.4. Obtener detalle privado propio — Caso feliz (200)
 # @name getEventoDetalle
@@ -348,6 +354,29 @@ Authorization: Bearer {{organizadorAccessToken}}
 {
   "estado": "CANCELADO"
 }
+
+### 3.7.b. Publicar evento secundario para prueba de cancelación
+# @name crearEventoParaCancelar
+POST {{base}}/api/eventos
+Content-Type: {{contentType}}
+Authorization: Bearer {{organizadorAccessToken}}
+
+{
+  "titulo": "Evento Temporal a Cancelar",
+  "startsAt": "2026-12-15T20:00:00Z",
+  "endsAt": "2026-12-16T02:00:00Z",
+  "ubicacion": "Av. Mitre 500",
+  "cantidadMusicosRequerida": 1
+}
+
+@eventoCanceladoId = {{crearEventoParaCancelar.response.body.id}}
+
+### 3.7.c. Cancelar evento propio — Caso feliz (200)
+# @name cancelarEventoPropio
+# Qué prueba: El organizador cancela un evento propio y sus procesos activos.
+# Status esperado: 200 OK.
+POST {{base}}/api/eventos/{{eventoCanceladoId}}/cancelar
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 3.8. Detalle público de evento publicado — Caso feliz (200)
 # @name getEventoPublicoPublicado
@@ -426,6 +455,13 @@ Authorization: Bearer {{organizadorAccessToken}}
 # Status esperado: 404 Not Found.
 GET {{base}}/api/eventos/{{eventoId}}/postulaciones
 Authorization: Bearer {{otroOrganizadorAccessToken}}
+
+### 4.4.c. Listar postulaciones del usuario autenticado — Caso feliz (200)
+# @name getMisPostulaciones
+# Qué prueba: El músico lista sus postulaciones enviadas.
+# Status esperado: 200 OK.
+GET {{base}}/api/postulaciones
+Authorization: Bearer {{musicoAccessToken}}
 
 @postulacionId = {{postularProyecto.response.body.id}}
 
@@ -542,6 +578,13 @@ Authorization: Bearer {{organizadorAccessToken}}
 # Por qué: El usuario es participante de la contratación.
 GET {{base}}/api/contrataciones/{{contratacionId}}
 Authorization: Bearer {{musicoAccessToken}}
+
+### 5.4.b. Listar contrataciones del usuario autenticado — Caso feliz (200)
+# @name getMisContrataciones
+# Qué prueba: Un participante lista sus contrataciones.
+# Status esperado: 200 OK.
+GET {{base}}/api/contrataciones
+Authorization: Bearer {{organizadorAccessToken}}
 
 ### 5.5. Consultar contratación ajena — Error 404
 # @name getContratacionAjena
