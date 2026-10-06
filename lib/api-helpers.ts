@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { authService } from "@/lib/services/auth-service";
 import { prisma } from "@/lib/prisma";
 import {
   AuthenticationError,
@@ -18,60 +18,11 @@ import type { Usuario } from "@/lib/types";
 export const uuidSchema = z.string().uuid("ID con formato inválido");
 
 /**
- * Los errores 400/401/403 devueltos por getUser representan una credencial que
- * Supabase no pudo validar. Los errores de red, configuración o servicio son 500.
- */
-function isInvalidCredentialError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-
-  const authError = error as { name?: string; status?: number; code?: string };
-
-  return (
-    authError.name === "AuthSessionMissingError" ||
-    authError.name === "AuthInvalidJwtError" ||
-    authError.code === "bad_jwt" ||
-    authError.code === "invalid_jwt" ||
-    authError.code === "session_not_found" ||
-    authError.status === 400 ||
-    authError.status === 401 ||
-    authError.status === 403
-  );
-}
-
-type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
-
-async function getSupabaseUserId(
-  supabase: SupabaseServerClient,
-  accessToken?: string
-): Promise<string | null> {
-  try {
-    const { data, error } = accessToken
-      ? await supabase.auth.getUser(accessToken)
-      : await supabase.auth.getUser();
-
-    if (error) {
-      if (isInvalidCredentialError(error)) return null;
-      throw new InternalServerError();
-    }
-
-    return data.user?.id ?? null;
-  } catch (error) {
-    if (error instanceof InternalServerError) throw error;
-    throw new InternalServerError();
-  }
-}
-
-/**
- * Obtiene el usuario autenticado mediante una identidad validada por Supabase.
+ * Obtiene el usuario autenticado mediante una identidad validada por Supabase Auth.
  * Admite cookies Supabase SSR o Authorization: Bearer <access_token>.
  * El encabezado x-user-id no forma parte del flujo y se ignora siempre.
  */
 export async function getAuthenticatedUser(request?: Request): Promise<Usuario | null> {
-  // No envolver createClient() en catch: cookies() puede lanzar la señal interna
-  // con la que Next determina que una ruta debe renderizarse dinámicamente.
-  const supabase = await createClient();
-  if (!supabase) throw new InternalServerError();
-
   const authorization = request?.headers.get("authorization");
   let authUserId: string | null;
 
@@ -82,9 +33,9 @@ export async function getAuthenticatedUser(request?: Request): Promise<Usuario |
     // Un Authorization presente pero mal formado no debe habilitar un fallback
     // silencioso a otra identidad por cookies.
     if (!accessToken) return null;
-    authUserId = await getSupabaseUserId(supabase, accessToken);
+    authUserId = await authService.validateSession(accessToken);
   } else {
-    authUserId = await getSupabaseUserId(supabase);
+    authUserId = await authService.validateSession();
   }
 
   if (!authUserId) return null;

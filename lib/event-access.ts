@@ -38,7 +38,6 @@ export const publicEventListSelect = {
   contrataciones: {
     where: { estado: "ACORDADO" as const },
     select: {
-      id: true,
       proyectoMusical: {
         select: { id: true, nombre: true, genero: true, imagenUrl: true },
       },
@@ -51,7 +50,6 @@ export const publicEventDetailSelect = {
   contrataciones: {
     where: { estado: "ACORDADO" as const },
     select: {
-      id: true,
       proyectoMusical: {
         select: {
           id: true,

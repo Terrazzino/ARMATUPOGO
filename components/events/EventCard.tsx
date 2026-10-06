@@ -20,7 +20,6 @@ interface EventCardProps {
       apellido: string;
     } | null;
     contrataciones?: Array<{
-      id: string;
       proyectoMusical: {
         id: string;
         nombre: string;

@@ -120,7 +120,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {event.contrataciones.map((c) => (
                     <div
-                      key={c.id}
+                      key={c.proyectoMusical.id}
                       className="p-4 bg-neutral-800 rounded-xl border border-neutral-700 flex flex-col justify-between gap-3"
                     >
                       <div>

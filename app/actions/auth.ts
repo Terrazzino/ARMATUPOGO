@@ -9,7 +9,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { authService } from "@/lib/services/auth-service";
 import { prisma } from "@/lib/prisma";
 import {
   registroSchemaConConfirm,
@@ -29,55 +29,23 @@ export async function registerUser(input: RegistroInputConConfirm) {
   try {
     const validatedInput = registroSchemaConConfirm.parse(input);
 
-    const supabase = await createClient();
-    if (!supabase) {
-      throw new ValidationError(
-        "El servicio de autenticación no está configurado. Verifica las variables de entorno."
-      );
-    }
-
-    // 1. Crear usuario en Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 1. Crear identidad mediante el servicio aislado de autenticación
+    const { userId, hasSession } = await authService.signUp({
       email: validatedInput.email,
       password: validatedInput.password,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
-        data: {
-          first_name: validatedInput.nombre,
-          last_name: validatedInput.apellido,
-          role: validatedInput.rol,
-        },
+      userData: {
+        firstName: validatedInput.nombre,
+        lastName: validatedInput.apellido,
+        role: validatedInput.rol,
       },
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
     });
-
-    if (authError) {
-      if (
-        authError.message.toLowerCase().includes("already registered") ||
-        authError.message.toLowerCase().includes("user already exists")
-      ) {
-        throw new ValidationError("El email ya se encuentra registrado", {
-          field: "email",
-        });
-      }
-
-      if (authError.message.toLowerCase().includes("rate limit")) {
-        throw new ValidationError(
-          "Se ha superado el límite de correos de confirmación de Supabase (máx. 3-4 por hora con el servidor por defecto). Desactiva 'Confirm email' en tu panel de Supabase para desarrollo local o aguarda unos minutos."
-        );
-      }
-
-      throw authError;
-    }
-
-    if (!authData.user) {
-      throw new Error("No se pudo crear el usuario en el servicio de autenticación");
-    }
 
     // 2. Crear el perfil en la base de datos usando el modelo Usuario de Prisma
     try {
       await prisma.usuario.create({
         data: {
-          id: authData.user.id,
+          id: userId,
           email: validatedInput.email.toLowerCase().trim(),
           nombre: validatedInput.nombre.trim(),
           apellido: validatedInput.apellido.trim(),
@@ -91,7 +59,7 @@ export async function registerUser(input: RegistroInputConConfirm) {
       );
     }
 
-    if (authData.session) {
+    if (hasSession) {
       redirectPath = validatedInput.rol === "MUSICO"
         ? "/dashboard/musician"
         : "/dashboard/organizer";
@@ -117,35 +85,15 @@ export async function loginUser(input: LoginInput) {
   try {
     const validatedInput = loginSchema.parse(input);
 
-    const supabase = await createClient();
-    if (!supabase) {
-      throw new ValidationError(
-        "El servicio de autenticación no está configurado. Verifica las variables de entorno."
-      );
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // 1. Iniciar sesión mediante el servicio aislado de autenticación
+    const { userId } = await authService.signIn({
       email: validatedInput.email.toLowerCase().trim(),
       password: validatedInput.password,
     });
 
-    if (error?.code === "email_not_confirmed") {
-      throw new ValidationError(
-        "Tu email todavía no está confirmado. Revisa tu correo y confirma tu cuenta antes de iniciar sesión."
-      );
-    }
-
-    if (error) {
-      throw new ValidationError("Email o contraseña incorrectos");
-    }
-
-    if (!data.session) {
-      throw new Error("No se pudo iniciar sesión. Por favor verifica tus credenciales.");
-    }
-
-    // Obtener rol desde Prisma para redirección personalizada
+    // 2. Obtener rol desde Prisma para redirección personalizada
     const usuario = await prisma.usuario.findUnique({
-      where: { id: data.user.id },
+      where: { id: userId },
       select: { rol: true },
     });
 
@@ -171,13 +119,7 @@ export async function loginUser(input: LoginInput) {
  */
 export async function logoutUser() {
   try {
-    const supabase = await createClient();
-    if (supabase) {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-    }
+    await authService.signOut();
   } catch (error) {
     const normalizedError = normalizeError(error);
     return {

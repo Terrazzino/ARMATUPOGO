@@ -1812,27 +1812,44 @@ Responsabilidades:
 
 ## PostgreSQL / Supabase
 
-PostgreSQL será la base de datos relacional.
+PostgreSQL es la base de datos relacional del sistema.
 
-Supabase proveerá la infraestructura correspondiente.
+Supabase provee la infraestructura administrada correspondiente, accedida vía Prisma ORM con connection pooling (PgBouncer).
+
+- **Clasificación:** SERVICIO ESENCIAL (persistencia relacional principal).
 
 ## Supabase Auth
 
-Responsable de:
+Proveedor externo de autenticación y gestión de identidades (IDaaS).
 
-- registro;
-- login;
-- sesiones;
-- tokens;
-- identidad.
+- **Proveedor:** Supabase.
+- **Finalidad:**
+  - registro de identidades;
+  - inicio de sesión (email y contraseña);
+  - emisión y verificación de sesiones y JWT;
+  - cierre de sesión;
+  - validación criptográfica de identidad en Server Actions, Middleware y Route Handlers.
+- **Clasificación:** SERVICIO ESENCIAL. Sin Supabase Auth, ninguna operación privada o autenticada puede proceder.
+- **Timeout:** 5 segundos explícito (`DEFAULT_SUPABASE_TIMEOUT_MS = 5000`) configurado en el fetch de clientes Supabase (`AbortSignal.timeout(5000)`).
+- **Comportamiento ante fallo o indisponibilidad:**
+  - Ante timeout, caída de red o error 5xx de Supabase, las operaciones dependientes de identidad NO continúan.
+  - En Route Handlers y Server Actions se devuelve un error de infraestructura controlado (`503 Service Unavailable` o `500 Internal Server Error`) sin exponer datos sensibles.
+  - En el middleware, las rutas protegidas (`/dashboard/*`) bloquean el acceso y redirigen a `/auth/login?error=auth_unavailable` (o `config_missing`), impidiendo cualquier bypass de seguridad.
+- **Credenciales:** Administradas exclusivamente por variables de entorno (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). No se utiliza `service_role` en la aplicación cliente ni se exponen secretos.
+- **Aislamiento:** Centralizado en la capa `lib/services/auth-service.ts`, abstrayendo detalles internos y códigos del SDK del resto del dominio.
+
+## Correo Electrónico (Transaccional)
+
+- **Proveedor:** Supabase Auth (infraestructura gestionada).
+- **Finalidad:** Envío automático del correo con link de confirmación de cuenta durante el proceso de registro (`signUp`).
+- **Alcance:** Arma tu Pogo **NO posee cliente de correo propio** (no integra SMTP, Resend, Brevo, SendGrid ni Nodemailer). La entrega del correo de confirmación está delegada íntegramente a Supabase Auth.
+- **Comportamiento ante error:** Si Supabase supera la cuota de envíos o falla en el envío, la operación de registro se interrumpe y se informa al usuario mediante mensaje controlado.
 
 ## Supabase Storage
 
-Podrá utilizarse para:
-
-- avatares;
-- imágenes de proyectos;
-- banners.
+- **Estado en MVP actual:** NO IMPLEMENTADO / DIFERIDO.
+- **Diseño previsto:** Previsto arquitectónicamente para almacenamiento de archivos binarios (avatares, imágenes de proyectos y banners).
+- **Implementación actual:** En esta etapa del proyecto, las imágenes se gestionan exclusivamente mediante URLs de texto (`imagenUrl`, `fotoPerfilUrl`) almacenadas en PostgreSQL, sin integración activa con buckets de Supabase Storage.
 
 ## Zod
 
