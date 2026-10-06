@@ -571,6 +571,16 @@ Authorization: Bearer {{otroMusicoAccessToken}}
 ### 6. SECCIÓN: OFERTAS Y NEGOCIACIÓN (/api/contrataciones/:id/ofertas)
 ### ==============================================================================
 
+### 6.0. Crear oferta sin sesión — Error 401
+# @name crearOfertaSinSesion
+# Status esperado: 401 Unauthorized.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+
+{
+  "monto": 150000
+}
+
 ### 6.1. Crear primera oferta económica — Caso feliz (201)
 # @name crearOfertaOrganizador
 # Qué prueba: El organizador envía una propuesta de $150.000.
@@ -586,6 +596,53 @@ Authorization: Bearer {{organizadorAccessToken}}
 }
 
 @oferta1Id = {{crearOfertaOrganizador.response.body.id}}
+
+### 6.1.b. Consultar historial como participante — Caso feliz (200)
+# @name getHistorialOfertas
+# Status esperado: 200 OK.
+GET {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Authorization: Bearer {{musicoAccessToken}}
+
+### 6.1.c. Consultar historial de contratación ajena — Error 404
+# @name getHistorialOfertasAjeno
+# Status esperado: 404 Not Found.
+GET {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 6.1.d. Crear oferta en contratación ajena — Error 404
+# @name crearOfertaContratacionAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+{
+  "monto": 170000
+}
+
+### 6.1.e. Intentar enviar remitenteId — Error 400
+# @name crearOfertaConRemitente
+# Status esperado: 400 Bad Request.
+POST {{base}}/api/contrataciones/{{contratacionId}}/ofertas
+Content-Type: {{contentType}}
+Authorization: Bearer {{musicoAccessToken}}
+
+{
+  "monto": 170000,
+  "remitenteId": "00000000-0000-0000-0000-000000000000"
+}
+
+### 6.1.f. Aceptar oferta ajena — Error 404
+# @name aceptarOfertaAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/ofertas/{{oferta1Id}}/aceptar
+Authorization: Bearer {{otroMusicoAccessToken}}
+
+### 6.1.g. Rechazar oferta ajena — Error 404
+# @name rechazarOfertaAjena
+# Status esperado: 404 Not Found.
+POST {{base}}/api/ofertas/{{oferta1Id}}/rechazar
+Authorization: Bearer {{otroMusicoAccessToken}}
 
 ### 6.2. Aceptar propia oferta — Error 409
 # @name aceptarPropiaOfertaError

@@ -797,7 +797,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La contratación no existe | `404` |
 | La oferta no existe | `404` |
 | Monto de oferta negativo o superior al límite permitido | `400` |
@@ -841,7 +841,7 @@ Además:
 | Situación | Código |
 |---|---|
 | Sin sesión activa | `401` |
-| El usuario no es participante de la contratación | `403` |
+| El usuario no es participante de la contratación | `404` |
 | La oferta no existe | `404` |
 | La oferta no está en estado `PROPUESTA` | `409` |
 | La contratación no está en estado `NEGOCIANDO` | `409` |
@@ -2039,6 +2039,18 @@ Ningún ID de actor o rol se acepta como identidad confiable desde el cliente.
 | `POST` | `/api/contrataciones/:contratacionId/ofertas` | Crear oferta o contraoferta | Sí |
 | `POST` | `/api/ofertas/:ofertaId/aceptar` | Aceptar propuesta vigente | Sí |
 | `POST` | `/api/ofertas/:ofertaId/rechazar` | Rechazar propuesta vigente | Sí |
+
+### Autorización de ofertas
+
+Solamente los participantes de una contratación pueden consultar su historial y crear
+ofertas. La participación se incorpora a la consulta; una contratación u oferta ajena
+responde `404`, igual que un recurso inexistente. `remitenteId` siempre se deriva del
+usuario autenticado y no se acepta desde el cliente.
+
+Aceptar o rechazar corresponde exclusivamente a la contraparte. Un participante que
+intenta resolver su propia oferta recibe `409`. La aceptación conserva la validación de
+disponibilidad y cupos y realiza atómicamente la transición de la oferta a `ACEPTADA`,
+de la contratación a `ACORDADO` y el registro del monto y fecha acordados.
 
 ---
 

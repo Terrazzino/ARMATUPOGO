@@ -9,10 +9,13 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/app/actions/auth";
 import { requireAuthenticatedUser } from "@/lib/api-helpers";
 import { participatingContractWhere, requireRole } from "@/lib/authorization";
-import { crearOfertaSchema, type CrearOfertaInput } from "@/lib/validations/offers";
+import {
+  crearOfertaSchema,
+  ofertaIdSchema,
+  type CrearOfertaInput,
+} from "@/lib/validations/offers";
 import {
   cancelarContratacionSchema,
   contratacionIdSchema,
@@ -21,7 +24,7 @@ import {
   postulacionIdSchema,
   type CancelarContratacionInput,
 } from "@/lib/validations/contracts";
-import { normalizeError, AuthorizationError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
+import { normalizeError, NotFoundError, ValidationError } from "@/lib/errors";
 import {
   acceptOwnedPostulation,
   cancelOwnedPostulation,
@@ -36,6 +39,12 @@ import {
   contractsForUserWhere,
   createDirectContract,
 } from "@/lib/contract-access";
+import {
+  acceptOfferAsCounterparty,
+  createOfferForParticipant,
+  getOffersForParticipant,
+  rejectOfferAsCounterparty,
+} from "@/lib/offer-access";
 
 function validatePostulationId(postulationId: string) {
   const parsed = postulacionIdSchema.safeParse(postulationId);
@@ -223,69 +232,19 @@ export async function cancelPostulation(postulacionId: string) {
  */
 export async function createOffer(input: CrearOfertaInput) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("No autenticado");
-    }
+    const user = await requireAuthenticatedUser();
+    const parsed = crearOfertaSchema.safeParse(input);
+    if (!parsed.success) throw new ValidationError("Datos de oferta inválidos");
 
-    const validated = crearOfertaSchema.parse(input);
-
-    const contract = await prisma.contratacion.findUnique({
-      where: { id: validated.contratacionId },
-      include: {
-        ofertas: {
-          where: { estado: "PROPUESTA" },
-        },
-      },
+    const newOffer = await createOfferForParticipant({
+      contractId: parsed.data.contratacionId,
+      userId: user.id,
+      amount: parsed.data.monto,
+      message: parsed.data.mensaje,
     });
 
-    if (!contract) {
-      throw new NotFoundError("Contratación");
-    }
-
-    // Verificar que sea participante
-    if (contract.organizadorId !== user.id && contract.musicoId !== user.id) {
-      throw new AuthorizationError("No tienes acceso a esta negociación");
-    }
-
-    // Verificar estado válido del contrato
-    if (["ACORDADO", "CANCELADO", "COMPLETADO"].includes(contract.estado)) {
-      throw new ValidationError(`No se pueden enviar ofertas en una contratación con estado ${contract.estado}`);
-    }
-
-    const newOffer = await prisma.$transaction(async (tx) => {
-      await tx.oferta.updateMany({
-        where: {
-          contratacionId: contract.id,
-          estado: "PROPUESTA",
-        },
-        data: {
-          estado: "CONTRAOFERTADA",
-        },
-      });
-
-      const createdOffer = await tx.oferta.create({
-        data: {
-          contratacionId: contract.id,
-          remitenteId: user.id,
-          monto: validated.monto,
-          mensaje: validated.mensaje || null,
-          estado: "PROPUESTA",
-        },
-      });
-
-      await tx.contratacion.update({
-        where: { id: contract.id },
-        data: {
-          estado: "NEGOCIANDO",
-        },
-      });
-
-      return createdOffer;
-    });
-
-    revalidatePath(`/dashboard`);
-    revalidatePath(`/contracts/${contract.id}`);
+    revalidatePath("/dashboard");
+    revalidatePath(`/contracts/${parsed.data.contratacionId}`);
 
     return {
       success: true,
@@ -306,87 +265,18 @@ export async function createOffer(input: CrearOfertaInput) {
  */
 export async function acceptOffer(ofertaId: string) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("No autenticado");
-    }
+    const user = await requireAuthenticatedUser();
+    const parsedId = ofertaIdSchema.safeParse(ofertaId);
+    if (!parsedId.success) throw new ValidationError("ID de oferta inválido");
 
-    const offer = await prisma.oferta.findUnique({
-      where: { id: ofertaId },
-      include: { contratacion: true },
-    });
-
-    if (!offer) {
-      throw new NotFoundError("Oferta");
-    }
-
-    const contract = offer.contratacion;
-
-    // Solo la contraparte puede aceptar (no el que envió la oferta)
-    if (offer.remitenteId === user.id) {
-      throw new ValidationError("No puedes aceptar tu propia oferta");
-    }
-
-    if (contract.organizadorId !== user.id && contract.musicoId !== user.id) {
-      throw new AuthorizationError("No formas parte de esta negociación");
-    }
-
-    if (offer.estado !== "PROPUESTA") {
-      throw new ValidationError("Esta oferta ya no está disponible para ser aceptada");
-    }
-
-    if (["ACORDADO", "CANCELADO", "COMPLETADO"].includes(contract.estado)) {
-      throw new ValidationError(`La contratación ya se encuentra en estado ${contract.estado}`);
-    }
-
-    const { updatedOffer, updatedContract } = await prisma.$transaction(async (tx) => {
-      const contractUpdate = await tx.contratacion.updateMany({
-        where: {
-          id: contract.id,
-          estado: "NEGOCIANDO",
-        },
-        data: {
-          estado: "ACORDADO",
-          montoPactado: offer.monto,
-          fechaAcuerdo: new Date(),
-        },
-      });
-
-      if (contractUpdate.count !== 1) {
-        throw new ConflictError("La contratación ya fue acordada por otra operación");
-      }
-
-      const offerUpdate = await tx.oferta.updateMany({
-        where: {
-          id: offer.id,
-          contratacionId: contract.id,
-          estado: "PROPUESTA",
-        },
-        data: { estado: "ACEPTADA" },
-      });
-
-      if (offerUpdate.count !== 1) {
-        throw new ConflictError("La oferta ya no está disponible para ser aceptada");
-      }
-
-      await tx.oferta.updateMany({
-        where: {
-          contratacionId: contract.id,
-          id: { not: offer.id },
-          estado: "PROPUESTA",
-        },
-        data: { estado: "CONTRAOFERTADA" },
-      });
-
-      const updatedOffer = await tx.oferta.findUniqueOrThrow({ where: { id: offer.id } });
-      const updatedContract = await tx.contratacion.findUniqueOrThrow({ where: { id: contract.id } });
-
-      return { updatedOffer, updatedContract };
-    });
+    const { updatedOffer, updatedContract } = await acceptOfferAsCounterparty(
+      parsedId.data,
+      user.id
+    );
 
     revalidatePath("/dashboard/musician");
     revalidatePath("/dashboard/organizer");
-    revalidatePath(`/contracts/${contract.id}`);
+    revalidatePath(`/contracts/${updatedContract.id}`);
 
     return {
       success: true,
@@ -410,56 +300,15 @@ export async function acceptOffer(ofertaId: string) {
  */
 export async function rejectOffer(ofertaId: string) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new AuthorizationError("No autenticado");
-    }
+    const user = await requireAuthenticatedUser();
+    const parsedId = ofertaIdSchema.safeParse(ofertaId);
+    if (!parsedId.success) throw new ValidationError("ID de oferta inválido");
 
-    const offer = await prisma.oferta.findUnique({
-      where: { id: ofertaId },
-      include: { contratacion: true },
-    });
+    const updated = await rejectOfferAsCounterparty(parsedId.data, user.id);
 
-    if (!offer) {
-      throw new NotFoundError("Oferta");
-    }
-
-    if (offer.remitenteId === user.id) {
-      throw new ValidationError("No puedes rechazar tu propia oferta");
-    }
-
-    const contract = offer.contratacion;
-    if (contract.organizadorId !== user.id && contract.musicoId !== user.id) {
-      throw new AuthorizationError("No tienes acceso a esta negociación");
-    }
-
-    if (offer.estado !== "PROPUESTA") {
-      throw new ValidationError("Solo se pueden rechazar ofertas vigentes");
-    }
-
-    if (contract.estado !== "NEGOCIANDO") {
-      throw new ValidationError("No se pueden rechazar ofertas en una contratación cerrada");
-    }
-
-    const updateResult = await prisma.oferta.updateMany({
-      where: {
-        id: ofertaId,
-        contratacionId: contract.id,
-        estado: "PROPUESTA",
-        contratacion: {
-          estado: "NEGOCIANDO",
-        },
-      },
-      data: { estado: "RECHAZADA" },
-    });
-
-    if (updateResult.count !== 1) {
-      throw new ConflictError("La oferta ya no está disponible para ser rechazada");
-    }
-
-    const updated = await prisma.oferta.findUniqueOrThrow({ where: { id: ofertaId } });
-
-    revalidatePath(`/contracts/${contract.id}`);
+    revalidatePath("/dashboard/musician");
+    revalidatePath("/dashboard/organizer");
+    revalidatePath(`/contracts/${updated.contratacionId}`);
 
     return {
       success: true,
@@ -569,6 +418,14 @@ export async function completeContract(contratacionId: string) {
       code: normalized.code,
     };
   }
+}
+
+/** Obtiene el historial de ofertas de una contratación participante. */
+export async function getContractOffers(contratacionId: string) {
+  const user = await requireAuthenticatedUser();
+  const parsedId = contratacionIdSchema.safeParse(contratacionId);
+  if (!parsedId.success) throw new ValidationError("ID de contratación inválido");
+  return getOffersForParticipant(parsedId.data, user.id);
 }
 
 /**

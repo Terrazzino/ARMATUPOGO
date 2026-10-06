@@ -117,10 +117,16 @@ del proyecto y los IDs de organizador y creador provienen de la sesión.
 
 | Método | Ruta | Qué hace | Rol | Errores posibles |
 |---|---|---|---|---|
-| `GET` | `/api/contrataciones/:contratacionId/ofertas` | Obtiene el historial de ofertas de una contratación | Participante | 401, 403, 404 |
-| `POST` | `/api/contrataciones/:contratacionId/ofertas` | Envía una oferta o contraoferta | Participante | 400, 401, 403, 404, 409 |
-| `POST` | `/api/ofertas/:ofertaId/aceptar` | Acepta la oferta vigente (`PROPUESTA`) y formaliza el acuerdo | Contraparte | 401, 403, 404, 409 |
-| `POST` | `/api/ofertas/:ofertaId/rechazar` | Rechaza la oferta vigente (`PROPUESTA`) | Contraparte | 401, 403, 404, 409 |
+| `GET` | `/api/contrataciones/:contratacionId/ofertas` | Obtiene el historial de ofertas de una contratación | Participante | 401, 404 |
+| `POST` | `/api/contrataciones/:contratacionId/ofertas` | Envía una oferta o contraoferta | Participante | 400, 401, 404, 409 |
+| `POST` | `/api/ofertas/:ofertaId/aceptar` | Acepta la oferta vigente (`PROPUESTA`) y formaliza el acuerdo | Contraparte | 401, 404, 409 |
+| `POST` | `/api/ofertas/:ofertaId/rechazar` | Rechaza la oferta vigente (`PROPUESTA`) | Contraparte | 401, 404, 409 |
+
+El historial y la creación exigen participación en la contratación. Una contratación u
+oferta ajena responde `404`. `remitenteId` se deriva siempre de la sesión y el body es
+estricto. Solo la contraparte puede aceptar o rechazar; el remitente que intenta resolver
+su propia propuesta recibe `409`. Aceptar conserva la transacción serializable que valida
+disponibilidad y cupos y registra el acuerdo.
 
 ---
 
@@ -323,16 +329,17 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | Operación | Situación | Status | Qué ve el usuario | Quién lo agarra |
 |---|---|---|---|---|
 | `POST /api/contrataciones/:id/ofertas` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
-| `POST /api/contrataciones/:id/ofertas` | Usuario no es participante | `403` | "No tienes acceso a esta negociación" | autorización/autenticación |
+| `POST /api/contrataciones/:id/ofertas` | Usuario no es participante | `404` | "Contratación no encontrada" | consulta con participación |
 | `POST /api/contrataciones/:id/ofertas` | Contratación no existe | `404` | "Contratación no encontrada" | consulta |
 | `POST /api/contrataciones/:id/ofertas` | Monto negativo o fuera del rango | `400` | "Datos inválidos" | Zod |
 | `POST /api/contrataciones/:id/ofertas` | Contratación no está `NEGOCIANDO` | `409` | "No se pueden enviar ofertas en una contratación cerrada" | regla de dominio |
 | `POST /api/ofertas/:id/aceptar` | Oferta no existe | `404` | "Oferta no encontrada" | consulta |
-| `POST /api/ofertas/:id/aceptar` | Usuario no es participante | `403` | "No formas parte de esta negociación" | autorización/autenticación |
+| `POST /api/ofertas/:id/aceptar` | Usuario no es participante | `404` | "Oferta no encontrada" | consulta con participación |
 | `POST /api/ofertas/:id/aceptar` | El emisor intenta aceptar su propia oferta | `409` | "No puedes aceptar tu propia oferta" | regla de dominio |
 | `POST /api/ofertas/:id/aceptar` | Oferta no está `PROPUESTA` | `409` | "Esta oferta ya no está disponible" | regla de dominio |
 | `POST /api/ofertas/:id/aceptar` | Contratación no está `NEGOCIANDO` | `409` | "La contratación ya no está en negociación" | regla de dominio |
 | `POST /api/ofertas/:id/rechazar` | El emisor intenta rechazar su propia oferta | `409` | "No puedes rechazar tu propia oferta" | regla de dominio |
+| `POST /api/ofertas/:id/rechazar` | Usuario no es participante | `404` | "Oferta no encontrada" | consulta con participación |
 | `POST /api/ofertas/:id/rechazar` | Oferta no está `PROPUESTA` | `409` | "Solo se pueden rechazar ofertas vigentes" | regla de dominio |
 | `POST /api/ofertas/:id/rechazar` | Contratación no está `NEGOCIANDO` | `409` | "No se pueden rechazar ofertas en una contratación cerrada" | regla de dominio |
 
