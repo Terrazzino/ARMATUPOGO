@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { proyectoMusicalSchema, type ProyectoMusicalInput } from "@/lib/validations/projects";
 import { createProject } from "@/app/actions/projects";
 
-export function CreateProjectModal() {
-  const [isOpen, setIsOpen] = useState(false);
+export function CreateProjectModal({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
+  const triggerId = useId();
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -33,202 +34,232 @@ export function CreateProjectModal() {
     }
 
     reset();
+    closeModal();
+  }
+
+  function closeModal() {
     setIsOpen(false);
+    window.requestAnimationFrame(() => document.getElementById(triggerId)?.focus());
   }
 
   return (
     <>
       <button
+        id={triggerId}
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-xl transition-all shadow-sm flex items-center gap-2"
+        className="atp-button atp-button-primary text-sm"
       >
-        <span>+</span>
+        <span aria-hidden="true">+</span>
         <span>Crear Proyecto Musical</span>
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+        <div className="atp-modal-backdrop">
+          <div
+            className="atp-modal my-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-project-title"
+          >
+            <div className="mb-5 flex items-center justify-between border-b border-neutral-800 pb-4">
+              <h3 id="create-project-title" className="atp-heading text-2xl">
                 Nuevo Proyecto Musical
               </h3>
               <button
-                onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold"
+                type="button"
+                onClick={closeModal}
+                aria-label="Cerrar formulario de proyecto"
+                className="text-xl font-bold text-neutral-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
 
             {serverError && (
-              <div className="p-3 mb-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg text-sm">
+              <div className="atp-feedback atp-feedback-error mb-4" role="alert">
                 {serverError}
               </div>
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-name" className="atp-label mb-2 block">
                     Nombre Artístico *
                   </label>
                   <input
                     {...register("nombre")}
+                    id="project-name"
+                    autoFocus
                     type="text"
                     placeholder="Ej: Los Pogo Boys"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    aria-invalid={Boolean(errors.nombre)}
+                    className="atp-field"
                   />
                   {errors.nombre && (
-                    <p className="text-xs text-red-500 mt-1">{errors.nombre.message}</p>
+                    <p className="mt-1 text-xs font-medium text-red-300">{errors.nombre.message}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-genre" className="atp-label mb-2 block">
                     Género Musical *
                   </label>
                   <input
                     {...register("genero")}
+                    id="project-genre"
                     type="text"
                     placeholder="Ej: Punk Rock / Indie"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    aria-invalid={Boolean(errors.genero)}
+                    className="atp-field"
                   />
                   {errors.genero && (
-                    <p className="text-xs text-red-500 mt-1">{errors.genero.message}</p>
+                    <p className="mt-1 text-xs font-medium text-red-300">{errors.genero.message}</p>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label htmlFor="project-description" className="atp-label mb-2 block">
                   Descripción y Propuesta
                 </label>
                 <textarea
                   {...register("descripcion")}
+                  id="project-description"
                   placeholder="Cuéntale a los organizadores sobre el sonido de la banda, trayectoria e integrantes..."
                   disabled={isLoading}
                   rows={3}
-                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  aria-invalid={Boolean(errors.descripcion)}
+                  className="atp-field"
                 />
                 {errors.descripcion && (
-                  <p className="text-xs text-red-500 mt-1">{errors.descripcion.message}</p>
+                  <p className="mt-1 text-xs font-medium text-red-300">{errors.descripcion.message}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-fee" className="atp-label mb-2 block">
                     Caché orientativo ($)
                   </label>
                   <input
                     {...register("cacheAproximado", { valueAsNumber: true })}
+                    id="project-fee"
                     type="number"
                     placeholder="50000"
                     min="0"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    aria-invalid={Boolean(errors.cacheAproximado)}
+                    className="atp-field"
                   />
                   {errors.cacheAproximado && (
-                    <p className="text-xs text-red-500 mt-1">{errors.cacheAproximado.message}</p>
+                    <p className="mt-1 text-xs font-medium text-red-300">{errors.cacheAproximado.message}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-city" className="atp-label mb-2 block">
                     Ciudad
                   </label>
                   <input
                     {...register("ciudad")}
+                    id="project-city"
                     type="text"
                     placeholder="CABA"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="atp-field"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-location" className="atp-label mb-2 block">
                     Zona / Barrio
                   </label>
                   <input
                     {...register("ubicacion")}
+                    id="project-location"
                     type="text"
                     placeholder="Palermo / Almagro"
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="atp-field"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="grid grid-cols-1 gap-4 border-t border-neutral-800 pt-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-spotify" className="atp-label mb-2 block">
                     Link de Spotify
                   </label>
                   <input
                     {...register("spotifyUrl")}
+                    id="project-spotify"
                     type="url"
                     placeholder="https://open.spotify.com/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="atp-field"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-youtube" className="atp-label mb-2 block">
                     Link de YouTube
                   </label>
                   <input
                     {...register("youtubeUrl")}
+                    id="project-youtube"
                     type="url"
                     placeholder="https://youtube.com/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="atp-field"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-instagram" className="atp-label mb-2 block">
                     Link de Instagram
                   </label>
                   <input
                     {...register("instagramUrl")}
+                    id="project-instagram"
                     type="url"
                     placeholder="https://instagram.com/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="atp-field"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label htmlFor="project-website" className="atp-label mb-2 block">
                     Sitio Web / Linktree
                   </label>
                   <input
                     {...register("sitioWebUrl")}
+                    id="project-website"
                     type="url"
                     placeholder="https://linktr.ee/..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="atp-field"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-800 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 font-medium"
+                  onClick={closeModal}
+                  className="atp-button atp-button-ghost text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-semibold rounded-lg transition-colors"
+                  aria-busy={isLoading}
+                  className="atp-button atp-button-primary text-sm"
                 >
                   {isLoading ? "Creando..." : "Guardar Proyecto"}
                 </button>

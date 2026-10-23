@@ -29,6 +29,7 @@ export const publicProjectDetailSelect = {
     },
   },
   valoraciones: {
+    orderBy: { creadoEn: "desc" as const },
     select: {
       id: true,
       puntaje: true,

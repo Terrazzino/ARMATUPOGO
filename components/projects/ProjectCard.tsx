@@ -1,27 +1,104 @@
 import Link from "next/link";
 
-interface ProjectCardProps {
-  project: {
-    id: string;
+interface ProjectCardProject {
+  id: string;
+  nombre: string;
+  genero: string;
+  descripcion?: string | null;
+  cacheAproximado?: number | string | { toString(): string } | null;
+  ubicacion?: string | null;
+  ciudad?: string | null;
+  imagenUrl?: string | null;
+  spotifyUrl?: string | null;
+  youtubeUrl?: string | null;
+  instagramUrl?: string | null;
+  sitioWebUrl?: string | null;
+  usuario?: {
     nombre: string;
-    genero: string;
-    descripcion?: string | null;
-    cacheAproximado?: number | string | { toString(): string } | null;
-    ubicacion?: string | null;
-    ciudad?: string | null;
-    imagenUrl?: string | null;
-    spotifyUrl?: string | null;
-    youtubeUrl?: string | null;
-    instagramUrl?: string | null;
-    sitioWebUrl?: string | null;
-    usuario?: {
-      nombre: string;
-      apellido: string;
-    } | null;
-  };
+    apellido: string;
+  } | null;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+type ProjectCardProps =
+  | {
+      project: ProjectCardProject;
+      variant?: "public";
+    }
+  | {
+      project: ProjectCardProject & { estaActivo: boolean };
+      variant: "dashboard";
+    };
+
+export function ProjectCard(props: ProjectCardProps) {
+  if (props.variant === "dashboard") {
+    const { project } = props;
+
+    return (
+      <article className="atp-card group flex min-w-0 flex-col overflow-hidden">
+        <div className="flex h-36 items-center justify-center border-b border-neutral-800 bg-neutral-950 p-4 sm:h-40">
+          {project.imagenUrl ? (
+            // Las imágenes de proyectos pueden provenir de hosts externos no configurables.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={project.imagenUrl}
+              alt={`Imagen de ${project.nombre}`}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <div className="grid h-full w-full place-items-center border border-dashed border-neutral-800 bg-neutral-900 px-4 text-center">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600">
+                Sin imagen del proyecto
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-1 flex-col p-5">
+          <h3 className="atp-heading truncate text-2xl" title={project.nombre}>
+            {project.nombre}
+          </h3>
+
+          {project.descripcion && (
+            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-400">
+              {project.descripcion}
+            </p>
+          )}
+
+          <div className="mt-4 space-y-2 border-t border-neutral-800 pt-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-neutral-500">Estado</span>
+              <span className={project.estaActivo ? "font-semibold text-emerald-400" : "font-semibold text-neutral-500"}>
+                {project.estaActivo ? "● Activo" : "○ Inactivo"}
+              </span>
+            </div>
+
+            {project.cacheAproximado && Number(project.cacheAproximado.toString()) > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-neutral-500">Caché orientativo</span>
+                <span className="font-semibold text-neutral-200">
+                  ${Number(project.cacheAproximado.toString()).toLocaleString("es-AR")}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-auto border-t border-neutral-800 pt-4">
+            <Link
+              href={`/projects/${project.id}`}
+              className="inline-flex min-h-10 items-center font-bold text-red-400 underline-offset-4 hover:text-red-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            >
+              Ver perfil público →
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  const { project } = props;
+
   return (
     <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden flex flex-col hover:border-neutral-700 transition-colors">
       {/* Header with avatar / banner */}

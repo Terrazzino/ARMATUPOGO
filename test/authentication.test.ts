@@ -78,6 +78,20 @@ describe("núcleo de autenticación y autorización", () => {
     expect(getUser).toHaveBeenCalledWith("token-invalido");
   });
 
+  it("rechaza una sesión expirada sin consultar el perfil Prisma", async () => {
+    const getUser = vi.fn().mockResolvedValue({
+      data: { user: null },
+      error: { name: "AuthInvalidJwtError", code: "invalid_jwt", status: 401 },
+    });
+    mocks.createClient.mockResolvedValue(supabaseWithGetUser(getUser));
+
+    await expect(requireAuthenticatedUser()).rejects.toBeInstanceOf(
+      AuthenticationError
+    );
+    expect(getUser).toHaveBeenCalledOnce();
+    expect(mocks.findUnique).not.toHaveBeenCalled();
+  });
+
   it("devuelve 403 conceptual para un rol incorrecto", () => {
     const authenticatedUser = user("MUSICO");
 

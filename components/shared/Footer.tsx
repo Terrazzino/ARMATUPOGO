@@ -7,7 +7,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
           <div className="flex items-center gap-2 text-lg font-bold text-white mb-2">
-            <Image src="/branding/arma-tu-pogo-logo.png" alt="" width={40} height={40} className="h-10 w-10 object-contain" />
+            <Image src="/branding/arma-tu-pogo-logo.optimized.webp" alt="" width={40} height={40} className="h-10 w-10 object-contain" />
             <span>ARMA TU POGO</span>
           </div>
           <p className="text-sm text-neutral-400 max-w-sm">
@@ -26,13 +26,8 @@ export function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/projects" className="hover:text-red-400 transition-colors">
-                Proyectos Musicales y Bandas
-              </Link>
-            </li>
-            <li>
               <Link href="/auth/register" className="hover:text-red-400 transition-colors">
-                Publicar un Evento o Banda
+                Ingresar o registrarse
               </Link>
             </li>
           </ul>

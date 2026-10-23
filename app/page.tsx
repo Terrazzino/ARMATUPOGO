@@ -1,174 +1,210 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
-import { getPublicEvents } from "@/app/actions/events";
-import { getPublicProjects } from "@/app/actions/projects";
+import { getPaginatedPublicEvents } from "@/app/actions/events";
 import { EventCard } from "@/components/events/EventCard";
-import { ProjectCard } from "@/components/projects/ProjectCard";
 
-export default async function Home() {
-  const [featuredEvents, featuredProjects] = await Promise.all([
-    getPublicEvents(),
-    getPublicProjects(),
-  ]);
+interface HomeProps {
+  searchParams: Promise<{
+    search?: string | string[];
+    city?: string | string[];
+    page?: string | string[];
+  }>;
+}
+
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parsePage(value?: string) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function getPageItems(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  const validPages = [...pages].filter((page) => page > 0 && page <= totalPages).sort((a, b) => a - b);
+  const items: Array<number | "ellipsis"> = [];
+
+  validPages.forEach((page, index) => {
+    if (index > 0 && page - validPages[index - 1] > 1) items.push("ellipsis");
+    items.push(page);
+  });
+
+  return items;
+}
+
+function getPageHref(page: number, filters: { search?: string; city?: string }) {
+  const query = new URLSearchParams();
+  if (filters.search) query.set("search", filters.search);
+  if (filters.city) query.set("city", filters.city);
+  if (page > 1) query.set("page", String(page));
+  const search = query.toString();
+  return `${search ? `/?${search}` : "/"}#cartelera`;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const params = await searchParams;
+  const filters = {
+    search: firstParam(params.search),
+    city: firstParam(params.city),
+  };
+  const { events, totalPages, currentPage } = await getPaginatedPublicEvents({
+    ...filters,
+    page: parsePage(firstParam(params.page)),
+  });
+  const pageItems = getPageItems(currentPage, totalPages);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-white">
+    <div className="home-typography min-h-screen flex flex-col bg-slate-950 text-white">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-12 sm:py-20 bg-neutral-950 border-b border-neutral-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-bold uppercase tracking-wider">
-            <span>Escena independiente</span>
-          </div>
-
-          <Image src="/branding/arma-tu-pogo-logo.png" alt="Arma tu pogo" width={220} height={220} className="mx-auto h-40 w-40 sm:h-52 sm:w-52 object-contain" priority />
-
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight">
-            TU PRÓXIMA FECHA, <span className="text-red-500">EN MARCHA</span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal">
-            Conectamos proyectos musicales independientes con organizadores de recitales y público. Formaliza contrataciones, negocia cachés y llena tus fechas.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              href="/events"
-              className="w-full sm:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white text-base font-bold rounded-xl transition-all shadow-lg hover:shadow-red-600/20 flex items-center justify-center gap-2"
-            >
-              <span>📅</span>
-              <span>Cartelera de Recitales</span>
-            </Link>
-            <Link
-              href="/projects"
-              className="w-full sm:w-auto px-8 py-3.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-white text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2"
-            >
-              <span>🎸</span>
-              <span>Directorio de Bandas</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Roles Feature Grid */}
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            ¿Cómo funciona Arma tu pogo?
-          </h2>
-          <p className="text-sm text-slate-400 mt-2">
-            Diseñado especialmente para la comunidad musical y organizadores
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Músicos */}
-          <div className="p-8 bg-slate-900 rounded-3xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-6">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-2xl">
-                🎸
+      <main className="flex-1">
+        <section className="home-hero relative overflow-hidden border-b border-neutral-800">
+          <div className="home-hero-mark" aria-hidden="true" />
+          <div className="relative z-10 mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6 sm:pb-8 sm:pt-10 lg:px-8 lg:pb-10 lg:pt-12">
+            <div className="max-w-6xl">
+              <h1 className="home-display max-w-6xl text-5xl font-black uppercase leading-[0.92] tracking-[-0.025em] text-white sm:text-7xl lg:text-[clamp(5.5rem,7vw,6rem)] lg:whitespace-nowrap">
+                ¿Cuál es tu próximo <span className="text-red-600">pogo?</span>
+              </h1>
+              <div className="mt-6 max-w-2xl border-l-2 border-red-600 pl-5 text-base leading-[1.55] text-neutral-200 sm:text-lg">
+                <p>
+                  Descubrí recitales, fechas y festivales de la escena independiente. Buscá tu
+                  próxima noche en vivo, sumate al pogo y explorá eventos cerca tuyo.
+                </p>
+                <p className="mt-2 text-neutral-500">
+                  Si sos parte de una banda u organizás fechas, registrate para publicar,
+                  postularte y mover la escena.
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-white">Músicos y Bandas</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Registra tus propuestas artísticas, indica tu caché orientativo, postúlate a fechas publicadas y negocia condiciones transparentes.
-              </p>
             </div>
-            <Link
-              href="/auth/register"
-              className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+
+            <form
+              method="GET"
+              aria-label="Buscar recitales"
+              className="mt-8 grid gap-3 border-y border-neutral-700 bg-neutral-950/95 p-3 sm:grid-cols-[1fr_0.55fr_auto] sm:p-4"
             >
-              Crear perfil de músico →
-            </Link>
-          </div>
-
-          {/* Organizadores */}
-          <div className="p-8 bg-slate-900 rounded-3xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-6">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-2xl">
-                📋
-              </div>
-              <h3 className="text-xl font-bold text-white">Organizadores</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Publica tus convocatorias de recitales, recibe postulaciones de proyectos musicales, realiza ofertas y gestiona tu line-up.
-              </p>
-            </div>
-            <Link
-              href="/auth/register"
-              className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-            >
-              Publicar un recital →
-            </Link>
-          </div>
-
-          {/* Público */}
-          <div className="p-8 bg-slate-900 rounded-3xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-6">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl">
-                🎟️
-              </div>
-              <h3 className="text-xl font-bold text-white">Público</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Acceso libre y sin registro para descubrir fechas en vivo, escuchar la música de las bandas confirmadas y conocer salas.
-              </p>
-            </div>
-            <Link
-              href="/events"
-              className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
-            >
-              Explorar cartelera abierta →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Events Section */}
-      {featuredEvents.length > 0 && (
-        <section className="py-12 bg-slate-900/50 border-t border-slate-900">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-2xl font-bold">Próximos Recitales</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Fechas confirmadas en la plataforma</p>
-              </div>
-              <Link href="/events" className="text-xs font-bold text-blue-400 hover:underline">
-                Ver todos ({featuredEvents.length}) →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {featuredEvents.slice(0, 3).map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
+              <label className="sr-only" htmlFor="home-search">Evento, banda o lugar</label>
+              <input
+                id="home-search"
+                type="search"
+                name="search"
+                defaultValue={filters.search || ""}
+                placeholder="Banda, evento o lugar"
+                className="min-h-12 border border-neutral-700 bg-black px-4 text-sm text-white placeholder:text-neutral-500 transition-colors hover:border-neutral-600 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+              <label className="sr-only" htmlFor="home-city">Ciudad</label>
+              <input
+                id="home-city"
+                type="search"
+                name="city"
+                defaultValue={filters.city || ""}
+                placeholder="Ciudad"
+                className="min-h-12 border border-neutral-700 bg-black px-4 text-sm text-white placeholder:text-neutral-500 transition-colors hover:border-neutral-600 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+              <button
+                type="submit"
+                className="min-h-12 bg-red-600 px-8 text-sm font-black uppercase tracking-wider text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                Buscar fechas
+              </button>
+            </form>
           </div>
         </section>
-      )}
 
-      {/* Featured Projects Section */}
-      {featuredProjects.length > 0 && (
-        <section className="py-12 border-t border-slate-900">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
+        <section id="cartelera" aria-labelledby="events-heading" className="home-events-board pb-14 pt-6 sm:pb-20 sm:pt-8 lg:pt-10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 border-b border-neutral-700 pb-5">
               <div>
-                <h2 className="text-2xl font-bold">Bandas y Proyectos Destacados</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Artistas independientes registrados</p>
+                <p className="home-heading mb-2.5 text-sm font-black uppercase leading-none tracking-[0.2em] text-red-400">
+                  La próxima fecha empieza acá
+                </p>
+                <h2 id="events-heading" className="home-display text-3xl font-black uppercase tracking-tight text-white sm:text-5xl">
+                  Cartelera de recitales
+                </h2>
               </div>
-              <Link href="/projects" className="text-xs font-bold text-purple-400 hover:underline">
-                Ver catálogo ({featuredProjects.length}) →
-              </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {featuredProjects.slice(0, 3).map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
+            {events.length === 0 ? (
+              <div className="border border-dashed border-neutral-700 bg-neutral-950 px-6 py-14 text-center">
+                <h3 className="home-heading text-xl font-black text-white">No encontramos fechas</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm text-neutral-400">
+                  Probá con otra banda, evento, lugar o ciudad. También podés volver a la cartelera completa.
+                </p>
+                {(filters.search || filters.city) && (
+                  <Link href="/" className="mt-5 inline-block font-bold text-red-400 hover:underline">
+                    Limpiar búsqueda
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[repeat(3,minmax(0,21.5rem))]">
+                  {events.map((event, index) => (
+                    <EventCard key={event.id} event={event} prioritizeImage={index === 0} />
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <nav aria-label="Páginas de la cartelera" className="mt-10 flex items-center justify-center gap-2">
+                    {currentPage > 1 ? (
+                      <Link
+                        href={getPageHref(currentPage - 1, filters)}
+                        aria-label="Ir a la página anterior"
+                        className="grid h-9 min-w-9 place-items-center border border-neutral-700 bg-black/70 px-2 text-sm font-bold text-neutral-200 transition-colors hover:border-red-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      >
+                        ←
+                      </Link>
+                    ) : (
+                      <span aria-disabled="true" aria-label="No hay página anterior" className="grid h-9 min-w-9 cursor-not-allowed place-items-center border border-neutral-800 bg-black/40 px-2 text-sm text-neutral-600">
+                        ←
+                      </span>
+                    )}
+
+                    {pageItems.map((item, index) =>
+                      item === "ellipsis" ? (
+                        <span key={`ellipsis-${index}`} aria-hidden="true" className="grid h-9 min-w-7 place-items-center text-neutral-500">
+                          …
+                        </span>
+                      ) : (
+                        <Link
+                          key={item}
+                          href={getPageHref(item, filters)}
+                          aria-label={`Ir a la página ${item}`}
+                          aria-current={item === currentPage ? "page" : undefined}
+                          className={`grid h-9 min-w-9 place-items-center border px-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
+                            item === currentPage
+                              ? "border-red-600 bg-red-600 text-white"
+                              : "border-neutral-700 bg-black/70 text-neutral-300 hover:border-red-500 hover:text-white"
+                          }`}
+                        >
+                          {item}
+                        </Link>
+                      )
+                    )}
+
+                    {currentPage < totalPages ? (
+                      <Link
+                        href={getPageHref(currentPage + 1, filters)}
+                        aria-label="Ir a la página siguiente"
+                        className="grid h-9 min-w-9 place-items-center border border-neutral-700 bg-black/70 px-2 text-sm font-bold text-neutral-200 transition-colors hover:border-red-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      >
+                        →
+                      </Link>
+                    ) : (
+                      <span aria-disabled="true" aria-label="No hay página siguiente" className="grid h-9 min-w-9 cursor-not-allowed place-items-center border border-neutral-800 bg-black/40 px-2 text-sm text-neutral-600">
+                        →
+                      </span>
+                    )}
+                  </nav>
+                )}
+              </>
+            )}
           </div>
         </section>
-      )}
+      </main>
 
       <Footer />
     </div>

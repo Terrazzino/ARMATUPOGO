@@ -44,13 +44,13 @@ export function PostulationCard({ postulation }: PostulationCardProps) {
   }
 
   return (
-    <article className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5 space-y-4">
+    <article className="atp-card space-y-4 p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-red-400">
+          <p className="atp-kicker">
             {postulation.evento.titulo}
           </p>
-          <h3 className="mt-1 text-lg font-bold text-white">
+          <h3 className="atp-heading mt-1 text-xl">
             {postulation.proyectoMusical.nombre}
           </h3>
           <p className="text-sm text-neutral-400">
@@ -61,7 +61,7 @@ export function PostulationCard({ postulation }: PostulationCardProps) {
       </div>
 
       {postulation.mensaje && (
-        <p className="whitespace-pre-line rounded-xl border border-neutral-800 bg-neutral-950 p-3 text-sm text-neutral-300">
+        <p className="whitespace-pre-line border border-neutral-800 bg-neutral-950 p-3 text-sm leading-relaxed text-neutral-300">
           {postulation.mensaje}
         </p>
       )}
@@ -69,10 +69,10 @@ export function PostulationCard({ postulation }: PostulationCardProps) {
       {feedback && (
         <p
           role="status"
-          className={`rounded-lg border px-3 py-2 text-xs ${
+          className={`atp-feedback text-sm ${
             feedback.error
-              ? "border-red-800 bg-red-950/50 text-red-300"
-              : "border-emerald-800 bg-emerald-950/50 text-emerald-300"
+              ? "atp-feedback-error"
+              : "atp-feedback-success"
           }`}
         >
           {feedback.message}
@@ -87,7 +87,7 @@ export function PostulationCard({ postulation }: PostulationCardProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/projects/${postulation.proyectoMusical.id}`}
-            className="rounded-lg px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            className="atp-button atp-button-ghost text-xs"
           >
             Ver proyecto
           </Link>
@@ -98,7 +98,7 @@ export function PostulationCard({ postulation }: PostulationCardProps) {
                 type="button"
                 onClick={() => processPostulation("reject")}
                 disabled={isPending}
-                className="rounded-lg border border-neutral-700 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="atp-button atp-button-secondary text-xs"
               >
                 Rechazar
               </button>
@@ -106,7 +106,8 @@ export function PostulationCard({ postulation }: PostulationCardProps) {
                 type="button"
                 onClick={() => processPostulation("accept")}
                 disabled={isPending}
-                className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-busy={isPending}
+                className="atp-button atp-button-primary text-xs"
               >
                 {isPending ? "Procesando..." : "Aceptar e iniciar negociación"}
               </button>

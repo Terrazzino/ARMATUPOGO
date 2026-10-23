@@ -1,244 +1,271 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProjectById } from "@/app/actions/projects";
-import { getProjectReputation } from "@/app/actions/ratings";
+import { notFound } from "next/navigation";
+import { getAuthenticatedUserForRender as getCurrentUser } from "@/lib/auth-render";
 import { getMyEvents } from "@/app/actions/events";
-import { getCurrentUser } from "@/app/actions/auth";
-import { Navbar } from "@/components/shared/Navbar";
+import { DeferredInviteModal } from "@/components/contracts/DeferredInviteModal";
+import { RockHandIcon, RockHandScale, RockHandScore } from "@/components/ratings/RockHandRating";
 import { Footer } from "@/components/shared/Footer";
-import { InviteModal } from "@/components/contracts/InviteModal";
+import { Navbar } from "@/components/shared/Navbar";
+import { getPublicProjectDetailForRender } from "@/lib/public-detail-data";
+import { getProjectReputationPresentation } from "@/lib/rating-presentation";
 
 interface ProjectDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+interface ProjectLink {
+  label: string;
+  url: string;
+}
+
+function isSafeExternalUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function externalLink(label: string, value?: string | null): ProjectLink | null {
+  return value && isSafeExternalUrl(value) ? { label, url: value } : null;
+}
+
+function getCustomLinks(value: unknown): ProjectLink[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const candidate = item as { title?: unknown; label?: unknown; url?: unknown };
+    if (typeof candidate.url !== "string" || !isSafeExternalUrl(candidate.url)) return [];
+    const rawLabel = typeof candidate.title === "string"
+      ? candidate.title
+      : typeof candidate.label === "string"
+        ? candidate.label
+        : "Enlace";
+    return [{ label: rawLabel.trim() || "Enlace", url: candidate.url }];
+  });
+}
+
 export async function generateMetadata({ params }: ProjectDetailPageProps) {
   const { id } = await params;
-  const project = await getProjectById(id);
+  const project = await getPublicProjectDetailForRender(id);
   if (!project) return { title: "Proyecto no encontrado - Arma tu pogo" };
   return {
-    title: `${project.nombre} (${project.genero}) - Arma tu pogo`,
-    description: project.descripcion || `Perfil de ${project.nombre} en Arma tu pogo`,
+    title: project.nombre + " (" + project.genero + ") - Arma tu pogo",
+    description: project.descripcion || "Perfil de " + project.nombre + " en Arma tu pogo",
   };
 }
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const { id } = await params;
-  const [project, reputation, user] = await Promise.all([
-    getProjectById(id),
-    getProjectReputation(id),
+  const [project, user] = await Promise.all([
+    getPublicProjectDetailForRender(id),
     getCurrentUser(),
   ]);
 
-  if (!project) {
-    notFound();
-  }
+  if (!project) notFound();
 
+  const reputation = getProjectReputationPresentation(project.valoraciones);
   const organizerEvents = user?.rol === "ORGANIZADOR" ? await getMyEvents() : [];
+  const cache = project.cacheAproximado && Number(project.cacheAproximado.toString()) > 0
+    ? "$" + Number(project.cacheAproximado.toString()).toLocaleString("es-AR")
+    : null;
+  const projectLinks = [
+    externalLink("Spotify", project.spotifyUrl),
+    externalLink("YouTube", project.youtubeUrl),
+    externalLink("Instagram", project.instagramUrl),
+    externalLink("Sitio web", project.sitioWebUrl),
+    ...getCustomLinks(project.enlacesPersonalizados),
+  ].filter((link): link is ProjectLink => link !== null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
-      <Navbar />
+    <div className="atp-page flex min-h-screen flex-col">
+      <Navbar
+        variant={user ? "dashboard" : "public"}
+        activeItem={user?.rol === "ORGANIZADOR" ? "discovery" : null}
+      />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
-        {/* Back Link */}
-        <div className="mb-6">
-          <Link href="/projects" className="text-sm font-medium text-neutral-300 hover:text-red-400 flex items-center gap-1">
-            ← Volver al catálogo de bandas
-          </Link>
-        </div>
+      <main className="atp-container w-full flex-1 py-7 sm:py-10">
+        <Link
+          href="/projects"
+          className="inline-flex text-sm font-bold text-neutral-400 underline-offset-4 hover:text-red-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        >
+          ← Volver al catálogo de bandas
+        </Link>
 
-        {/* Hero Section */}
-        <div className="bg-neutral-900 text-white rounded-2xl p-8 sm:p-10 border border-neutral-800 border-l-4 border-l-red-600 mb-8 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-red-700 border-2 border-red-400/40 flex items-center justify-center text-4xl sm:text-5xl font-black uppercase shrink-0">
-              {project.nombre.charAt(0)}
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-bold px-2.5 py-1 bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg uppercase tracking-wider">
-                  {project.genero}
+        <header className="mt-6 grid gap-7 border-b border-neutral-800 pb-8 md:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)] md:items-center lg:gap-10">
+          <div className="mx-auto aspect-square w-full max-w-sm overflow-hidden border border-neutral-800 bg-neutral-900 p-5 md:mx-0">
+            {project.imagenUrl ? (
+              // Las imágenes pueden provenir de hosts externos no configurados en Next Image.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={project.imagenUrl}
+                alt={"Imagen de " + project.nombre}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <div
+                className="grid h-full w-full place-items-center border border-dashed border-neutral-800 bg-neutral-950 px-5 text-center"
+                aria-label="Imagen del proyecto no disponible"
+              >
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-600">
+                  Sin imagen del proyecto
                 </span>
-                {reputation.total > 0 && (
-                  <span className="text-xs font-bold px-2.5 py-1 bg-amber-500/20 text-amber-300 rounded-lg flex items-center gap-1">
-                    ★ {reputation.averageScore} ({reputation.total} valoraciones)
-                  </span>
-                )}
               </div>
+            )}
+          </div>
 
-              <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
-                {project.nombre}
-              </h1>
-
+          <div className="min-w-0">
+            <p className="atp-kicker">Proyecto musical</p>
+            <h1 className="atp-heading atp-page-title mt-4 break-words">{project.nombre}</h1>
+            <dl className="mt-7 grid gap-4 border-l-2 border-red-600 pl-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="atp-label text-neutral-500">Género musical</dt>
+                <dd className="mt-1 font-bold text-neutral-100">{project.genero}</dd>
+              </div>
               {project.ciudad && (
-                <p className="text-sm text-slate-300 flex items-center gap-1">
-                  <span>📍</span> {project.ciudad}{project.ubicacion ? ` - ${project.ubicacion}` : ""}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Info */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Bio */}
-            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
-              <h2 className="text-xl font-bold mb-4">Biografía y Propuesta</h2>
-              <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed text-sm sm:text-base">
-                {project.descripcion || "Sin descripción proporcionada."}
-              </p>
-            </div>
-
-            {/* Reviews & Ratings */}
-            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
-              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold">Historial de Valoraciones</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Evaluaciones de organizadores con los que ha compartido fecha
-                  </p>
+                  <dt className="atp-label text-neutral-500">Ciudad</dt>
+                  <dd className="mt-1 font-bold text-neutral-100">{project.ciudad}</dd>
                 </div>
-              </div>
+              )}
+              {project.ubicacion && (
+                <div>
+                  <dt className="atp-label text-neutral-500">Ubicación</dt>
+                  <dd className="mt-1 font-bold text-neutral-100">{project.ubicacion}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        </header>
 
-              {reputation.ratings.length === 0 ? (
-                <div className="p-8 text-center bg-neutral-800/50 rounded-xl border border-dashed border-neutral-700">
-                  <span className="text-3xl block mb-2">⭐</span>
-                  <p className="text-sm font-semibold">Aún no posee valoraciones</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Las valoraciones se generan tras completar fechas acordadas en la plataforma.
-                  </p>
+        <div className="mx-auto mt-8 max-w-5xl space-y-10">
+          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-biography-title">
+            <p className="atp-kicker">Sobre el proyecto</p>
+            <h2 id="project-biography-title" className="atp-heading mt-1 text-3xl">Biografía y propuesta</h2>
+            <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-neutral-300">
+              {project.descripcion || "Este proyecto todavía no publicó una descripción."}
+            </p>
+          </section>
+
+          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-data-title">
+            <p className="atp-kicker">Información</p>
+            <h2 id="project-data-title" className="atp-heading mt-1 text-3xl">Datos del proyecto</h2>
+            <dl className="mt-2 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="py-4">
+                <dt className="atp-label text-neutral-500">Género musical</dt>
+                <dd className="mt-1 text-lg font-bold text-neutral-100">{project.genero}</dd>
+              </div>
+              {project.ciudad && (
+                <div className="py-4">
+                  <dt className="atp-label text-neutral-500">Ciudad</dt>
+                  <dd className="mt-1 text-lg font-bold text-neutral-100">{project.ciudad}</dd>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {reputation.ratings.map((r) => (
-                    <div
-                      key={r.id}
-                      className="p-4 bg-neutral-800 rounded-xl border border-neutral-700 space-y-2"
+              )}
+              {project.ubicacion && (
+                <div className="py-4">
+                  <dt className="atp-label text-neutral-500">Ubicación</dt>
+                  <dd className="mt-1 text-lg font-bold text-neutral-100">{project.ubicacion}</dd>
+                </div>
+              )}
+              {cache && (
+                <div className="py-4">
+                  <dt className="atp-label text-neutral-500">Caché orientativo</dt>
+                  <dd className="mt-1 text-lg font-bold text-neutral-100">{cache}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
+
+          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-links-title">
+            <p className="atp-kicker">Escuchá a la banda</p>
+            <h2 id="project-links-title" className="atp-heading mt-1 text-3xl">Música y redes</h2>
+            {projectLinks.length > 0 ? (
+              <ul className="mt-5 flex flex-wrap gap-3">
+                {projectLinks.map((link, index) => (
+                  <li key={link.url + "-" + index}>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="atp-button atp-button-secondary min-h-10 px-4 text-sm"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-amber-500">
-                          {"★".repeat(r.puntaje)}{"☆".repeat(5 - r.puntaje)}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {new Date(r.creadoEn).toLocaleDateString("es-AR")}
-                        </span>
-                      </div>
-                      {r.comentario && (
-                        <p className="text-sm text-slate-700 dark:text-slate-300 italic">
-                          &ldquo;{r.comentario}&rdquo;
-                        </p>
-                      )}
-                      <p className="text-xs text-slate-500 font-medium">
-                        — Por {r.autor.nombre} {r.autor.apellido}
-                      </p>
-                    </div>
-                  ))}
+                      {link.label}<span aria-hidden="true">↗</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-4 border-l-2 border-neutral-700 pl-3 text-sm text-neutral-400">
+                Este proyecto todavía no publicó enlaces de música o redes.
+              </p>
+            )}
+          </section>
+
+          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-ratings-title">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-neutral-800 pb-4">
+              <div>
+                <p className="atp-kicker">Experiencias en vivo</p>
+                <h2 id="project-ratings-title" className="atp-heading mt-1 text-3xl">Historial de valoraciones</h2>
+              </div>
+              {reputation.total > 0 && (
+                <div className="flex items-center gap-2 text-sm font-bold text-neutral-300">
+                  <RockHandScore
+                    score={reputation.averageScore}
+                    total={reputation.total}
+                    iconSize={22}
+                    className="text-neutral-100"
+                  />
+                  <span>{reputation.total === 1 ? "1 valoración" : reputation.total + " valoraciones"}</span>
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Sidebar / Links & Invitation */}
-          <div className="space-y-6">
-            <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 space-y-5">
-              <h3 className="text-lg font-bold">Datos del Proyecto</h3>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">Género:</span>
-                  <span className="font-semibold">{project.genero}</span>
-                </div>
-                {project.cacheAproximado && Number(project.cacheAproximado.toString()) > 0 && (
-                  <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500">Caché orientativo:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      ${Number(project.cacheAproximado.toString()).toLocaleString("es-AR")}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Music & Social Links */}
-              <div className="space-y-2 pt-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
-                  Plataformas y Redes
-                </span>
-                <div className="flex flex-col gap-2 text-sm font-semibold">
-                  {project.spotifyUrl && (
-                    <a
-                      href={project.spotifyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-lg bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 hover:bg-green-100 transition-colors flex items-center gap-2"
-                    >
-                      <span>🟢</span> Escuchar en Spotify
-                    </a>
-                  )}
-                  {project.youtubeUrl && (
-                    <a
-                      href={project.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 hover:bg-red-100 transition-colors flex items-center gap-2"
-                    >
-                      <span>🔴</span> Ver en YouTube
-                    </a>
-                  )}
-                  {project.instagramUrl && (
-                    <a
-                      href={project.instagramUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-lg bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 hover:bg-pink-100 transition-colors flex items-center gap-2"
-                    >
-                      <span>📷</span> Seguir en Instagram
-                    </a>
-                  )}
-                  {project.sitioWebUrl && (
-                    <a
-                      href={project.sitioWebUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors flex items-center gap-2"
-                    >
-                      <span>🌐</span> Sitio Oficial / Linktree
-                    </a>
-                  )}
+            {reputation.ratings.length === 0 ? (
+              <div className="mt-5 flex items-start gap-3 border-l-2 border-neutral-700 pl-3 text-neutral-400">
+                <RockHandIcon size={32} className="mt-0.5 opacity-60" />
+                <div>
+                  <p className="font-bold text-neutral-200">Aún no posee valoraciones</p>
+                  <p className="mt-1 text-sm">Las valoraciones se generan tras completar fechas acordadas en la plataforma.</p>
                 </div>
               </div>
-
-              {/* Organizer Invite Action */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                {user ? (
-                  user.rol === "ORGANIZADOR" ? (
-                    <InviteModal
-                      projectId={project.id}
-                      projectName={project.nombre}
-                      events={organizerEvents}
-                    />
-                  ) : (
-                    <div className="p-3 bg-neutral-800 rounded-lg text-xs text-neutral-400 text-center">
-                      Eres músico. Puedes gestionar tus propios proyectos desde tu panel.
+            ) : (
+              <ul className="divide-y divide-neutral-800">
+                {reputation.ratings.map((rating) => (
+                  <li key={rating.id} className="py-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <RockHandScale score={rating.puntaje} size={20} />
+                      <time dateTime={new Date(rating.creadoEn).toISOString()} className="text-xs text-neutral-500">
+                        {new Date(rating.creadoEn).toLocaleDateString("es-AR")}
+                      </time>
                     </div>
-                  )
-                ) : (
-                  <div className="space-y-3 text-center">
-                    <p className="text-xs text-slate-500">
-                      ¿Eres organizador y te interesa esta banda para tu recital?
+                    {rating.comentario && (
+                      <p className="mt-3 whitespace-pre-line text-base italic leading-relaxed text-neutral-300">
+                        &ldquo;{rating.comentario}&rdquo;
+                      </p>
+                    )}
+                    <p className="mt-2 text-sm font-bold text-neutral-500">
+                      — Por {rating.autor.nombre} {rating.autor.apellido}
                     </p>
-                    <a
-                      href="/auth/login"
-                      className="block w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-colors text-center"
-                    >
-                      Inicia Sesión para Invitar
-                    </a>
-                  </div>
-                )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {user?.rol === "ORGANIZADOR" && (
+            <section aria-labelledby="project-invite-title">
+              <p className="atp-kicker">Contrataciones</p>
+              <h2 id="project-invite-title" className="atp-heading mt-1 text-3xl">¿Querés contratar esta banda?</h2>
+              <div className="mt-5">
+                <DeferredInviteModal projectId={project.id} projectName={project.nombre} events={organizerEvents} />
               </div>
-            </div>
-          </div>
+            </section>
+          )}
         </div>
       </main>
 

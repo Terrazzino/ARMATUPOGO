@@ -39,17 +39,91 @@ export const publicEventListSelect = {
     where: { estado: "ACORDADO" as const },
     select: {
       proyectoMusical: {
-        select: { id: true, nombre: true, genero: true, imagenUrl: true },
+        select: {
+          id: true,
+          nombre: true,
+          genero: true,
+          imagenUrl: true,
+          spotifyUrl: true,
+          youtubeUrl: true,
+          instagramUrl: true,
+          sitioWebUrl: true,
+          enlacesPersonalizados: true,
+        },
       },
     },
+  },
+  entradas: {
+    orderBy: { precio: "asc" as const },
+    select: {
+      precio: true,
+      esGratuita: true,
+    },
+  },
+} satisfies Prisma.EventoSelect;
+
+/** Proyección mínima utilizada exclusivamente por las tarjetas públicas. */
+export const publicEventCardSelect = {
+  id: true,
+  titulo: true,
+  startsAt: true,
+  ubicacion: true,
+  nombreLugar: true,
+  ciudad: true,
+  bannerUrl: true,
+  contrataciones: {
+    where: { estado: "ACORDADO" as const },
+    select: {
+      proyectoMusical: {
+        select: {
+          id: true,
+          nombre: true,
+          genero: true,
+          spotifyUrl: true,
+          youtubeUrl: true,
+          instagramUrl: true,
+          sitioWebUrl: true,
+          enlacesPersonalizados: true,
+        },
+      },
+    },
+  },
+  entradas: {
+    orderBy: { precio: "asc" as const },
+    select: {
+      precio: true,
+      esGratuita: true,
+    },
+  },
+} satisfies Prisma.EventoSelect;
+
+export const publicEventListOrderBy = [
+  { startsAt: "asc" as const },
+  { id: "asc" as const },
+] satisfies Prisma.EventoOrderByWithRelationInput[];
+
+export const musicianEventListSelect = {
+  id: true,
+  titulo: true,
+  startsAt: true,
+  endsAt: true,
+  ubicacion: true,
+  nombreLugar: true,
+  ciudad: true,
+  cantidadMusicosRequerida: true,
+  cacheOfrecido: true,
+  bannerUrl: true,
+  contrataciones: {
+    select: { estado: true },
   },
 } satisfies Prisma.EventoSelect;
 
 export const publicEventDetailSelect = {
   ...publicEventListSelect,
   contrataciones: {
-    where: { estado: "ACORDADO" as const },
+    where: { estado: { in: ["ACORDADO" as const, "COMPLETADO" as const] } },
     select: {
+      estado: true,
       proyectoMusical: {
         select: {
           id: true,
@@ -95,6 +169,16 @@ export function publicEventListWhere(
       { descripcion: { contains: filters.search, mode: "insensitive" } },
       { ubicacion: { contains: filters.search, mode: "insensitive" } },
       { nombreLugar: { contains: filters.search, mode: "insensitive" } },
+      {
+        contrataciones: {
+          some: {
+            estado: "ACORDADO",
+            proyectoMusical: {
+              nombre: { contains: filters.search, mode: "insensitive" },
+            },
+          },
+        },
+      },
     ];
   }
 

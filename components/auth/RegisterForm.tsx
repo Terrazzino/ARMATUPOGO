@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { registroSchemaConConfirm, type RegistroInputConConfirm } from "@/lib/validations/auth";
 import { registerUser } from "@/app/actions/auth";
@@ -45,9 +46,9 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-md">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-neutral-300 mb-1">
+        <label htmlFor="email" className="atp-label mb-2 block">
           Email
         </label>
         <input
@@ -55,21 +56,24 @@ export function RegisterForm() {
           type="email"
           id="email"
           placeholder="tu@email.com"
-          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+          autoComplete="email"
+          aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? "register-email-error" : undefined}
+          className="atp-field"
           disabled={isLoading}
         />
         {errors.email && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+          <p id="register-email-error" className="mt-1.5 text-sm font-medium text-red-300">
             {errors.email.message}
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label
             htmlFor="nombre"
-            className="block text-sm font-medium text-neutral-300 mb-1"
+            className="atp-label mb-2 block"
           >
             Nombre
           </label>
@@ -78,11 +82,14 @@ export function RegisterForm() {
             type="text"
             id="nombre"
             placeholder="Juan"
-            className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+            autoComplete="given-name"
+            aria-invalid={Boolean(errors.nombre)}
+            aria-describedby={errors.nombre ? "register-name-error" : undefined}
+            className="atp-field"
             disabled={isLoading}
           />
           {errors.nombre && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+            <p id="register-name-error" className="mt-1.5 text-sm font-medium text-red-300">
               {errors.nombre.message}
             </p>
           )}
@@ -91,7 +98,7 @@ export function RegisterForm() {
         <div>
           <label
             htmlFor="apellido"
-            className="block text-sm font-medium text-neutral-300 mb-1"
+            className="atp-label mb-2 block"
           >
             Apellido
           </label>
@@ -100,137 +107,150 @@ export function RegisterForm() {
             type="text"
             id="apellido"
             placeholder="Pérez"
-            className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+            autoComplete="family-name"
+            aria-invalid={Boolean(errors.apellido)}
+            aria-describedby={errors.apellido ? "register-last-name-error" : undefined}
+            className="atp-field"
             disabled={isLoading}
           />
           {errors.apellido && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+            <p id="register-last-name-error" className="mt-1.5 text-sm font-medium text-red-300">
               {errors.apellido.message}
             </p>
           )}
         </div>
       </div>
 
-      <div>
-        <label htmlFor="rol" className="block text-sm font-medium text-neutral-300 mb-2">
-          ¿Cuál es tu rol?
-        </label>
-        <div className="space-y-2">
-          <label className="flex items-center">
+      <fieldset aria-describedby={errors.rol ? "register-role-error" : undefined}>
+        <legend className="atp-label mb-2">¿Cuál es tu rol?</legend>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label className="atp-card flex cursor-pointer items-center p-3 has-[:checked]:border-red-600 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500">
             <input
               {...register("rol")}
               type="radio"
               value="MUSICO"
               disabled={isLoading}
-              className="w-4 h-4 text-red-500 cursor-pointer"
+              className="h-4 w-4 cursor-pointer accent-red-600 focus-visible:outline-none"
             />
-            <span className="ml-2 text-sm text-neutral-300">
+            <span className="ml-2 font-semibold text-neutral-200">
               Soy músico
             </span>
           </label>
-          <label className="flex items-center">
+          <label className="atp-card flex cursor-pointer items-center p-3 has-[:checked]:border-red-600 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500">
             <input
               {...register("rol")}
               type="radio"
               value="ORGANIZADOR"
               disabled={isLoading}
-              className="w-4 h-4 text-red-500 cursor-pointer"
+              className="h-4 w-4 cursor-pointer accent-red-600 focus-visible:outline-none"
             />
-            <span className="ml-2 text-sm text-neutral-300">
+            <span className="ml-2 font-semibold text-neutral-200">
               Soy organizador de eventos
             </span>
           </label>
         </div>
         {errors.rol && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+          <p id="register-role-error" className="mt-1.5 text-sm font-medium text-red-300">
             {errors.rol.message}
           </p>
         )}
+      </fieldset>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label
+            htmlFor="password"
+            className="atp-label mb-2 block"
+          >
+            Contraseña
+          </label>
+          <input
+            {...register("password")}
+            type="password"
+            id="password"
+            placeholder="••••••••"
+            autoComplete="new-password"
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? "register-password-error" : undefined}
+            className="atp-field"
+            disabled={isLoading}
+          />
+          {errors.password && (
+            <p id="register-password-error" className="mt-1.5 text-sm font-medium text-red-300">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="confirmPassword"
+            className="atp-label mb-2 block"
+          >
+            Confirmar contraseña
+          </label>
+          <input
+            {...register("confirmPassword")}
+            type="password"
+            id="confirmPassword"
+            placeholder="••••••••"
+            autoComplete="new-password"
+            aria-invalid={Boolean(errors.confirmPassword)}
+            aria-describedby={errors.confirmPassword ? "register-confirm-password-error" : undefined}
+            className="atp-field"
+            disabled={isLoading}
+          />
+          {errors.confirmPassword && (
+            <p id="register-confirm-password-error" className="mt-1.5 text-sm font-medium text-red-300">
+              {errors.confirmPassword.message}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-neutral-300 mb-1"
-        >
-          Contraseña
-        </label>
-        <input
-          {...register("password")}
-          type="password"
-          id="password"
-          placeholder="••••••••"
-          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-          disabled={isLoading}
-        />
-        {errors.password && (
-          <p className="text-sm text-red-400 mt-1">
-            {errors.password.message}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-medium text-neutral-300 mb-1"
-        >
-          Confirmar contraseña
-        </label>
-        <input
-          {...register("confirmPassword")}
-          type="password"
-          id="confirmPassword"
-          placeholder="••••••••"
-          className="w-full px-4 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-          disabled={isLoading}
-        />
-        {errors.confirmPassword && (
-          <p className="text-sm text-red-400 mt-1">
-            {errors.confirmPassword.message}
-          </p>
-        )}
-      </div>
-
-      <label className="flex items-start cursor-pointer">
+      <label className="flex cursor-pointer items-start rounded-sm py-1 text-neutral-300 focus-within:ring-2 focus-within:ring-red-500 focus-within:ring-offset-2 focus-within:ring-offset-neutral-900">
         <input
           {...register("agreeTerms")}
           type="checkbox"
+          id="agreeTerms"
           disabled={isLoading}
-          className="w-4 h-4 mt-1 text-red-500"
+          aria-invalid={Boolean(errors.agreeTerms)}
+          aria-describedby={errors.agreeTerms ? "register-terms-error" : undefined}
+          className="mt-1 h-4 w-4 shrink-0 accent-red-600 focus-visible:outline-none"
         />
-        <span className="ml-2 text-sm text-neutral-300">
+        <span className="ml-2 text-sm">
           Acepto los términos y condiciones de Arma tu pogo
         </span>
       </label>
       {errors.agreeTerms && (
-        <p className="text-sm text-red-600 dark:text-red-400">
+        <p id="register-terms-error" className="text-sm font-medium text-red-300">
           {errors.agreeTerms.message}
         </p>
       )}
 
       {serverError && (
-        <div className="p-3 bg-red-950/50 border border-red-800 rounded-lg">
-          <p className="text-sm text-red-200">{serverError}</p>
+        <div className="atp-feedback atp-feedback-error" role="alert">
+          <p>{serverError}</p>
         </div>
       )}
 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        aria-busy={isLoading}
+        className="atp-button atp-button-primary w-full uppercase tracking-wider"
       >
         {isLoading ? "Registrando..." : "Registrarse"}
       </button>
 
-      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+      <p className="border-t border-neutral-800 pt-5 text-center text-sm text-neutral-400">
         ¿Ya tienes cuenta?{" "}
-        <a
+        <Link
           href="/auth/login"
-          className="text-red-600 dark:text-red-400 hover:underline font-medium"
+          className="font-bold text-red-400 underline-offset-4 hover:text-red-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
         >
           Ingresa aquí
-        </a>
+        </Link>
       </p>
     </form>
   );

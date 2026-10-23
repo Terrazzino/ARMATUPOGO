@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiErrorResponse } from "@/lib/api-helpers";
 import {
+  publicEventListOrderBy,
   publicEventListSelect,
   publicEventListWhere,
 } from "@/lib/event-access";
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const events = await prisma.evento.findMany({
       where: publicEventListWhere(new Date(), { city, search }),
-      orderBy: { startsAt: "asc" },
+      orderBy: publicEventListOrderBy,
       select: publicEventListSelect,
     });
 

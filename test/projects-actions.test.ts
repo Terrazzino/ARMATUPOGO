@@ -14,6 +14,9 @@ vi.mock("@/lib/api-helpers", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api-helpers")>()),
   requireAuthenticatedUser: mocks.requireAuthenticatedUser,
 }));
+vi.mock("@/lib/auth-render", () => ({
+  requireAuthenticatedUserForRender: mocks.requireAuthenticatedUser,
+}));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     proyectoMusical: {
@@ -76,6 +79,22 @@ describe("Server Actions de proyectos", () => {
     expect(mocks.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ usuarioId: musician.id }),
     });
+  });
+
+  it("cada invocación de una Server Action conserva su validación independiente", async () => {
+    const musician = user();
+    mocks.requireAuthenticatedUser.mockResolvedValue(musician);
+    mocks.create.mockResolvedValue(project(musician.id));
+    const input = {
+      nombre: "Los Actions",
+      genero: "Rock",
+      enlacesPersonalizados: [],
+    };
+
+    await createProject(input);
+    await createProject(input);
+
+    expect(mocks.requireAuthenticatedUser).toHaveBeenCalledTimes(2);
   });
 
   it("rechaza con 403 a un ORGANIZADOR", async () => {
@@ -154,7 +173,14 @@ describe("Server Actions de proyectos", () => {
 
     expect(await getProjectById(projectId)).toBeNull();
     expect(mocks.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: projectId, estaActivo: true } })
+      expect.objectContaining({
+        where: { id: projectId, estaActivo: true },
+        select: expect.objectContaining({
+          valoraciones: expect.objectContaining({
+            orderBy: { creadoEn: "desc" },
+          }),
+        }),
+      })
     );
   });
 
