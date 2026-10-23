@@ -10,6 +10,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedUser } from "@/lib/api-helpers";
+import { requireAuthenticatedUserForRender } from "@/lib/auth-render";
 import { participatingContractWhere, requireRole } from "@/lib/authorization";
 import {
   crearOfertaSchema,
@@ -85,6 +86,7 @@ export async function applyToEvent(
     revalidatePath("/dashboard/musician");
     revalidatePath("/dashboard/organizer");
     revalidatePath(`/events/${eventoId}`);
+    revalidatePath("/events");
 
     return {
       success: true,
@@ -363,22 +365,65 @@ export async function cancelContract(input: CancelarContratacionInput) {
  * Obtiene las contrataciones del usuario autenticado (músico u organizador)
  */
 export async function getMyContracts() {
-  const user = await requireAuthenticatedUser();
+  const user = await requireAuthenticatedUserForRender();
 
   const contracts = await prisma.contratacion.findMany({
     where: contractsForUserWhere(user.rol, user.id),
     orderBy: { actualizadoEn: "desc" },
-    include: contractListInclude,
+    include: {
+      ...contractListInclude,
+      valoraciones: {
+        where: { autorId: user.id },
+        select: { id: true },
+        take: 1,
+      },
+    },
   });
 
-  return contracts.map((contract) => ({
+  return contracts.map(({ valoraciones, ...contract }) => ({
     ...contract,
+    hasCurrentUserRating: valoraciones.length > 0,
     montoPactado: contract.montoPactado?.toNumber() ?? null,
     ofertas: contract.ofertas.map((offer) => ({
       ...offer,
       monto: offer.monto.toNumber(),
     })),
   }));
+}
+
+/** Obtiene únicamente las postulaciones pendientes del músico autenticado. */
+export async function getMyPendingPostulations() {
+  const user = await requireAuthenticatedUserForRender();
+  requireRole(user, "MUSICO");
+
+  return prisma.postulacion.findMany({
+    where: { musicoId: user.id, estado: "PENDIENTE" },
+    orderBy: [
+      { evento: { startsAt: "asc" } },
+      { id: "asc" },
+    ],
+    select: {
+      id: true,
+      estado: true,
+      creadoEn: true,
+      evento: {
+        select: {
+          id: true,
+          titulo: true,
+          startsAt: true,
+          ubicacion: true,
+          nombreLugar: true,
+          ciudad: true,
+          organizador: {
+            select: { id: true, nombre: true, apellido: true },
+          },
+        },
+      },
+      proyectoMusical: {
+        select: { id: true, nombre: true },
+      },
+    },
+  });
 }
 
 /**
@@ -409,7 +454,10 @@ export async function completeContract(contratacionId: string) {
     revalidatePath("/dashboard/musician");
     revalidatePath("/dashboard/organizer");
 
-    return { success: true, data: updated };
+    return {
+      success: true,
+      data: { id: updated.id, estado: updated.estado },
+    };
   } catch (error) {
     const normalized = normalizeError(error);
     return {
@@ -432,7 +480,7 @@ export async function getContractOffers(contratacionId: string) {
  * Obtiene las postulaciones recibidas en eventos del organizador autenticado.
  */
 export async function getReceivedPostulations() {
-  const user = await requireAuthenticatedUser();
+  const user = await requireAuthenticatedUserForRender();
   requireRole(user, "ORGANIZADOR");
 
   return prisma.postulacion.findMany({
@@ -446,7 +494,9 @@ export async function getReceivedPostulations() {
       estado: true,
       mensaje: true,
       creadoEn: true,
-      evento: { select: { id: true, titulo: true } },
+      evento: {
+        select: { id: true, titulo: true, startsAt: true, estado: true },
+      },
       proyectoMusical: { select: { id: true, nombre: true } },
       musico: { select: { nombre: true, apellido: true } },
       contratacion: { select: { id: true } },

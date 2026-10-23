@@ -10,16 +10,17 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedUser } from "@/lib/api-helpers";
+import { requireAuthenticatedUserForRender } from "@/lib/auth-render";
 import { ownedProjectWhere, requireRole } from "@/lib/authorization";
 import { proyectoMusicalSchema, type ProyectoMusicalInput } from "@/lib/validations/projects";
 import { normalizeError, NotFoundError } from "@/lib/errors";
 import {
   projectCreateData,
   projectUpdateData,
-  publicProjectDetailSelect,
   publicProjectListSelect,
   publicProjectWhere,
 } from "@/lib/project-access";
+import { findPublicProjectDetailById } from "@/lib/public-detail-data";
 
 /**
  * Crea un nuevo proyecto musical para el músico autenticado
@@ -135,7 +136,7 @@ export async function toggleProjectStatus(id: string) {
  * Obtiene todos los proyectos pertenecientes al músico autenticado
  */
 export async function getMyProjects() {
-  const user = await requireAuthenticatedUser();
+  const user = await requireAuthenticatedUserForRender();
   requireRole(user, "MUSICO");
 
   return prisma.proyectoMusical.findMany({
@@ -148,17 +149,7 @@ export async function getMyProjects() {
  * Obtiene un proyecto musical activo para su perfil público.
  */
 export async function getProjectById(id: string) {
-  try {
-    const project = await prisma.proyectoMusical.findFirst({
-      where: { id, estaActivo: true },
-      select: publicProjectDetailSelect,
-    });
-
-    return project;
-  } catch (error) {
-    console.warn("Could not fetch project by ID:", (error as Error).message);
-    return null;
-  }
+  return findPublicProjectDetailById(id);
 }
 
 /**

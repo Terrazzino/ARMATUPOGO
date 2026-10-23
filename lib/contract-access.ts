@@ -20,6 +20,8 @@ export const contractListInclude = {
       startsAt: true,
       endsAt: true,
       ubicacion: true,
+      nombreLugar: true,
+      ciudad: true,
       estado: true,
     },
   },

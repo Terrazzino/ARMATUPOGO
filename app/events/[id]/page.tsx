@@ -1,12 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getEventById } from "@/app/actions/events";
-import { getCurrentUser } from "@/app/actions/auth";
-import { getMyProjects } from "@/app/actions/projects";
-import { Navbar } from "@/components/shared/Navbar";
+import { getAuthenticatedUserForRender as getCurrentUser } from "@/lib/auth-render";
+import {
+  getMusicianEventContext,
+} from "@/app/actions/events";
+import { EventParticipationPanel } from "@/components/events/EventParticipationPanel";
 import { Footer } from "@/components/shared/Footer";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { ApplyModal } from "@/components/contracts/ApplyModal";
+import { Navbar } from "@/components/shared/Navbar";
+import { calcularCupos } from "@/lib/cupos";
+import {
+  getEventApplicationDisabledReason,
+  getEventDetailNavigation,
+  getEventTemporalState,
+  hasEventFlyer,
+} from "@/lib/event-detail";
+import { getProjectOpportunityState } from "@/lib/musician-event-board";
+import { getPublicEventDetailForRender } from "@/lib/public-detail-data";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
@@ -14,7 +23,7 @@ interface EventDetailPageProps {
 
 export async function generateMetadata({ params }: EventDetailPageProps) {
   const { id } = await params;
-  const event = await getEventById(id);
+  const event = await getPublicEventDetailForRender(id);
   if (!event) return { title: "Evento no encontrado - Arma tu pogo" };
   return {
     title: `${event.titulo} - Arma tu pogo`,
@@ -25,178 +34,255 @@ export async function generateMetadata({ params }: EventDetailPageProps) {
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { id } = await params;
   const [event, user] = await Promise.all([
-    getEventById(id),
+    getPublicEventDetailForRender(id),
     getCurrentUser(),
   ]);
 
-  if (!event) {
-    notFound();
-  }
+  if (!event) notFound();
 
-  const musicianProjects = user?.rol === "MUSICO" ? await getMyProjects() : [];
+  const musicianContext = user?.rol === "MUSICO"
+    ? await getMusicianEventContext(event.id)
+    : null;
+  const capacity = calcularCupos({
+    cantidadRequerida: event.cantidadMusicosRequerida,
+    contrataciones: event.contrataciones,
+  });
+  const temporalState = getEventTemporalState({
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+  });
+  const applicationDisabledReason = getEventApplicationDisabledReason({
+    status: event.estado,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    confirmedCount: capacity.cuposOcupados,
+    requiredCount: capacity.cuposTotales,
+  });
+  const projectsWithState = musicianContext?.projects.map((project) => ({
+    ...project,
+    state: getProjectOpportunityState({
+      projectId: project.id,
+      postulations: musicianContext.postulations,
+      contracts: musicianContext.contracts,
+    }),
+  })) ?? [];
 
-  const dateObj = new Date(event.startsAt);
-  const formattedDate = dateObj.toLocaleDateString("es-AR", {
+  const startsAt = new Date(event.startsAt);
+  const endsAt = new Date(event.endsAt);
+  const formattedDate = startsAt.toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
-  const formattedTime = dateObj.toLocaleTimeString("es-AR", {
+  const startTime = startsAt.toLocaleTimeString("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+  const endTime = endsAt.toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const temporalLabel = temporalState === "PAST"
+    ? "Finalizado"
+    : temporalState === "ONGOING"
+      ? "En curso"
+      : "Publicado";
+  const cache = event.cacheOfrecido && Number(event.cacheOfrecido.toString()) > 0
+    ? `$${Number(event.cacheOfrecido.toString()).toLocaleString("es-AR")}`
+    : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
-      <Navbar />
+    <div className="atp-page flex min-h-screen flex-col">
+      <Navbar {...getEventDetailNavigation(user?.rol ?? null)} />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
-        {/* Back Link */}
-        <div className="mb-6">
-          <Link href="/events" className="text-sm font-medium text-neutral-300 hover:text-red-400 flex items-center gap-1">
-            ← Volver a la cartelera
-          </Link>
-        </div>
+      <main className="atp-container w-full flex-1 py-7 sm:py-10">
+        <Link
+          href="/events"
+          className="inline-flex text-sm font-bold text-neutral-400 underline-offset-4 hover:text-red-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        >
+          ← Volver a la cartelera
+        </Link>
 
-        {/* Hero Section */}
-        <div className="bg-neutral-900 text-white rounded-2xl p-8 sm:p-10 border border-neutral-800 border-l-4 border-l-red-600 mb-8 relative overflow-hidden">
-          <div className="relative z-10">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <span className="text-xs sm:text-sm uppercase tracking-wider font-bold text-red-400">
-                📅 {formattedDate} • {formattedTime} hs
+        <header className="mt-6 grid gap-7 border-b border-neutral-800 pb-8 md:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)] md:items-center lg:gap-10">
+          <div className="mx-auto aspect-[4/5] w-full max-w-sm overflow-hidden border border-neutral-800 bg-neutral-900 md:mx-0">
+            {hasEventFlyer(event.bannerUrl) ? (
+              // Los flyers pueden provenir de hosts externos no configurados en Next Image.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={event.bannerUrl!}
+                alt={`Flyer de ${event.titulo}`}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="event-flyer-placeholder h-full w-full" aria-label="Flyer no disponible">
+                <span>FLYER NO DISPONIBLE</span>
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="atp-kicker">Fecha publicada</p>
+              <span className="border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs font-bold uppercase tracking-[0.1em] text-neutral-300">
+                {temporalLabel}
               </span>
-              <StatusBadge status={event.estado} />
             </div>
-
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
+            <h1 className="atp-heading atp-page-title mt-4 break-words">
               {event.titulo}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-6 text-sm text-slate-300">
-              <div className="flex items-center gap-1.5">
-                <span>📍</span>
-                <span>{event.nombreLugar ? `${event.nombreLugar}, ` : ""}{event.ubicacion}{event.ciudad ? ` (${event.ciudad})` : ""}</span>
+            <dl className="mt-7 grid gap-4 border-l-2 border-red-600 pl-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="atp-label text-neutral-500">Fecha y horario</dt>
+                <dd className="mt-1 font-bold capitalize text-neutral-100">
+                  {formattedDate}
+                </dd>
+                <dd className="text-neutral-400">{startTime} a {endTime} hs</dd>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span>👤</span>
-                <span>Organizado por {event.organizador.nombre} {event.organizador.apellido}</span>
+              <div>
+                <dt className="atp-label text-neutral-500">Establecimiento</dt>
+                <dd className="mt-1 font-bold text-neutral-100">
+                  {event.nombreLugar || "Lugar a confirmar"}
+                </dd>
               </div>
-            </div>
+              <div>
+                <dt className="atp-label text-neutral-500">Dirección</dt>
+                <dd className="mt-1 font-bold text-neutral-100">{event.ubicacion}</dd>
+                {event.ciudad && <dd className="text-neutral-400">{event.ciudad}</dd>}
+              </div>
+              <div>
+                <dt className="atp-label text-neutral-500">Organiza</dt>
+                <dd className="mt-1 font-bold text-neutral-100">
+                  {event.organizador.nombre} {event.organizador.apellido}
+                </dd>
+              </div>
+            </dl>
           </div>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Info */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Description */}
-            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
-              <h2 className="text-xl font-bold mb-4">Acerca de esta fecha</h2>
-              <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed text-sm sm:text-base">
-                {event.descripcion || "Sin descripción proporcionada."}
+        <div className="mx-auto mt-8 max-w-5xl space-y-10">
+            <section className="border-b border-neutral-800 pb-10" aria-labelledby="event-description-title">
+              <p className="atp-kicker">Sobre la fecha</p>
+              <h2 id="event-description-title" className="atp-heading mt-1 text-3xl">
+                Descripción del evento
+              </h2>
+              <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-neutral-300">
+                {event.descripcion || "Sin descripción publicada."}
               </p>
-            </div>
+            </section>
 
-            {/* Confirmed Lineup */}
-            <div className="bg-neutral-900 rounded-2xl p-6 sm:p-8 border border-neutral-800">
-              <div className="flex items-center justify-between mb-6">
+            <section className="border-b border-neutral-800 pb-10" aria-labelledby="event-lineup-title">
+              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-neutral-800 pb-4">
                 <div>
-                  <h2 className="text-xl font-bold">Line-up de Bandas Confirmadas</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {event.contrataciones.length} de {event.cantidadMusicosRequerida} cupos cubiertos
-                  </p>
+                  <p className="atp-kicker">Line-up</p>
+                  <h2 id="event-lineup-title" className="atp-heading mt-1 text-3xl">
+                    Bandas confirmadas
+                  </h2>
                 </div>
+                <p className="text-sm font-bold uppercase tracking-[0.1em] text-neutral-300">
+                  {capacity.cuposOcupados} de {capacity.cuposTotales} bandas confirmadas
+                </p>
               </div>
 
               {event.contrataciones.length === 0 ? (
-                <div className="p-8 text-center bg-neutral-800/50 rounded-xl border border-dashed border-neutral-700">
-                  <span className="text-3xl block mb-2">🥁</span>
-                  <p className="text-sm font-semibold">Aún no hay bandas confirmadas</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Las postulaciones están abiertas para músicos y bandas independientes.
+                <div className="atp-empty-state mt-5">
+                  <h3 className="atp-heading text-2xl">Aún no hay bandas confirmadas</h3>
+                  <p className="mt-2 text-sm text-neutral-400">
+                    El line-up se actualizará cuando existan contrataciones acordadas.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {event.contrataciones.map((c) => (
-                    <div
-                      key={c.proyectoMusical.id}
-                      className="p-4 bg-neutral-800 rounded-xl border border-neutral-700 flex flex-col justify-between gap-3"
+                <ul className="mt-2 divide-y divide-neutral-800">
+                  {event.contrataciones.map((contract) => (
+                    <li
+                      key={contract.proyectoMusical.id}
+                      className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div>
-                        <span className="text-xs font-semibold px-2 py-0.5 bg-neutral-700 text-neutral-200 border border-neutral-600 rounded uppercase">
-                          {c.proyectoMusical.genero}
-                        </span>
-                        <h4 className="text-base font-bold mt-1.5">{c.proyectoMusical.nombre}</h4>
+                      <div className="min-w-0">
+                        <p className="atp-heading truncate text-2xl">
+                          {contract.proyectoMusical.nombre}
+                        </p>
+                        <p className="mt-1 text-sm uppercase tracking-[0.08em] text-neutral-500">
+                          {contract.proyectoMusical.genero}
+                        </p>
                       </div>
-
                       <Link
-                        href={`/projects/${c.proyectoMusical.id}`}
-                        className="text-xs font-semibold text-neutral-300 hover:text-red-400 hover:underline"
+                        href={`/projects/${contract.proyectoMusical.id}`}
+                        className="atp-button atp-button-ghost min-h-9 shrink-0 px-3 text-sm"
                       >
-                        Ver Perfil y Redes →
+                        Ver perfil público
                       </Link>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
-            </div>
-          </div>
+            </section>
 
-          {/* Sidebar / Application Action */}
-          <div className="space-y-6">
-            <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 space-y-5">
-              <h3 className="text-lg font-bold">Resumen de la Fecha</h3>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">Cupos de bandas:</span>
-                  <span className="font-semibold">{event.cantidadMusicosRequerida}</span>
+            <section className="border-b border-neutral-800 pb-10" aria-labelledby="event-summary-title">
+              <p className="atp-kicker">Información</p>
+              <h2 id="event-summary-title" className="atp-heading mt-1 text-3xl">
+                Resumen de la fecha
+              </h2>
+              <dl className="mt-2 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="py-4">
+                  <dt className="atp-label text-neutral-500">Bandas confirmadas</dt>
+                  <dd className="mt-1 text-lg font-bold text-neutral-100">
+                    {capacity.cuposOcupados}
+                  </dd>
                 </div>
-                {event.cacheOfrecido && Number(event.cacheOfrecido.toString()) > 0 && (
-                  <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500">Caché ofrecido:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      ${Number(event.cacheOfrecido.toString()).toLocaleString("es-AR")}
-                    </span>
+                {cache && (
+                  <div className="py-4">
+                    <dt className="atp-label text-neutral-500">Caché ofrecido</dt>
+                    <dd className="mt-1 text-lg font-bold text-neutral-100">{cache}</dd>
                   </div>
                 )}
-                <div className="flex justify-between py-2">
-                  <span className="text-slate-500">Estado:</span>
-                  <StatusBadge status={event.estado} />
+                <div className="py-4">
+                  <dt className="atp-label text-neutral-500">Estado</dt>
+                  <dd className="mt-1 text-lg font-bold uppercase text-neutral-100">{temporalLabel}</dd>
                 </div>
-              </div>
+              </dl>
+            </section>
 
-              {/* Action Box according to auth & role */}
-              <div className="pt-2">
-                {user ? (
-                  user.rol === "MUSICO" ? (
-                    <ApplyModal
-                      eventId={event.id}
-                      eventTitle={event.titulo}
-                      projects={musicianProjects}
-                    />
-                  ) : (
-                    <div className="p-3 bg-neutral-800 rounded-lg text-xs text-neutral-400 text-center">
-                      Eres organizador. Puedes gestionar tus fechas desde tu panel.
-                    </div>
-                  )
-                ) : (
-                  <div className="space-y-3 text-center">
-                    <p className="text-xs text-slate-500">
-                      ¿Tienes una banda y quieres tocar en este recital?
-                    </p>
-                    <a
-                      href="/auth/login"
-                      className="block w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-colors text-center"
-                    >
-                      Inicia Sesión para Postularte
-                    </a>
-                  </div>
-                )}
+            {user?.rol === "MUSICO" && musicianContext ? (
+              <EventParticipationPanel
+                eventId={event.id}
+                eventTitle={event.titulo}
+                projects={projectsWithState}
+                disabledReason={applicationDisabledReason}
+              />
+            ) : (
+              <section aria-labelledby="participation-title">
+                <p className="atp-kicker">Estado personal</p>
+                <h2 id="participation-title" className="atp-heading mt-1 text-3xl">
+                  Tu participación
+                </h2>
+                {user?.rol === "ORGANIZADOR" ? (
+              <div className="mt-4 border-l-2 border-neutral-700 pl-3 text-sm text-neutral-400">
+                <p>Gestioná tus eventos y postulaciones desde tu panel de organizador.</p>
+                <Link href="/dashboard/organizer" className="atp-button atp-button-secondary mt-3 text-sm">
+                  Ir a mi perfil
+                </Link>
               </div>
-            </div>
-          </div>
+            ) : applicationDisabledReason ? (
+              <p className="mt-4 border-l-2 border-neutral-700 pl-3 text-sm text-neutral-400">
+                {applicationDisabledReason}
+              </p>
+            ) : (
+              <div className="mt-4 border-l-2 border-neutral-700 pl-3">
+                <p className="text-sm text-neutral-400">
+                  ¿Tenés una banda y querés participar de esta fecha?
+                </p>
+                <Link href="/auth/login" className="atp-button atp-button-primary mt-4 text-sm">
+                  Iniciar sesión para postularte
+                </Link>
+              </div>
+                )}
+              </section>
+            )}
         </div>
       </main>
 

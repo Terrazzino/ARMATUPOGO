@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { inviteProject } from "@/app/actions/contracts";
 
-interface InviteModalProps {
+export interface InviteModalProps {
   projectId: string;
   projectName: string;
   events: Array<{
@@ -11,15 +11,22 @@ interface InviteModalProps {
     titulo: string;
     startsAt: Date | string;
   }>;
+  initiallyOpen?: boolean;
 }
 
-export function InviteModal({ projectId, projectName, events }: InviteModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function InviteModal({ projectId, projectName, events, initiallyOpen = false }: InviteModalProps) {
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || "");
   const [offerAmount, setOfferAmount] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ error?: boolean; message: string } | null>(null);
+
+  function closeModal() {
+    setIsOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  }
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -41,23 +48,23 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
     } else {
       setFeedback({ error: false, message: "¡Invitación enviada con éxito! Podrás negociar desde tu panel." });
       setTimeout(() => {
-        setIsOpen(false);
+        closeModal();
       }, 2000);
     }
   }
 
   if (events.length === 0) {
     return (
-      <div className="p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-800 dark:text-neutral-200 text-sm">
-        <p className="font-semibold">¿Quieres contratar a {projectName}?</p>
-        <p className="mt-1">
+      <div className="border-l-2 border-neutral-700 pl-3 text-sm text-neutral-400">
+        <p className="font-bold text-neutral-200">¿Querés contratar a {projectName}?</p>
+        <p className="mt-1 max-w-xl">
           Primero debes publicar un evento activo desde tu panel de organizador.
         </p>
         <a
           href="/dashboard/organizer"
-          className="inline-block mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-xs transition-colors"
+          className="atp-button atp-button-secondary mt-4 min-h-10 px-4 text-sm"
         >
-          Publicar un Evento
+          Publicar un evento
         </a>
       </div>
     );
@@ -66,24 +73,33 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
   return (
     <>
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+        className="atp-button atp-button-primary min-h-10 w-full px-4 text-sm uppercase tracking-[0.08em] sm:w-auto"
       >
-        <span>✉️</span>
-        <span>Invitar a mi Evento</span>
+        <span>Invitar a mi evento</span>
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+        <div className="atp-modal-backdrop">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invite-modal-title"
+            className="atp-modal"
+          >
+            <div className="mb-5 flex items-start justify-between gap-4 border-b border-neutral-800 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Invitar a {projectName}</h3>
-                <p className="text-xs text-slate-500">Selecciona el recital al que deseas invitar a esta banda</p>
+                <p className="atp-kicker">Nueva invitación</p>
+                <h3 id="invite-modal-title" className="atp-heading mt-1 text-3xl">Invitar a {projectName}</h3>
+                <p className="mt-2 text-sm text-neutral-400">Seleccioná el recital al que deseás invitar a esta banda.</p>
               </div>
               <button
-                onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold"
+                type="button"
+                onClick={closeModal}
+                aria-label="Cerrar invitación"
+                className="atp-button atp-button-ghost min-h-9 shrink-0 px-3 text-xl"
               >
                 ✕
               </button>
@@ -91,10 +107,11 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
 
             {feedback && (
               <div
-                className={`p-3 rounded-lg text-sm mb-4 border ${
+                role={feedback.error ? "alert" : "status"}
+                className={`atp-feedback mb-4 text-sm ${
                   feedback.error
-                    ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800"
-                    : "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800"
+                    ? "atp-feedback-error"
+                    : "atp-feedback-success"
                 }`}
               >
                 {feedback.message}
@@ -103,14 +120,16 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
 
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Selecciona tu Evento
+                <label htmlFor="invite-event" className="atp-label mb-1.5 block text-neutral-400">
+                  Seleccioná tu evento
                 </label>
                 <select
+                  id="invite-event"
+                  autoFocus
                   value={selectedEventId}
                   onChange={(e) => setSelectedEventId(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="atp-field text-sm"
                 >
                   {events.map((ev) => (
                     <option key={ev.id} value={ev.id}>
@@ -121,48 +140,50 @@ export function InviteModal({ projectId, projectName, events }: InviteModalProps
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Propuesta inicial de Caché ($) (Opcional)
+                <label htmlFor="invite-amount" className="atp-label mb-1.5 block text-neutral-400">
+                  Propuesta inicial de caché ($) (opcional)
                 </label>
                 <input
+                  id="invite-amount"
                   type="number"
                   placeholder="Ej: 60000"
                   value={offerAmount}
                   onChange={(e) => setOfferAmount(e.target.value)}
                   disabled={isLoading}
                   min="0"
-                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="atp-field text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label htmlFor="invite-message" className="atp-label mb-1.5 block text-neutral-400">
                   Mensaje o condiciones de la propuesta
                 </label>
                 <textarea
+                  id="invite-message"
                   placeholder="Hola! Nos gustaría contar con tu proyecto para esta fecha..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   disabled={isLoading}
                   rows={3}
-                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="atp-field resize-y text-sm"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col-reverse gap-2 border-t border-neutral-800 pt-4 sm:flex-row sm:items-center sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 font-medium"
+                  onClick={closeModal}
+                  className="atp-button atp-button-ghost min-h-10 px-4 text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-semibold rounded-lg transition-colors"
+                  className="atp-button atp-button-primary min-h-10 px-4 text-sm"
                 >
-                  {isLoading ? "Enviando..." : "Enviar Invitación"}
+                  {isLoading ? "Enviando..." : "Enviar invitación"}
                 </button>
               </div>
             </form>

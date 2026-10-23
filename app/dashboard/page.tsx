@@ -5,7 +5,7 @@
  */
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getAuthenticatedUserForRender as getCurrentUser } from "@/lib/auth-render";
 
 export const metadata = {
   title: "Dashboard - Arma tu pogo",
@@ -26,11 +26,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Error</h1>
-        <p>Rol de usuario no válido</p>
+    <main className="atp-page grid min-h-dvh place-items-center px-4">
+      <div className="atp-panel max-w-md border-l-4 border-l-red-600 p-6 text-center">
+        <h1 className="atp-heading text-3xl">Error</h1>
+        <p className="mt-2 text-neutral-400">Rol de usuario no válido</p>
       </div>
-    </div>
+    </main>
   );
 }

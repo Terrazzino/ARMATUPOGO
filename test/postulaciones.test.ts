@@ -205,6 +205,20 @@ describe("Reglas de Postulación de Proyectos a Eventos", () => {
         expect(resultado.motivo).toBe("POSTULACION_NO_PENDIENTE");
       }
     });
+
+    it("caso que falla: ya existe una contratación para el proyecto y el evento", () => {
+      const resultado = validarAceptacionPostulacion({
+        postulacion: { estado: "PENDIENTE" },
+        evento: { organizadorId: "org-1", estado: "PUBLICADO" },
+        usuarioId: "org-1",
+        contratacionExistente: true,
+      });
+
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) {
+        expect(resultado.motivo).toBe("CONTRATACION_DUPLICADA");
+      }
+    });
   });
 
   describe("validarRechazoPostulacion", () => {

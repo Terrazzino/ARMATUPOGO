@@ -1,95 +1,173 @@
 import Link from "next/link";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { EventLineupModal, type LineupProject } from "@/components/events/EventLineupModal";
 
 interface EventCardProps {
   event: {
     id: string;
     titulo: string;
-    descripcion?: string | null;
     startsAt: Date | string;
-    endsAt?: Date | string | null;
     ubicacion: string;
     nombreLugar?: string | null;
     ciudad?: string | null;
-    cantidadMusicosRequerida: number;
-    cacheOfrecido?: number | string | { toString(): string } | null;
-    estado: string;
     bannerUrl?: string | null;
-    organizador?: {
-      nombre: string;
-      apellido: string;
-    } | null;
+    entradas?: Array<{
+      precio: number | string | { toString(): string };
+      esGratuita: boolean;
+    }>;
     contrataciones?: Array<{
       proyectoMusical: {
         id: string;
         nombre: string;
         genero: string;
-        imagenUrl?: string | null;
+        spotifyUrl?: string | null;
+        youtubeUrl?: string | null;
+        instagramUrl?: string | null;
+        sitioWebUrl?: string | null;
+        enlacesPersonalizados?: unknown;
       };
     }>;
   };
+  prioritizeImage?: boolean;
 }
 
-export function EventCard({ event }: EventCardProps) {
-  const dateObj = new Date(event.startsAt);
-  const formattedDate = dateObj.toLocaleDateString("es-AR", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  const formattedTime = dateObj.toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function getCustomLinks(value: unknown): Array<{ label: string; url: string }> {
+  if (!Array.isArray(value)) return [];
 
-  const confirmedCount = event.contrataciones?.length || 0;
+  return value.flatMap((item: unknown) => {
+    if (!item || typeof item !== "object") return [];
+    const candidate = item as { title?: unknown; label?: unknown; url?: unknown };
+    if (typeof candidate.url !== "string" || !isSafeExternalUrl(candidate.url)) return [];
+
+    const label =
+      typeof candidate.title === "string"
+        ? candidate.title
+        : typeof candidate.label === "string"
+          ? candidate.label
+          : "Otro link";
+    return [{ label, url: candidate.url }];
+  });
+}
+
+function isSafeExternalUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function externalLink(label: string, value?: string | null) {
+  return value && isSafeExternalUrl(value) ? { label, url: value } : null;
+}
+
+function getLineup(event: EventCardProps["event"]): LineupProject[] {
+  return (event.contrataciones ?? []).map(({ proyectoMusical }) => ({
+    id: proyectoMusical.id,
+    nombre: proyectoMusical.nombre,
+    genero: proyectoMusical.genero,
+    links: [
+      externalLink("Instagram", proyectoMusical.instagramUrl),
+      externalLink("Spotify", proyectoMusical.spotifyUrl),
+      externalLink("YouTube", proyectoMusical.youtubeUrl),
+      externalLink("Sitio web", proyectoMusical.sitioWebUrl),
+      ...getCustomLinks(proyectoMusical.enlacesPersonalizados),
+    ].filter((link): link is { label: string; url: string } => link !== null),
+  }));
+}
+
+function formatTicketPrice(event: EventCardProps["event"]) {
+  const tickets = event.entradas ?? [];
+  if (tickets.some((ticket) => ticket.esGratuita)) return "Entrada gratuita";
+
+  const lowestPrice = tickets
+    .map((ticket) => Number(ticket.precio.toString()))
+    .filter((price) => Number.isFinite(price) && price > 0)
+    .sort((a, b) => a - b)[0];
+
+  return lowestPrice
+    ? `Desde $${lowestPrice.toLocaleString("es-AR")}`
+    : "Consultar precio";
+}
+
+export function EventCard({ event, prioritizeImage = false }: EventCardProps) {
+  const date = new Date(event.startsAt);
+  const day = date.toLocaleDateString("es-AR", { day: "2-digit" });
+  const month = date.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
+  const fullDate = date.toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const time = date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  const lineup = getLineup(event);
 
   return (
-    <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden flex flex-col hover:border-neutral-700 transition-colors">
-      {/* Event Header / Banner placeholder if no image */}
-      <div className="bg-red-700 text-white p-5 flex items-start justify-between">
-        <div>
-          <span className="text-xs uppercase tracking-wider font-semibold text-red-100 block mb-1">
-            {formattedDate} • {formattedTime} hs
-          </span>
-          <h3 className="text-xl font-bold line-clamp-1">{event.titulo}</h3>
-        </div>
-        <StatusBadge status={event.estado} />
-      </div>
-
-      <div className="p-5 flex-1 flex flex-col justify-between">
-        <div className="space-y-3 mb-4">
-          <div className="text-sm text-neutral-300 flex items-center gap-1.5">
-            <span>📍</span>
-            <span>{event.nombreLugar ? `${event.nombreLugar}, ` : ""}{event.ubicacion}{event.ciudad ? ` (${event.ciudad})` : ""}</span>
+    <article className="group flex h-full flex-col overflow-hidden border border-neutral-800 bg-neutral-950 transition-colors hover:border-neutral-600">
+      <Link
+        href={`/events/${event.id}`}
+        aria-label={`Ver detalles de ${event.titulo}`}
+        className="relative block aspect-[4/5] overflow-hidden bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500"
+      >
+        {event.bannerUrl ? (
+          // Las URLs de flyers son externas y no tienen un host único configurable.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={event.bannerUrl}
+            alt={`Flyer de ${event.titulo}`}
+            loading={prioritizeImage ? "eager" : "lazy"}
+            fetchPriority={prioritizeImage ? "high" : "auto"}
+            decoding="async"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+          />
+        ) : (
+          <div className="event-flyer-placeholder h-full w-full" aria-hidden="true">
+            <span>FLYER NO DISPONIBLE</span>
           </div>
-
-          {event.descripcion && (
-            <p className="text-sm text-neutral-400 line-clamp-2">
-              {event.descripcion}
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-neutral-400 pt-2 border-t border-neutral-800">
-            <div>
-              <span className="text-neutral-200 font-bold">{confirmedCount}</span> de {event.cantidadMusicosRequerida} bandas confirmadas
-            </div>
-            {event.cacheOfrecido && Number(event.cacheOfrecido.toString()) > 0 && (
-              <div className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                Caché: ${Number(event.cacheOfrecido.toString()).toLocaleString("es-AR")}
-              </div>
-            )}
-          </div>
+        )}
+        <div className="absolute left-0 top-0 min-w-20 bg-red-600 px-4 py-3 text-center text-white shadow-lg">
+          <span className="block text-3xl font-black leading-none">{day}</span>
+          <span className="block text-xs font-black uppercase tracking-[0.2em]">{month}</span>
         </div>
+      </Link>
 
-        <Link
-          href={`/events/${event.id}`}
-          className="w-full text-center py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          Ver Detalles y Postularse
-        </Link>
+      <div className="flex flex-1 flex-col p-5">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-400">
+          {fullDate} · {time} hs
+        </p>
+        <h3 className="event-card-title mt-2 text-2xl font-black leading-tight text-white">
+          <Link href={`/events/${event.id}`} className="hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+            {event.titulo}
+          </Link>
+        </h3>
+
+        <dl className="mt-5 space-y-3 border-t border-neutral-800 pt-4 text-sm">
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-wider text-neutral-500">Entrada</dt>
+            <dd className="mt-0.5 font-black text-white">{formatTicketPrice(event)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-wider text-neutral-500">Lugar</dt>
+            <dd className="mt-0.5 font-bold text-neutral-200">{event.nombreLugar || "Lugar a confirmar"}</dd>
+            <dd className="text-neutral-400">{event.ubicacion}{event.ciudad ? ` · ${event.ciudad}` : ""}</dd>
+          </div>
+        </dl>
+
+        <div className="mt-auto flex flex-col gap-2 pt-6 sm:flex-row">
+          <EventLineupModal eventTitle={event.titulo} projects={lineup} />
+          <button
+            type="button"
+            disabled
+            aria-describedby={`ticket-note-${event.id}`}
+            className="min-h-11 flex-1 cursor-not-allowed bg-red-600 px-4 py-2.5 text-sm font-black text-white opacity-65"
+          >
+            Comprar entrada
+          </button>
+        </div>
+        <p id={`ticket-note-${event.id}`} className="sr-only">
+          La compra de entradas todavía no está disponible en la plataforma.
+        </p>
       </div>
-    </div>
+    </article>
   );
 }

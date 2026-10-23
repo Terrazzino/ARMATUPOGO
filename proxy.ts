@@ -1,27 +1,40 @@
 /**
- * Middleware de Next.js para validación de sesión y autenticación.
+ * Proxy de Next.js para validación de sesión y autenticación.
  *
- * Este middleware se ejecuta en cada request y valida la sesión del usuario.
+ * Se ejecuta antes de las rutas de página incluidas por el matcher. Las API
+ * quedan fuera porque autorizan cada operación de forma independiente.
  *
- * @see https://nextjs.org/docs/app/building-application-features/authentication
+ * @see https://nextjs.org/docs/app/api-reference/file-conventions/proxy
  * @see https://supabase.com/docs/guides/auth/server-side/nextjs
  * @see AGENTS.md § 10. AUTENTICACIÓN Y AUTORIZACIÓN
  */
 
+import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
-// Rutas que requieren autenticación
 const PROTECTED_ROUTES = ["/dashboard"];
-
-// Rutas públicas (sin autenticación)
 const PUBLIC_AUTH_ROUTES = ["/auth/login", "/auth/register", "/auth/callback"];
+const AUTH_CACHE_HEADERS = ["cache-control", "expires", "pragma"];
 
-export async function middleware(request: NextRequest) {
+function redirectWithAuthState(url: URL, authResponse: NextResponse) {
+  const redirectResponse = NextResponse.redirect(url);
+
+  authResponse.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+  AUTH_CACHE_HEADERS.forEach((headerName) => {
+    const value = authResponse.headers.get(headerName);
+    if (value) {
+      redirectResponse.headers.set(headerName, value);
+    }
+  });
+
+  return redirectResponse;
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Crear cliente de Supabase
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -30,22 +43,21 @@ export async function middleware(request: NextRequest) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Si no hay credenciales, las rutas públicas continúan, pero las rutas protegidas NUNCA quedan expuestas
+    // Las rutas protegidas nunca quedan expuestas si falta la configuración.
     if (isProtectedRoute) {
       console.error(
-        "[Middleware] Intento de acceso a ruta protegida sin credenciales de Supabase:",
+        "[Proxy] Intento de acceso a ruta protegida sin credenciales de Supabase:",
         pathname
       );
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
       url.searchParams.set("error", "config_missing");
-      return NextResponse.redirect(url);
+      return redirectWithAuthState(url, response);
     }
     return response;
   }
@@ -55,9 +67,12 @@ export async function middleware(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, headersToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
+        });
+        Object.entries(headersToSet).forEach(([name, value]) => {
+          response.headers.set(name, value);
         });
       },
     },
@@ -75,7 +90,6 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Obtener sesión del usuario de forma resiliente
   let user = null;
   try {
     const { data, error } = await supabase.auth.getUser();
@@ -83,7 +97,7 @@ export async function middleware(request: NextRequest) {
       user = data.user;
     }
   } catch (error) {
-    console.error("[Middleware] Fallo al consultar Supabase Auth:", {
+    console.error("[Proxy] Fallo al consultar Supabase Auth:", {
       pathname,
       errorName: error instanceof Error ? error.name : typeof error,
     });
@@ -91,28 +105,23 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
       url.searchParams.set("error", "auth_unavailable");
-      return NextResponse.redirect(url);
+      return redirectWithAuthState(url, response);
     }
   }
 
-  // Proteger rutas que requieren autenticación
-  if (isProtectedRoute) {
-    if (!user) {
-      // Redirigir a login si no está autenticado
-      const url = request.nextUrl.clone();
-      url.pathname = "/auth/login";
-      return NextResponse.redirect(url);
-    }
+  if (isProtectedRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    return redirectWithAuthState(url, response);
   }
 
-  // Redirigir usuarios autenticados fuera de rutas de auth
-  if (PUBLIC_AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
-    if (user) {
-      // Redirigir al dashboard si ya está autenticado
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
+  if (
+    user &&
+    PUBLIC_AUTH_ROUTES.some((route) => pathname.startsWith(route))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return redirectWithAuthState(url, response);
   }
 
   return response;
@@ -121,12 +130,10 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * Excluye API (que autoriza por operación), recursos internos de Next y
+     * los assets públicos de branding. No se excluyen extensiones globalmente:
+     * una ruta protegida que termine en ".png" debe seguir protegida.
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|branding/).*)",
   ],
 };

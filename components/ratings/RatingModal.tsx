@@ -1,22 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createRating } from "@/app/actions/ratings";
+import { RockHandIcon } from "@/components/ratings/RockHandRating";
+import { RockHandRatingSelector } from "@/components/ratings/RockHandRatingSelector";
 
-interface RatingModalProps {
+export interface RatingModalProps {
   contractId: string;
   targetName: string;
+  triggerLabel?: string;
+  initiallyOpen?: boolean;
 }
 
-export function RatingModal({ contractId, targetName }: RatingModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [score, setScore] = useState(5);
+export function RatingModal({ contractId, targetName, triggerLabel, initiallyOpen = false }: RatingModalProps) {
+  const router = useRouter();
+  const titleId = useId();
+  const scoreLabelId = useId();
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [score, setScore] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ error?: boolean; message: string } | null>(null);
 
   async function handleRating(e: React.FormEvent) {
     e.preventDefault();
+
+    if (score === null) {
+      setFeedback({ error: true, message: "Selecciona una puntuación entre 1 y 5." });
+      return;
+    }
+
     setIsLoading(true);
     setFeedback(null);
 
@@ -26,49 +41,73 @@ export function RatingModal({ contractId, targetName }: RatingModalProps) {
       comentario: comment,
     });
 
-    setIsLoading(false);
-
     if (result.error) {
+      setIsLoading(false);
       setFeedback({ error: true, message: result.message });
     } else {
       setFeedback({ error: false, message: "¡Valoración registrada con éxito!" });
       setTimeout(() => {
-        setIsOpen(false);
-      }, 1500);
+        closeModal();
+        setIsLoading(false);
+        router.refresh();
+      }, 1200);
     }
+  }
+
+  function openModal() {
+    setScore(null);
+    setComment("");
+    setFeedback(null);
+    setIsOpen(true);
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
   }
 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
-        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1"
+        ref={triggerRef}
+        type="button"
+        onClick={openModal}
+        className="atp-button atp-button-secondary text-xs"
       >
-        <span>★</span>
-        <span>Calificar a {targetName}</span>
+        <RockHandIcon size={18} />
+        <span>{triggerLabel ?? `Calificar a ${targetName}`}</span>
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white">
+        <div className="atp-modal-backdrop">
+          <div
+            className="atp-modal space-y-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+          >
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <h3 id={titleId} className="atp-heading text-2xl">
                 Valorar a {targetName}
               </h3>
               <button
-                onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                type="button"
+                onClick={closeModal}
+                autoFocus
+                aria-label="Cerrar formulario de valoración"
+                className="text-lg font-bold text-neutral-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
 
             {feedback && (
               <div
-                className={`p-3 rounded-lg text-xs font-medium border ${
+                role={feedback.error ? "alert" : "status"}
+                className={`atp-feedback ${
                   feedback.error
-                    ? "bg-red-950/50 text-red-200 border-red-800"
-                    : "bg-emerald-950/50 text-emerald-200 border-emerald-800"
+                    ? "atp-feedback-error"
+                    : "atp-feedback-success"
                 }`}
               >
                 {feedback.message}
@@ -77,53 +116,43 @@ export function RatingModal({ contractId, targetName }: RatingModalProps) {
 
             <form onSubmit={handleRating} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-2">
-                  Puntaje (Estrellas)
-                </label>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      type="button"
-                      key={star}
-                      onClick={() => setScore(star)}
-                      className={`text-2xl transition-transform hover:scale-110 ${
-                        star <= score ? "text-amber-400" : "text-slate-300 dark:text-slate-700"
-                      }`}
-                    >
-                      ★
-                    </button>
-                  ))}
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-2">
-                    {score} de 5
-                  </span>
-                </div>
+                <span id={scoreLabelId} className="atp-label mb-2 block">
+                  Puntuación
+                </span>
+                <RockHandRatingSelector
+                  value={score}
+                  onChange={setScore}
+                  labelledBy={scoreLabelId}
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 uppercase mb-1">
+                <label htmlFor="rating-comment" className="atp-label mb-2 block">
                   Comentario o Reseña (Opcional)
                 </label>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
+                  id="rating-comment"
                   placeholder="Comparte tu experiencia trabajando juntos en la fecha..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-800 text-white placeholder:text-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="atp-field"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-wrap justify-end gap-2 border-t border-neutral-800 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white"
+                  onClick={closeModal}
+                  className="atp-button atp-button-ghost text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-bold text-xs rounded-lg transition-colors"
+                  disabled={isLoading || score === null}
+                  aria-busy={isLoading}
+                  className="atp-button atp-button-primary text-xs"
                 >
                   {isLoading ? "Guardando..." : "Enviar Calificación"}
                 </button>
