@@ -1847,9 +1847,28 @@ Proveedor externo de autenticación y gestión de identidades (IDaaS).
 
 ## Supabase Storage
 
-- **Estado en MVP actual:** NO IMPLEMENTADO / DIFERIDO.
-- **Diseño previsto:** Previsto arquitectónicamente para almacenamiento de archivos binarios (avatares, imágenes de proyectos y banners).
-- **Implementación actual:** En esta etapa del proyecto, las imágenes se gestionan exclusivamente mediante URLs de texto (`imagenUrl`, `fotoPerfilUrl`) almacenadas en PostgreSQL, sin integración activa con buckets de Supabase Storage.
+- **Estado en MVP actual:** IMPLEMENTADO EN CÓDIGO PARA IMÁGENES DE PROYECTOS MUSICALES Y PARA FLYERS OPCIONALES DE EVENTOS EXISTENTES; CONFIGURACIÓN REMOTA PENDIENTE.
+- **Trazabilidad:** La decisión original difería Supabase Storage y conservaba únicamente URLs de texto. El 26/10/2026 se autorizó primero su uso para imágenes opcionales de proyectos musicales y, posteriormente, se amplió a flyers opcionales de eventos. Avatares y otros banners permanecen diferidos.
+- **Modelo de datos:** Se reutiliza `ProyectoMusical.imagenUrl`; no se agrega una tabla de archivos ni se modifica el esquema Prisma. El campo almacena la URL pública del objeto vigente o `null` cuando el proyecto no tiene imagen.
+- **Bucket:** `project-images`, público solamente para lectura de imágenes. El acceso público no habilita escrituras.
+- **Ruta de objetos:** `<auth.uid()>/projects/<projectId>/<uuid-aleatorio>.<ext-detectada>`. No se utiliza el nombre original del archivo como identificador y no se sobrescriben objetos.
+- **Escrituras:** Se realizan desde Server Actions con el cliente SSR del usuario autenticado y la clave pública de Supabase. No se utiliza ni se expone `service_role`. La aplicación verifica además que el usuario sea `MUSICO` y propietario del proyecto; las políticas RLS de `storage.objects` restringen `INSERT` y `DELETE` a la carpeta del mismo `auth.uid()`.
+- **Formatos y límites:** JPG/JPEG, PNG y WebP estáticos; máximo 5 MiB; dimensiones entre 64×64 y 4096×4096 píxeles y máximo 16.777.216 píxeles. SVG y formatos animados no están permitidos. El servidor valida tamaño, MIME declarado, firma/contenido real y dimensiones antes de subir. El bucket replica los límites de MIME y tamaño como defensa adicional.
+- **Opcionalidad:** Crear y editar un proyecto sin imagen sigue siendo válido. La edición permite conservar, reemplazar o quitar la imagen.
+- **Consistencia entre servicios:** La base de datos mantiene la referencia canónica. En un alta con imagen se crea primero una fila provisional inactiva y sin URL, para que Storage pueda comprobar que el proyecto existe y pertenece al usuario; luego se sube el objeto y una actualización única guarda la URL y activa el proyecto. Ante un fallo se intenta eliminar el objeto nuevo y la fila provisional. En un reemplazo o eliminación, el objeto anterior sólo se elimina después de guardar la nueva referencia o `null`. Un fallo de compensación puede dejar un objeto huérfano o una fila provisional inactiva, pero nunca publicar una referencia a una imagen borrada.
+- **Errores:** Fallos de validación no inician la carga. Un fallo de Storage no deja un proyecto activo ni modifica un proyecto existente; el alta provisional se elimina de forma compensatoria. Los mensajes al usuario son controlados y no revelan tokens, rutas privadas ni detalles internos. La ausencia del bucket o de las políticas se considera configuración incompleta.
+- **Configuración remota:** El script versionado en `supabase/migrations/202610260002_project_images_storage.sql` debe aplicarse explícitamente al proyecto Supabase antes de utilizar la funcionalidad de extremo a extremo. Preparar el script no autoriza su ejecución remota.
+
+### Flyers de eventos
+
+- **Modelo de datos:** Se reutiliza `Evento.bannerUrl`; contiene la URL pública vigente o `null`. No se modifica Prisma ni se incorpora una tabla de negocio adicional.
+- **Bucket y rutas:** El bucket público `event-images` sirve los flyers. Cada objeto usa `<auth.uid()>/events/<eventId>/<uuid-aleatorio>.<ext-detectada>` y nunca el nombre original ni sobrescrituras.
+- **Formatos y límites:** JPG/JPEG, PNG y WebP estáticos; máximo 5 MiB; dimensiones entre 400×500 y 4000×5000 píxeles, con máximo 20 megapíxeles. SVG, ejecutables y animaciones no se aceptan. El servidor comprueba MIME declarado, firma real, dimensiones y animación antes de subir.
+- **Seguridad:** La Server Action exige sesión, rol `ORGANIZADOR`, existencia y ownership del evento. La RLS replica el ownership contra `public.eventos` y el rol contra `public.usuarios`, limita `INSERT` y `DELETE` a objetos propios y concede `SELECT` únicamente para la operación interna de `remove()`. No se concede `UPDATE` ni se usa `service_role`.
+- **Edición y reemplazo:** Editar permite conservar, reemplazar o quitar el flyer. Un objeto anterior sólo se elimina después de confirmar la nueva referencia en PostgreSQL; si falla la actualización, se intenta limpiar el objeto recién subido. Las restricciones de fechas y cupos siguen siendo las definidas en la sección 14 y no se relajan por la imagen.
+- **Creación:** Crear sin flyer continúa disponible aunque Storage falle. Crear con flyer no queda habilitado mientras el modelo sólo admita `PUBLICADO` y `CANCELADO`: la RLS exige que el evento exista, pero publicar una fila incompleta como staging contradice el flujo directo a `PUBLICADO`, y `CANCELADO` no puede usarse como estado provisional. El formulario informa que se publique primero y se agregue el flyer mediante edición. Habilitar una operación atómica requerirá una decisión futura explícita sobre un estado privado o mecanismo equivalente.
+- **Errores y opcionalidad:** Un fallo de validación o Storage no modifica el evento. Un fallo de limpieza posterior puede dejar un objeto huérfano, pero no una URL rota. Los mensajes son controlados y no exponen secretos. El flyer es opcional.
+- **Configuración remota:** `supabase/migrations/202610260003_event_images_storage.sql` prepara el bucket y sus políticas; debe revisarse y aplicarse manualmente con autorización separada antes de probar el flujo de extremo a extremo.
 
 ## Zod
 

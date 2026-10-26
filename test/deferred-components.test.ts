@@ -9,7 +9,9 @@ function source(relativePath: string) {
 describe("límites de carga diferida", () => {
   it.each([
     ["components/projects/DeferredCreateProjectModal.tsx", "CreateProjectModal"],
+    ["components/projects/DeferredEditProjectModal.tsx", "EditProjectModal"],
     ["components/events/DeferredCreateEventModal.tsx", "CreateEventModal"],
+    ["components/events/DeferredEditEventModal.tsx", "EditEventModal"],
     ["components/events/DeferredApplyToEventModal.tsx", "ApplyToEventModal"],
     ["components/contracts/DeferredInviteModal.tsx", "InviteModal"],
     ["components/ratings/DeferredRatingModal.tsx", "RatingModal"],
@@ -21,6 +23,25 @@ describe("límites de carga diferida", () => {
     expect(contents).toContain(`import("@/components/`);
     expect(contents).toContain(`module.${component}`);
     expect(contents).toContain("loading:");
+  });
+
+  it("la cancelación de proyecto restaura formulario, imagen y foco sin guardar", () => {
+    const contents = source("components/projects/CreateProjectModal.tsx");
+
+    expect(contents).toContain("reset(defaults)");
+    expect(contents).toContain("setSelectedImage(null)");
+    expect(contents).toContain("setRemoveImage(false)");
+    expect(contents).toContain("document.getElementById(triggerId)?.focus()");
+  });
+
+  it("el formulario de eventos alinea recinto, dirección y ciudad y restaura el borrador al cancelar", () => {
+    const contents = source("components/events/CreateEventModal.tsx");
+
+    expect(contents.match(/grid-rows-\[2\.75rem_auto_auto\]/g)).toHaveLength(3);
+    expect(contents).toContain("sm:grid-cols-3 sm:items-start");
+    expect(contents).toContain("reset(defaults)");
+    expect(contents).toContain("setSelectedImage(null)");
+    expect(contents).toContain("setRemoveImage(false)");
   });
 
   it("no vuelve a incluir los formularios de creación en los dashboards iniciales", () => {

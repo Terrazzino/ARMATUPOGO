@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeferredEditProjectModal } from "@/components/projects/DeferredEditProjectModal";
 
 interface ProjectCardProject {
   id: string;
@@ -13,6 +14,7 @@ interface ProjectCardProject {
   youtubeUrl?: string | null;
   instagramUrl?: string | null;
   sitioWebUrl?: string | null;
+  enlacesPersonalizados?: unknown;
   usuario?: {
     nombre: string;
     apellido: string;
@@ -84,13 +86,36 @@ export function ProjectCard(props: ProjectCardProps) {
             )}
           </div>
 
-          <div className="mt-auto border-t border-neutral-800 pt-4">
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-neutral-800 pt-4">
             <Link
               href={`/projects/${project.id}`}
               className="inline-flex min-h-10 items-center font-bold text-red-400 underline-offset-4 hover:text-red-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
             >
               Ver perfil público →
             </Link>
+            <DeferredEditProjectModal
+              project={{
+                id: project.id,
+                nombre: project.nombre,
+                genero: project.genero,
+                descripcion: project.descripcion ?? "",
+                cacheAproximado: project.cacheAproximado ? Number(project.cacheAproximado.toString()) : null,
+                ubicacion: project.ubicacion ?? "",
+                ciudad: project.ciudad ?? "",
+                imagenUrl: project.imagenUrl ?? "",
+                spotifyUrl: project.spotifyUrl ?? "",
+                youtubeUrl: project.youtubeUrl ?? "",
+                instagramUrl: project.instagramUrl ?? "",
+                sitioWebUrl: project.sitioWebUrl ?? "",
+                enlacesPersonalizados: Array.isArray(project.enlacesPersonalizados)
+                  ? project.enlacesPersonalizados.filter(
+                      (link): link is { title: string; url: string } =>
+                        Boolean(link) && typeof link === "object" && "title" in link && "url" in link &&
+                        typeof link.title === "string" && typeof link.url === "string"
+                    )
+                  : [],
+              }}
+            />
           </div>
         </div>
       </article>
