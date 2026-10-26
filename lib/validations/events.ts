@@ -7,6 +7,8 @@
 import { z } from "zod";
 import { VALIDATION_LIMITS } from "@/lib/constants";
 
+export const eventIdSchema = z.uuid("ID de evento inválido");
+
 export const eventoSchema = z.object({
   titulo: z
     .string()

@@ -7,6 +7,8 @@
 import { z } from "zod";
 import { VALIDATION_LIMITS } from "@/lib/constants";
 
+export const projectIdSchema = z.string().uuid("ID de proyecto inválido");
+
 export const proyectoMusicalSchema = z.object({
   nombre: z
     .string()

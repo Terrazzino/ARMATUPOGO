@@ -10,14 +10,21 @@ export type OrganizerEventContractStatus =
 export interface OrganizerEventListItem {
   id: string;
   titulo: string;
+  descripcion?: string | null;
   startsAt: string;
   endsAt: string;
   ubicacion: string;
   nombreLugar: string | null;
   ciudad: string | null;
   cantidadMusicosRequerida: number;
+  cacheOfrecido?: number | null;
+  bannerUrl?: string | null;
   estado: OrganizerEventStatus;
   contrataciones: Array<{ estado: OrganizerEventContractStatus }>;
+}
+
+export function hasActiveEventContracts(event: OrganizerEventListItem) {
+  return event.contrataciones.some(({ estado }) => estado === "NEGOCIANDO" || estado === "ACORDADO");
 }
 
 export interface OrganizerEventGroups {

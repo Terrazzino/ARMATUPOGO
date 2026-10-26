@@ -9,9 +9,11 @@ import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState"
 import {
   canCancelOrganizerEvent,
   getConfirmedBandsCount,
+  hasActiveEventContracts,
   type OrganizerEventGroups,
   type OrganizerEventListItem,
 } from "@/lib/organizer-events";
+import { DeferredEditEventModal } from "@/components/events/DeferredEditEventModal";
 
 type EventTab = keyof OrganizerEventGroups;
 
@@ -214,11 +216,26 @@ function OrganizerEventRow({
       </TableCell>
 
       <TableCell label="Acciones">
-        {canCancelOrganizerEvent(event, new Date(now)) ? (
-          <CancelEventAction eventId={event.id} eventTitle={event.titulo} />
-        ) : (
-          <span className="text-xs font-semibold text-neutral-600">Sin acciones disponibles</span>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <DeferredEditEventModal event={{
+            id: event.id,
+            titulo: event.titulo,
+            descripcion: event.descripcion ?? null,
+            startsAt: event.startsAt,
+            endsAt: event.endsAt,
+            ubicacion: event.ubicacion,
+            nombreLugar: event.nombreLugar,
+            ciudad: event.ciudad,
+            cantidadMusicosRequerida: event.cantidadMusicosRequerida,
+            cacheOfrecido: event.cacheOfrecido ?? null,
+            bannerUrl: event.bannerUrl ?? null,
+            estado: event.estado,
+            hasActiveContracts: hasActiveEventContracts(event),
+          }} />
+          {canCancelOrganizerEvent(event, new Date(now)) && (
+            <CancelEventAction eventId={event.id} eventTitle={event.titulo} />
+          )}
+        </div>
       </TableCell>
     </div>
   );

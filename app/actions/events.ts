@@ -12,9 +12,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedUser } from "@/lib/api-helpers";
 import { requireAuthenticatedUserForRender } from "@/lib/auth-render";
 import { ownedEventWhere, requireRole } from "@/lib/authorization";
-import { normalizeError, NotFoundError } from "@/lib/errors";
+import { normalizeError, NotFoundError, ValidationError } from "@/lib/errors";
 import { calcularCupos } from "@/lib/cupos";
-import { eventoSchema, type EventoInput } from "@/lib/validations/events";
+import { eventIdSchema, eventoSchema, type EventoInput } from "@/lib/validations/events";
 import {
   cancelOwnedEvent,
   eventCreateData,
@@ -28,14 +28,63 @@ import {
   validateEventUpdate,
 } from "@/lib/event-access";
 import { findPublicEventDetailById } from "@/lib/public-detail-data";
+import { getOwnedEventImagePath, validateEventImage } from "@/lib/event-image";
+import { removeEventImage, uploadEventImage } from "@/lib/services/event-image-storage";
 
-export async function createEvent(input: EventoInput) {
+type EventImageAction = "keep" | "replace" | "remove";
+
+function parseEventId(id: string) {
+  const result = eventIdSchema.safeParse(id);
+  if (!result.success) throw new ValidationError(result.error.issues[0]?.message ?? "ID de evento inválido");
+  return result.data;
+}
+
+function parseEventInput(input: unknown, partial = false) {
+  const result = (partial ? eventoSchema.partial() : eventoSchema).safeParse(input);
+  if (!result.success) throw new ValidationError(result.error.issues[0]?.message ?? "Datos del evento inválidos");
+  return result.data;
+}
+
+function parseEventFormData(formData: FormData) {
+  const rawEvent = formData.get("event");
+  if (typeof rawEvent !== "string") throw new ValidationError("Los datos del evento son inválidos");
+  let input: unknown;
+  try {
+    input = JSON.parse(rawEvent);
+  } catch {
+    throw new ValidationError("Los datos del evento son inválidos");
+  }
+  if (input && typeof input === "object" && !Array.isArray(input)) {
+    const sanitized = { ...(input as Record<string, unknown>) };
+    delete sanitized.bannerUrl;
+    input = sanitized;
+  }
+  const rawAction = formData.get("imageAction");
+  const imageAction: EventImageAction = rawAction === "replace" || rawAction === "remove" ? rawAction : "keep";
+  const image = formData.get("image");
+  if (imageAction === "replace" && (!(image instanceof File) || image.size === 0)) {
+    throw new ValidationError("Seleccioná un flyer para reemplazar el actual");
+  }
+  return { input, imageAction, image: imageAction === "replace" ? image as File : null };
+}
+
+export async function createEvent(input: EventoInput | FormData) {
   try {
     const user = await requireAuthenticatedUser();
     requireRole(user, "ORGANIZADOR");
 
-    const validatedData = eventoSchema.parse(input);
+    const submission = input instanceof FormData
+      ? parseEventFormData(input)
+      : { input, imageAction: "keep" as const, image: null };
+    const validatedData = parseEventInput(submission.input, false) as EventoInput;
     validateEventDates(validatedData);
+
+    if (submission.imageAction === "replace" && submission.image) {
+      await validateEventImage(submission.image);
+      throw new ValidationError(
+        "Publicá primero el evento sin flyer y agregalo desde Editar evento. El modelo actual no admite una carga provisional privada segura."
+      );
+    }
 
     const event = await prisma.evento.create({
       data: eventCreateData(user.id, validatedData),
@@ -55,31 +104,60 @@ export async function createEvent(input: EventoInput) {
   }
 }
 
-export async function updateEvent(id: string, input: Partial<EventoInput>) {
+export async function updateEvent(id: string, input: Partial<EventoInput> | FormData) {
+  let uploadedPath: string | null = null;
   try {
     const user = await requireAuthenticatedUser();
     requireRole(user, "ORGANIZADOR");
 
+    const eventId = parseEventId(id);
     const existing = await prisma.evento.findFirst({
-      where: ownedEventWhere(id, user.id),
+      where: ownedEventWhere(eventId, user.id),
       include: { contrataciones: { select: { estado: true } } },
     });
     if (!existing) throw new NotFoundError("Evento");
 
-    const validatedData = eventoSchema.partial().parse(input);
+    const submission = input instanceof FormData
+      ? parseEventFormData(input)
+      : { input, imageAction: "keep" as const, image: null };
+    const validatedData = parseEventInput(submission.input, true) as Partial<EventoInput>;
     validateEventUpdate(existing, validatedData);
 
+    let nextBannerUrl = existing.bannerUrl;
+    if (submission.imageAction === "replace" && submission.image) {
+      const uploaded = await uploadEventImage(user.id, eventId, submission.image);
+      uploadedPath = uploaded.path;
+      nextBannerUrl = uploaded.publicUrl;
+    } else if (submission.imageAction === "remove") {
+      nextBannerUrl = null;
+    }
+
     const updated = await prisma.evento.update({
-      where: { id, organizadorId: user.id },
-      data: eventUpdateData(validatedData),
+      where: { id: eventId, organizadorId: user.id },
+      data: {
+        ...eventUpdateData(validatedData),
+        ...(submission.imageAction !== "keep" && { bannerUrl: nextBannerUrl }),
+      },
     });
+    const committedUploadedPath = uploadedPath;
+    uploadedPath = null;
+
+    let warning: string | undefined;
+    if (submission.imageAction !== "keep") {
+      const previousPath = getOwnedEventImagePath(existing.bannerUrl, user.id, eventId);
+      if (previousPath && previousPath !== committedUploadedPath) {
+        const removed = await removeEventImage(previousPath);
+        if (!removed) warning = "El evento se guardó, pero quedó un flyer anterior pendiente de limpieza.";
+      }
+    }
 
     revalidatePath("/dashboard/organizer");
-    revalidatePath(`/events/${id}`);
+    revalidatePath(`/events/${eventId}`);
     revalidatePath("/events");
 
-    return { success: true, data: updated };
+    return { success: true, data: updated, ...(warning && { warning }) };
   } catch (error) {
+    if (uploadedPath) await removeEventImage(uploadedPath);
     const normalized = normalizeError(error);
     return {
       error: true,
