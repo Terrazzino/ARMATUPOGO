@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const sql = readFileSync(
   join(process.cwd(), "supabase/migrations/202610260002_project_images_storage.sql"),
   "utf8"
-).toLowerCase();
+).toLowerCase().replace(/\r\n/g, "\n");
 
 describe("migración RLS de imágenes de proyectos", () => {
   it("valida ownership contra la tabla y columnas reales de Prisma", () => {

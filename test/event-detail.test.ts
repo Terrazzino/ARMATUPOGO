@@ -13,15 +13,12 @@ describe("detalle de eventos", () => {
   it("elige navegación pública o contextual según el rol", () => {
     expect(getEventDetailNavigation(null)).toEqual({
       variant: "public",
-      activeItem: null,
     });
     expect(getEventDetailNavigation("MUSICO")).toEqual({
       variant: "dashboard",
-      activeItem: "discovery",
     });
     expect(getEventDetailNavigation("ORGANIZADOR")).toEqual({
       variant: "dashboard",
-      activeItem: null,
     });
   });
 

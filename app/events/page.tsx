@@ -70,17 +70,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
     <div className="atp-page home-typography flex min-h-screen flex-col">
       <Navbar
         variant={isMusician ? "dashboard" : "public"}
-        activeItem={isMusician ? "discovery" : null}
       />
 
       <main id="cartelera" className="home-events-board flex-1 scroll-mt-16">
-        <div className="atp-container py-8 sm:py-10">
-          <header className="mb-8 border-b border-neutral-700 pb-5">
+        <div className="atp-container py-6 sm:py-8">
+          <header className="mb-6 border-b border-neutral-700 pb-4">
             <p className="atp-kicker">
               {isMusician ? "Oportunidades para músicos" : "Próximos recitales"}
             </p>
-            <h1 className="atp-heading atp-page-title mt-2">Cartelera de recitales</h1>
-            <p className="mt-3 max-w-2xl text-base text-neutral-400">
+            <h1 className="atp-heading atp-page-title mt-1.5">Cartelera de recitales</h1>
+            <p className="mt-2 max-w-2xl text-base text-neutral-400">
               {isMusician
                 ? "Encontrá fechas disponibles y postulá uno de tus proyectos musicales."
                 : "Explorá próximas fechas, lugares y propuestas de la escena independiente."}
@@ -90,7 +89,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           <form
             method="GET"
             aria-label="Buscar recitales"
-            className="atp-panel mb-8 grid gap-3 p-4 sm:grid-cols-[1fr_0.55fr_auto]"
+            className="atp-panel mb-6 grid gap-3 p-3 sm:grid-cols-[1fr_0.55fr_auto]"
           >
             <label className="sr-only" htmlFor="events-search">Banda, evento o lugar</label>
             <input
@@ -130,7 +129,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             musicianBoard.events.length === 0 ? (
               <EmptyBoard hasFilters={Boolean(filters.search || filters.city)} />
             ) : (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[repeat(3,minmax(0,21.5rem))]">
+              <div className="event-card-grid">
                 {musicianBoard.events.map((event, index) => (
                   <MusicianEventCard
                     key={event.id}
@@ -142,7 +141,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               </div>
             )
           ) : publicBoard && publicBoard.events.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[repeat(3,minmax(0,21.5rem))]">
+            <div className="event-card-grid">
               {publicBoard.events.map((event, index) => (
                 <EventCard key={event.id} event={event} prioritizeImage={index === 0} />
               ))}
@@ -152,7 +151,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           )}
 
           {totalPages > 1 && (
-            <nav aria-label="Páginas de la cartelera" className="mt-10 flex items-center justify-center gap-2">
+            <nav aria-label="Páginas de la cartelera" className="mt-8 flex items-center justify-center gap-2">
               <PageLink page={currentPage - 1} label="Ir a la página anterior" disabled={currentPage <= 1} filters={filters}>←</PageLink>
               {pageItems.map((item, index) =>
                 item === "ellipsis" ? (

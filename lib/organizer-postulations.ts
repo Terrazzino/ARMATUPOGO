@@ -13,6 +13,7 @@ export interface OrganizerPostulationListItem {
     id: string;
     titulo: string;
     startsAt: string;
+    endsAt: string;
     estado: "PUBLICADO" | "CANCELADO";
   };
   proyectoMusical: {

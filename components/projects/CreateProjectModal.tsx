@@ -84,30 +84,29 @@ function ProjectModal({ mode, project, initiallyOpen = false }: { mode: "create"
       {isOpen && (
         <div className="atp-modal-backdrop">
           <div className="atp-modal my-4" role="dialog" aria-modal="true" aria-labelledby={`${triggerId}-title`}>
-            <div className="mb-5 flex items-center justify-between border-b border-neutral-800 pb-4">
+            <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
               <h3 id={`${triggerId}-title`} className="atp-heading text-2xl">{title}</h3>
               <button type="button" onClick={closeModal} aria-label="Cerrar formulario de proyecto" className="text-xl font-bold text-neutral-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><span aria-hidden="true">✕</span></button>
             </div>
             {serverError && <div className="atp-feedback atp-feedback-error mb-4" role="alert">{serverError}</div>}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 text-left">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                 <Field label="Nombre Artístico *" id={`${triggerId}-name`} error={errors.nombre?.message}><input {...register("nombre")} id={`${triggerId}-name`} autoFocus type="text" placeholder="Ej: Los Pogo Boys" disabled={isLoading} aria-invalid={Boolean(errors.nombre)} className="atp-field" /></Field>
                 <Field label="Género Musical *" id={`${triggerId}-genre`} error={errors.genero?.message}><input {...register("genero")} id={`${triggerId}-genre`} type="text" placeholder="Ej: Punk Rock / Indie" disabled={isLoading} aria-invalid={Boolean(errors.genero)} className="atp-field" /></Field>
               </div>
               <Field label="Descripción y Propuesta" id={`${triggerId}-description`} error={errors.descripcion?.message}><textarea {...register("descripcion")} id={`${triggerId}-description`} rows={3} placeholder="Sonido, trayectoria e integrantes..." disabled={isLoading} aria-invalid={Boolean(errors.descripcion)} className="atp-field" /></Field>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                 <Field label="Caché orientativo ($)" id={`${triggerId}-fee`} error={errors.cacheAproximado?.message}><input {...register("cacheAproximado", { setValueAs: (value) => value === "" ? null : Number(value) })} id={`${triggerId}-fee`} type="number" min="0" placeholder="50000" disabled={isLoading} aria-invalid={Boolean(errors.cacheAproximado)} className="atp-field" /></Field>
                 <Field label="Ciudad" id={`${triggerId}-city`}><input {...register("ciudad")} id={`${triggerId}-city`} type="text" placeholder="CABA" disabled={isLoading} className="atp-field" /></Field>
-                <Field label="Zona / Barrio" id={`${triggerId}-location`}><input {...register("ubicacion")} id={`${triggerId}-location`} type="text" placeholder="Palermo / Almagro" disabled={isLoading} className="atp-field" /></Field>
               </div>
               <ImageUploadField label="Imagen del proyecto (opcional)" helpText="JPG, PNG o WebP estático. Máximo 5 MiB, entre 64×64 y 4096×4096 px." accept={PROJECT_IMAGE_ACCEPT} maxBytes={PROJECT_IMAGE_MAX_BYTES} currentImageUrl={project?.imagenUrl} previewAlt={`Vista previa de ${projectName || "la imagen del proyecto"}`} selectedFile={selectedImage} removed={removeImage} disabled={isLoading} onSelect={(file) => { setSelectedImage(file); setRemoveImage(false); }} onClearSelection={() => setSelectedImage(null)} onRemove={() => setRemoveImage(true)} onRestore={() => setRemoveImage(false)} />
-              <div className="grid grid-cols-1 gap-4 border-t border-neutral-800 pt-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3.5 border-t border-neutral-800 pt-3 sm:grid-cols-2">
                 <Field label="Link de Spotify" id={`${triggerId}-spotify`} error={errors.spotifyUrl?.message}><input {...register("spotifyUrl")} id={`${triggerId}-spotify`} type="url" placeholder="https://open.spotify.com/..." disabled={isLoading} className="atp-field" /></Field>
                 <Field label="Link de YouTube" id={`${triggerId}-youtube`} error={errors.youtubeUrl?.message}><input {...register("youtubeUrl")} id={`${triggerId}-youtube`} type="url" placeholder="https://youtube.com/..." disabled={isLoading} className="atp-field" /></Field>
                 <Field label="Link de Instagram" id={`${triggerId}-instagram`} error={errors.instagramUrl?.message}><input {...register("instagramUrl")} id={`${triggerId}-instagram`} type="url" placeholder="https://instagram.com/..." disabled={isLoading} className="atp-field" /></Field>
                 <Field label="Sitio Web / Linktree" id={`${triggerId}-website`} error={errors.sitioWebUrl?.message}><input {...register("sitioWebUrl")} id={`${triggerId}-website`} type="url" placeholder="https://linktr.ee/..." disabled={isLoading} className="atp-field" /></Field>
               </div>
-              <fieldset className="space-y-3 border-t border-neutral-800 pt-4">
+              <fieldset className="space-y-3 border-t border-neutral-800 pt-3">
                 <legend className="atp-label">Otros enlaces</legend>
                 {links.fields.map((field, index) => (
                   <div key={field.id} className="grid gap-2 sm:grid-cols-[1fr_1.5fr_auto]">
@@ -119,7 +118,7 @@ function ProjectModal({ mode, project, initiallyOpen = false }: { mode: "create"
                 {errors.enlacesPersonalizados?.message && <p className="text-xs font-medium text-red-300">{errors.enlacesPersonalizados.message}</p>}
                 <button type="button" onClick={() => links.append({ title: "", url: "" })} disabled={isLoading} className="atp-button atp-button-secondary text-xs">Agregar enlace</button>
               </fieldset>
-              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-800 pt-4">
+              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-800 pt-3">
                 <button type="button" onClick={closeModal} disabled={isLoading} className="atp-button atp-button-ghost text-sm">Cancelar</button>
                 <button type="submit" disabled={isLoading} aria-busy={isLoading} className="atp-button atp-button-primary text-sm">{isLoading ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Guardar Proyecto"}</button>
               </div>

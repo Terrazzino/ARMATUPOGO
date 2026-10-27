@@ -96,16 +96,9 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     <div className="atp-page flex min-h-screen flex-col">
       <Navbar {...getEventDetailNavigation(user?.rol ?? null)} />
 
-      <main className="atp-container w-full flex-1 py-7 sm:py-10">
-        <Link
-          href="/events"
-          className="inline-flex text-sm font-bold text-neutral-400 underline-offset-4 hover:text-red-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ← Volver a la cartelera
-        </Link>
-
-        <header className="mt-6 grid gap-7 border-b border-neutral-800 pb-8 md:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)] md:items-center lg:gap-10">
-          <div className="mx-auto aspect-[4/5] w-full max-w-sm overflow-hidden border border-neutral-800 bg-neutral-900 md:mx-0">
+      <main className="atp-container w-full flex-1 py-6 sm:py-8">
+        <header className="grid gap-6 border-b border-neutral-800 pb-6 md:grid-cols-[minmax(14rem,19rem)_minmax(0,1fr)] md:items-center lg:gap-8">
+          <div className="mx-auto aspect-[4/5] w-full max-w-xs overflow-hidden border border-neutral-800 bg-neutral-900 md:mx-0">
             {hasEventFlyer(event.bannerUrl) ? (
               // Los flyers pueden provenir de hosts externos no configurados en Next Image.
               // eslint-disable-next-line @next/next/no-img-element
@@ -115,7 +108,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
               />
             ) : (
               <div className="event-flyer-placeholder h-full w-full" aria-label="Flyer no disponible">
@@ -131,11 +124,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 {temporalLabel}
               </span>
             </div>
-            <h1 className="atp-heading atp-page-title mt-4 break-words">
+            <h1 className="atp-heading atp-page-title mt-3 break-words">
               {event.titulo}
             </h1>
 
-            <dl className="mt-7 grid gap-4 border-l-2 border-red-600 pl-4 text-sm sm:grid-cols-2">
+            <dl className="mt-5 grid gap-3 border-l-2 border-red-600 pl-4 text-sm sm:grid-cols-2">
               <div>
                 <dt className="atp-label text-neutral-500">Fecha y horario</dt>
                 <dd className="mt-1 font-bold capitalize text-neutral-100">
@@ -164,22 +157,22 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           </div>
         </header>
 
-        <div className="mx-auto mt-8 max-w-5xl space-y-10">
-            <section className="border-b border-neutral-800 pb-10" aria-labelledby="event-description-title">
+        <div className="mx-auto mt-6 max-w-5xl space-y-8">
+            <section className="border-b border-neutral-800 pb-8" aria-labelledby="event-description-title">
               <p className="atp-kicker">Sobre la fecha</p>
-              <h2 id="event-description-title" className="atp-heading mt-1 text-3xl">
+              <h2 id="event-description-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">
                 Descripción del evento
               </h2>
-              <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-neutral-300">
+              <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-neutral-300">
                 {event.descripcion || "Sin descripción publicada."}
               </p>
             </section>
 
-            <section className="border-b border-neutral-800 pb-10" aria-labelledby="event-lineup-title">
+            <section className="border-b border-neutral-800 pb-8" aria-labelledby="event-lineup-title">
               <div className="flex flex-wrap items-end justify-between gap-3 border-b border-neutral-800 pb-4">
                 <div>
                   <p className="atp-kicker">Line-up</p>
-                  <h2 id="event-lineup-title" className="atp-heading mt-1 text-3xl">
+                  <h2 id="event-lineup-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">
                     Bandas confirmadas
                   </h2>
                 </div>
@@ -222,25 +215,25 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               )}
             </section>
 
-            <section className="border-b border-neutral-800 pb-10" aria-labelledby="event-summary-title">
+            <section className="border-b border-neutral-800 pb-8" aria-labelledby="event-summary-title">
               <p className="atp-kicker">Información</p>
-              <h2 id="event-summary-title" className="atp-heading mt-1 text-3xl">
+              <h2 id="event-summary-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">
                 Resumen de la fecha
               </h2>
               <dl className="mt-2 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="py-4">
+                <div className="py-3">
                   <dt className="atp-label text-neutral-500">Bandas confirmadas</dt>
                   <dd className="mt-1 text-lg font-bold text-neutral-100">
                     {capacity.cuposOcupados}
                   </dd>
                 </div>
                 {cache && (
-                  <div className="py-4">
+                  <div className="py-3">
                     <dt className="atp-label text-neutral-500">Caché ofrecido</dt>
                     <dd className="mt-1 text-lg font-bold text-neutral-100">{cache}</dd>
                   </div>
                 )}
-                <div className="py-4">
+                <div className="py-3">
                   <dt className="atp-label text-neutral-500">Estado</dt>
                   <dd className="mt-1 text-lg font-bold uppercase text-neutral-100">{temporalLabel}</dd>
                 </div>
@@ -257,7 +250,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             ) : (
               <section aria-labelledby="participation-title">
                 <p className="atp-kicker">Estado personal</p>
-                <h2 id="participation-title" className="atp-heading mt-1 text-3xl">
+                <h2 id="participation-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">
                   Tu participación
                 </h2>
                 {user?.rol === "ORGANIZADOR" ? (

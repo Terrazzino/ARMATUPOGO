@@ -64,12 +64,12 @@ export default async function Home({ searchParams }: HomeProps) {
       <main className="flex-1">
         <section className="home-hero relative overflow-hidden border-b border-neutral-800">
           <div className="home-hero-mark" aria-hidden="true" />
-          <div className="relative z-10 mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6 sm:pb-8 sm:pt-10 lg:px-8 lg:pb-10 lg:pt-12">
+          <div className="relative z-10 mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6 sm:pb-7 sm:pt-8 lg:px-8 lg:pb-7 lg:pt-8">
             <div className="max-w-6xl">
-              <h1 className="home-display max-w-6xl text-5xl font-black uppercase leading-[0.92] tracking-[-0.025em] text-white sm:text-7xl lg:text-[clamp(5.5rem,7vw,6rem)] lg:whitespace-nowrap">
+              <h1 className="home-display max-w-6xl text-5xl font-black uppercase leading-[0.92] tracking-[-0.025em] text-white sm:text-6xl lg:text-[clamp(4.75rem,6vw,5rem)] lg:whitespace-nowrap">
                 ¿Cuál es tu próximo <span className="text-red-600">pogo?</span>
               </h1>
-              <div className="mt-6 max-w-2xl border-l-2 border-red-600 pl-5 text-base leading-[1.55] text-neutral-200 sm:text-lg">
+              <div className="mt-4 max-w-2xl border-l-2 border-red-600 pl-4 text-base leading-[1.45] text-neutral-200">
                 <p>
                   Descubrí recitales, fechas y festivales de la escena independiente. Buscá tu
                   próxima noche en vivo, sumate al pogo y explorá eventos cerca tuyo.
@@ -84,7 +84,7 @@ export default async function Home({ searchParams }: HomeProps) {
             <form
               method="GET"
               aria-label="Buscar recitales"
-              className="mt-8 grid gap-3 border-y border-neutral-700 bg-neutral-950/95 p-3 sm:grid-cols-[1fr_0.55fr_auto] sm:p-4"
+              className="mt-5 grid gap-3 border-y border-neutral-700 bg-neutral-950/95 p-3 sm:grid-cols-[1fr_0.55fr_auto]"
             >
               <label className="sr-only" htmlFor="home-search">Evento, banda o lugar</label>
               <input
@@ -93,7 +93,7 @@ export default async function Home({ searchParams }: HomeProps) {
                 name="search"
                 defaultValue={filters.search || ""}
                 placeholder="Banda, evento o lugar"
-                className="min-h-12 border border-neutral-700 bg-black px-4 text-sm text-white placeholder:text-neutral-500 transition-colors hover:border-neutral-600 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="min-h-12 border border-neutral-700 bg-black px-4 text-sm text-white placeholder:text-neutral-500 transition-colors hover:border-neutral-600 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 sm:min-h-11"
               />
               <label className="sr-only" htmlFor="home-city">Ciudad</label>
               <input
@@ -102,11 +102,11 @@ export default async function Home({ searchParams }: HomeProps) {
                 name="city"
                 defaultValue={filters.city || ""}
                 placeholder="Ciudad"
-                className="min-h-12 border border-neutral-700 bg-black px-4 text-sm text-white placeholder:text-neutral-500 transition-colors hover:border-neutral-600 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="min-h-12 border border-neutral-700 bg-black px-4 text-sm text-white placeholder:text-neutral-500 transition-colors hover:border-neutral-600 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 sm:min-h-11"
               />
               <button
                 type="submit"
-                className="min-h-12 bg-red-600 px-8 text-sm font-black uppercase tracking-wider text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="min-h-12 bg-red-600 px-6 text-sm font-black uppercase tracking-wider text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:min-h-11"
               >
                 Buscar fechas
               </button>
@@ -114,14 +114,14 @@ export default async function Home({ searchParams }: HomeProps) {
           </div>
         </section>
 
-        <section id="cartelera" aria-labelledby="events-heading" className="home-events-board pb-14 pt-6 sm:pb-20 sm:pt-8 lg:pt-10">
+        <section id="cartelera" aria-labelledby="events-heading" className="home-events-board pb-12 pt-5 sm:pb-14 sm:pt-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 border-b border-neutral-700 pb-5">
+            <div className="mb-5 border-b border-neutral-700 pb-4">
               <div>
-                <p className="home-heading mb-2.5 text-sm font-black uppercase leading-none tracking-[0.2em] text-red-400">
+                <p className="home-heading mb-2 text-sm font-black uppercase leading-none tracking-[0.18em] text-red-400">
                   La próxima fecha empieza acá
                 </p>
-                <h2 id="events-heading" className="home-display text-3xl font-black uppercase tracking-tight text-white sm:text-5xl">
+                <h2 id="events-heading" className="home-display text-3xl font-black uppercase tracking-tight text-white sm:text-4xl">
                   Cartelera de recitales
                 </h2>
               </div>
@@ -141,14 +141,14 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[repeat(3,minmax(0,21.5rem))]">
+                <div className="event-card-grid">
                   {events.map((event, index) => (
                     <EventCard key={event.id} event={event} prioritizeImage={index === 0} />
                   ))}
                 </div>
 
                 {totalPages > 1 && (
-                  <nav aria-label="Páginas de la cartelera" className="mt-10 flex items-center justify-center gap-2">
+                  <nav aria-label="Páginas de la cartelera" className="mt-8 flex items-center justify-center gap-2">
                     {currentPage > 1 ? (
                       <Link
                         href={getPageHref(currentPage - 1, filters)}

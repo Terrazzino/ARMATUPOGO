@@ -52,7 +52,7 @@ export function LoginForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {registered && !emailConfirmationPending && (
         <div className="atp-feedback atp-feedback-success" role="status">
           <p>Registro exitoso! Por favor inicia sesión.</p>
@@ -127,7 +127,7 @@ export function LoginForm({
         {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
       </button>
 
-      <p className="border-t border-neutral-800 pt-5 text-center text-sm text-neutral-400">
+      <p className="border-t border-neutral-800 pt-4 text-center text-sm text-neutral-400">
         ¿No tienes cuenta?{" "}
         <Link
           href="/auth/register"

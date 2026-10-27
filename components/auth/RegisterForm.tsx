@@ -46,7 +46,7 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <label htmlFor="email" className="atp-label mb-2 block">
           Email
@@ -243,7 +243,7 @@ export function RegisterForm() {
         {isLoading ? "Registrando..." : "Registrarse"}
       </button>
 
-      <p className="border-t border-neutral-800 pt-5 text-center text-sm text-neutral-400">
+      <p className="border-t border-neutral-800 pt-4 text-center text-sm text-neutral-400">
         ¿Ya tienes cuenta?{" "}
         <Link
           href="/auth/login"

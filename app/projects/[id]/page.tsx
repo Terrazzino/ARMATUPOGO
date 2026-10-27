@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAuthenticatedUserForRender as getCurrentUser } from "@/lib/auth-render";
 import { getMyEvents } from "@/app/actions/events";
@@ -71,6 +70,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const cache = project.cacheAproximado && Number(project.cacheAproximado.toString()) > 0
     ? "$" + Number(project.cacheAproximado.toString()).toLocaleString("es-AR")
     : null;
+  const displayedLocation = project.ciudad || project.ubicacion;
+  const displayedLocationLabel = project.ciudad ? "Ciudad" : "Ubicación";
   const projectLinks = [
     externalLink("Spotify", project.spotifyUrl),
     externalLink("YouTube", project.youtubeUrl),
@@ -83,19 +84,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     <div className="atp-page flex min-h-screen flex-col">
       <Navbar
         variant={user ? "dashboard" : "public"}
-        activeItem={user?.rol === "ORGANIZADOR" ? "discovery" : null}
       />
 
-      <main className="atp-container w-full flex-1 py-7 sm:py-10">
-        <Link
-          href="/projects"
-          className="inline-flex text-sm font-bold text-neutral-400 underline-offset-4 hover:text-red-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ← Volver al catálogo de bandas
-        </Link>
-
-        <header className="mt-6 grid gap-7 border-b border-neutral-800 pb-8 md:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)] md:items-center lg:gap-10">
-          <div className="mx-auto aspect-square w-full max-w-sm overflow-hidden border border-neutral-800 bg-neutral-900 p-5 md:mx-0">
+      <main className="atp-container w-full flex-1 py-6 sm:py-8">
+        <header className="grid gap-6 border-b border-neutral-800 pb-6 md:grid-cols-[minmax(14rem,19rem)_minmax(0,1fr)] md:items-center lg:gap-8">
+          <div className="mx-auto aspect-square w-full max-w-xs overflow-hidden border border-neutral-800 bg-neutral-900 p-4 md:mx-0">
             {project.imagenUrl ? (
               // Las imágenes pueden provenir de hosts externos no configurados en Next Image.
               // eslint-disable-next-line @next/next/no-img-element
@@ -121,59 +114,41 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
           <div className="min-w-0">
             <p className="atp-kicker">Proyecto musical</p>
-            <h1 className="atp-heading atp-page-title mt-4 break-words">{project.nombre}</h1>
-            <dl className="mt-7 grid gap-4 border-l-2 border-red-600 pl-4 text-sm sm:grid-cols-2">
+            <h1 className="atp-heading atp-page-title mt-3 break-words">{project.nombre}</h1>
+            <dl className="mt-5 grid gap-3 border-l-2 border-red-600 pl-4 text-sm sm:grid-cols-2">
               <div>
                 <dt className="atp-label text-neutral-500">Género musical</dt>
                 <dd className="mt-1 font-bold text-neutral-100">{project.genero}</dd>
               </div>
-              {project.ciudad && (
+              {displayedLocation && (
                 <div>
-                  <dt className="atp-label text-neutral-500">Ciudad</dt>
-                  <dd className="mt-1 font-bold text-neutral-100">{project.ciudad}</dd>
-                </div>
-              )}
-              {project.ubicacion && (
-                <div>
-                  <dt className="atp-label text-neutral-500">Ubicación</dt>
-                  <dd className="mt-1 font-bold text-neutral-100">{project.ubicacion}</dd>
+                  <dt className="atp-label text-neutral-500">{displayedLocationLabel}</dt>
+                  <dd className="mt-1 font-bold text-neutral-100">{displayedLocation}</dd>
                 </div>
               )}
             </dl>
           </div>
         </header>
 
-        <div className="mx-auto mt-8 max-w-5xl space-y-10">
-          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-biography-title">
+        <div className="mx-auto mt-6 max-w-5xl space-y-8">
+          <section className="border-b border-neutral-800 pb-8" aria-labelledby="project-biography-title">
             <p className="atp-kicker">Sobre el proyecto</p>
-            <h2 id="project-biography-title" className="atp-heading mt-1 text-3xl">Biografía y propuesta</h2>
-            <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-neutral-300">
+            <h2 id="project-biography-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">Biografía y propuesta</h2>
+            <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-neutral-300">
               {project.descripcion || "Este proyecto todavía no publicó una descripción."}
             </p>
           </section>
 
-          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-data-title">
+          <section className="border-b border-neutral-800 pb-8" aria-labelledby="project-data-title">
             <p className="atp-kicker">Información</p>
-            <h2 id="project-data-title" className="atp-heading mt-1 text-3xl">Datos del proyecto</h2>
+            <h2 id="project-data-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">Datos del proyecto</h2>
             <dl className="mt-2 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="py-4">
+              <div className="py-3">
                 <dt className="atp-label text-neutral-500">Género musical</dt>
                 <dd className="mt-1 text-lg font-bold text-neutral-100">{project.genero}</dd>
               </div>
-              {project.ciudad && (
-                <div className="py-4">
-                  <dt className="atp-label text-neutral-500">Ciudad</dt>
-                  <dd className="mt-1 text-lg font-bold text-neutral-100">{project.ciudad}</dd>
-                </div>
-              )}
-              {project.ubicacion && (
-                <div className="py-4">
-                  <dt className="atp-label text-neutral-500">Ubicación</dt>
-                  <dd className="mt-1 text-lg font-bold text-neutral-100">{project.ubicacion}</dd>
-                </div>
-              )}
               {cache && (
-                <div className="py-4">
+                <div className="py-3">
                   <dt className="atp-label text-neutral-500">Caché orientativo</dt>
                   <dd className="mt-1 text-lg font-bold text-neutral-100">{cache}</dd>
                 </div>
@@ -181,9 +156,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             </dl>
           </section>
 
-          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-links-title">
+          <section className="border-b border-neutral-800 pb-8" aria-labelledby="project-links-title">
             <p className="atp-kicker">Escuchá a la banda</p>
-            <h2 id="project-links-title" className="atp-heading mt-1 text-3xl">Música y redes</h2>
+            <h2 id="project-links-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">Música y redes</h2>
             {projectLinks.length > 0 ? (
               <ul className="mt-5 flex flex-wrap gap-3">
                 {projectLinks.map((link, index) => (
@@ -206,11 +181,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             )}
           </section>
 
-          <section className="border-b border-neutral-800 pb-10" aria-labelledby="project-ratings-title">
+          <section className="border-b border-neutral-800 pb-8" aria-labelledby="project-ratings-title">
             <div className="flex flex-wrap items-end justify-between gap-4 border-b border-neutral-800 pb-4">
               <div>
                 <p className="atp-kicker">Experiencias en vivo</p>
-                <h2 id="project-ratings-title" className="atp-heading mt-1 text-3xl">Historial de valoraciones</h2>
+                <h2 id="project-ratings-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">Historial de valoraciones</h2>
               </div>
               {reputation.total > 0 && (
                 <div className="flex items-center gap-2 text-sm font-bold text-neutral-300">
@@ -236,7 +211,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             ) : (
               <ul className="divide-y divide-neutral-800">
                 {reputation.ratings.map((rating) => (
-                  <li key={rating.id} className="py-5">
+                  <li key={rating.id} className="py-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <RockHandScale score={rating.puntaje} size={20} />
                       <time dateTime={new Date(rating.creadoEn).toISOString()} className="text-xs text-neutral-500">
@@ -260,8 +235,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           {user?.rol === "ORGANIZADOR" && (
             <section aria-labelledby="project-invite-title">
               <p className="atp-kicker">Contrataciones</p>
-              <h2 id="project-invite-title" className="atp-heading mt-1 text-3xl">¿Querés contratar esta banda?</h2>
-              <div className="mt-5">
+              <h2 id="project-invite-title" className="atp-heading mt-1 text-2xl sm:text-[1.75rem]">¿Querés contratar esta banda?</h2>
+              <div className="mt-4">
                 <DeferredInviteModal projectId={project.id} projectName={project.nombre} events={organizerEvents} />
               </div>
             </section>

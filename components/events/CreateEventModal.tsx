@@ -100,7 +100,7 @@ function EventModal({ mode, event, initiallyOpen = false }: { mode: "create" | "
             aria-modal="true"
             aria-labelledby={`${triggerId}-title`}
           >
-            <div className="mb-5 flex items-center justify-between border-b border-neutral-800 pb-4">
+            <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
               <h3 id={`${triggerId}-title`} className="atp-heading text-2xl">
                 {mode === "edit" ? "Editar Evento" : "Publicar Recital o Fecha"}
               </h3>
@@ -126,7 +126,7 @@ function EventModal({ mode, event, initiallyOpen = false }: { mode: "create" | "
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 text-left">
               <div>
                 <label htmlFor="event-title" className="atp-label mb-2 block">
                   Nombre del Recital / Fecha *
@@ -146,7 +146,7 @@ function EventModal({ mode, event, initiallyOpen = false }: { mode: "create" | "
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
                 <div>
                   <label htmlFor="event-start" className="atp-label mb-2 block">
                     Inicio del evento *
@@ -205,7 +205,7 @@ function EventModal({ mode, event, initiallyOpen = false }: { mode: "create" | "
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-start">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3 sm:items-start">
                 <div className="grid grid-rows-[2.75rem_auto_auto]">
                   <label htmlFor="event-venue" className="atp-label flex items-end pb-2">
                     Nombre del Recinto / Sala
@@ -301,7 +301,7 @@ function EventModal({ mode, event, initiallyOpen = false }: { mode: "create" | "
                 />
               </div>
 
-              <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t border-neutral-800 bg-neutral-950 pt-4">
+              <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t border-neutral-800 bg-neutral-950 pt-3">
                 <button
                   type="button"
                   onClick={closeModal}

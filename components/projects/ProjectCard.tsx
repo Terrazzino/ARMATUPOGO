@@ -34,10 +34,14 @@ type ProjectCardProps =
 export function ProjectCard(props: ProjectCardProps) {
   if (props.variant === "dashboard") {
     const { project } = props;
+    const cacheAmount = project.cacheAproximado == null
+      ? null
+      : Number(project.cacheAproximado.toString());
+    const hasCache = cacheAmount !== null && Number.isFinite(cacheAmount) && cacheAmount > 0;
 
     return (
-      <article className="atp-card group flex min-w-0 flex-col overflow-hidden">
-        <div className="flex h-36 items-center justify-center border-b border-neutral-800 bg-neutral-950 p-4 sm:h-40">
+      <article className="atp-card group grid w-full max-w-[27.5rem] min-w-0 grid-cols-[6.5rem_minmax(0,1fr)] place-self-start overflow-hidden sm:grid-cols-[8.5rem_minmax(0,1fr)] lg:grid-cols-[10.5rem_minmax(0,1fr)]">
+        <div className="aspect-square w-full self-start border-r border-neutral-800 bg-neutral-950">
           {project.imagenUrl ? (
             // Las imágenes de proyectos pueden provenir de hosts externos no configurables.
             // eslint-disable-next-line @next/next/no-img-element
@@ -49,47 +53,44 @@ export function ProjectCard(props: ProjectCardProps) {
               className="h-full w-full object-contain"
             />
           ) : (
-            <div className="grid h-full w-full place-items-center border border-dashed border-neutral-800 bg-neutral-900 px-4 text-center">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600">
+            <div className="grid h-full w-full place-items-center bg-neutral-900 px-2 text-center">
+              <span className="text-[0.6rem] font-semibold uppercase leading-tight tracking-[0.1em] text-neutral-600 sm:text-xs sm:tracking-[0.14em]">
                 Sin imagen del proyecto
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <h3 className="atp-heading truncate text-2xl" title={project.nombre}>
+        <div className="flex min-w-0 flex-col p-3">
+          <h3 className="atp-heading truncate text-[1.35rem] sm:text-[1.5rem]" title={project.nombre}>
             {project.nombre}
           </h3>
 
-          {project.descripcion && (
-            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-400">
-              {project.descripcion}
-            </p>
-          )}
+          <p className="mt-1 line-clamp-1 text-sm leading-snug text-neutral-400">
+            {project.descripcion || project.genero}
+          </p>
 
-          <div className="mt-4 space-y-2 border-t border-neutral-800 pt-3 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-neutral-500">Estado</span>
-              <span className={project.estaActivo ? "font-semibold text-emerald-400" : "font-semibold text-neutral-500"}>
+          <dl className="mt-2 space-y-1 border-t border-neutral-800 pt-2 text-xs sm:text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-neutral-500">Estado</dt>
+              <dd className={project.estaActivo ? "shrink-0 font-semibold text-emerald-400" : "shrink-0 font-semibold text-neutral-500"}>
                 {project.estaActivo ? "● Activo" : "○ Inactivo"}
-              </span>
+              </dd>
             </div>
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-neutral-500">Caché orientativo</dt>
+              <dd className="shrink-0 font-semibold text-neutral-200">
+                {hasCache
+                  ? `$${cacheAmount.toLocaleString("es-AR")}`
+                  : "Sin definir"}
+              </dd>
+            </div>
+          </dl>
 
-            {project.cacheAproximado && Number(project.cacheAproximado.toString()) > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-neutral-500">Caché orientativo</span>
-                <span className="font-semibold text-neutral-200">
-                  ${Number(project.cacheAproximado.toString()).toLocaleString("es-AR")}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-neutral-800 pt-4">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-neutral-800 pt-2 [&_.atp-button]:min-h-9 [&_.atp-button]:px-3 [&_.atp-button]:text-xs">
             <Link
               href={`/projects/${project.id}`}
-              className="inline-flex min-h-10 items-center font-bold text-red-400 underline-offset-4 hover:text-red-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              className="inline-flex min-h-9 items-center text-xs font-bold text-red-400 underline-offset-4 hover:text-red-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:text-sm"
             >
               Ver perfil público →
             </Link>
@@ -100,7 +101,6 @@ export function ProjectCard(props: ProjectCardProps) {
                 genero: project.genero,
                 descripcion: project.descripcion ?? "",
                 cacheAproximado: project.cacheAproximado ? Number(project.cacheAproximado.toString()) : null,
-                ubicacion: project.ubicacion ?? "",
                 ciudad: project.ciudad ?? "",
                 imagenUrl: project.imagenUrl ?? "",
                 spotifyUrl: project.spotifyUrl ?? "",
@@ -123,84 +123,76 @@ export function ProjectCard(props: ProjectCardProps) {
   }
 
   const { project } = props;
+  const genre = project.genero.trim() || "Género no especificado";
+  const city = project.ciudad?.trim() || "Ciudad no especificada";
+  const description = project.descripcion?.trim() || "Sin descripción";
+  const cacheAmount = project.cacheAproximado == null
+    ? null
+    : Number(project.cacheAproximado.toString());
+  const hasCache = cacheAmount !== null && Number.isFinite(cacheAmount) && cacheAmount > 0;
 
   return (
-    <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden flex flex-col hover:border-neutral-700 transition-colors">
-      {/* Header with avatar / banner */}
-      <div className="bg-neutral-900 text-white p-5 flex items-center gap-4 border-b border-red-600">
-        <div className="w-14 h-14 rounded-full bg-red-700 border-2 border-white/20 flex items-center justify-center text-2xl font-bold uppercase shrink-0">
-          {project.nombre.charAt(0)}
-        </div>
-        <div className="overflow-hidden">
-          <span className="text-xs font-semibold px-2 py-0.5 bg-white/20 rounded-md uppercase tracking-wider">
-            {project.genero}
-          </span>
-          <h3 className="text-lg font-bold truncate mt-1">{project.nombre}</h3>
+    <article className="atp-card grid h-full min-h-[12.5rem] min-w-0 grid-cols-[38%_minmax(0,1fr)] overflow-hidden">
+      <div className="h-full border-r border-neutral-800 bg-neutral-950">
+        <div className="aspect-square w-full">
+          {project.imagenUrl ? (
+            // Las imágenes de proyectos pueden provenir de hosts externos no configurables.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={project.imagenUrl}
+              alt={`Imagen de ${project.nombre}`}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <div className="grid h-full w-full place-items-center bg-neutral-900 px-2 text-center">
+              <span className="text-[0.6rem] font-semibold uppercase leading-tight tracking-[0.1em] text-neutral-600 sm:text-xs">
+                Sin imagen del proyecto
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-        <div className="space-y-2">
-          {project.ciudad && (
-            <p className="text-xs text-neutral-400 flex items-center gap-1">
-              <span>📍</span> {project.ciudad}{project.ubicacion ? ` - ${project.ubicacion}` : ""}
-            </p>
-          )}
-
-          {project.descripcion && (
-            <p className="text-sm text-neutral-300 line-clamp-2">
-              {project.descripcion}
-            </p>
-          )}
-
-          {project.cacheAproximado && Number(project.cacheAproximado.toString()) > 0 && (
-            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              Caché orientativo: ${Number(project.cacheAproximado.toString()).toLocaleString("es-AR")}
-            </p>
-          )}
+      <div className="flex min-w-0 flex-col p-3">
+        <div className="min-w-0">
+          <h2 className="atp-heading line-clamp-2 min-h-[2.65rem] text-[1.35rem] sm:text-[1.45rem]" title={project.nombre}>
+            {project.nombre}
+          </h2>
+          <dl className="mt-1 space-y-0.5 text-xs leading-tight sm:text-sm">
+            <div className="flex min-w-0 gap-1.5">
+              <dt className="shrink-0 text-neutral-500">Género:</dt>
+              <dd className={`truncate ${project.genero.trim() ? "text-neutral-300" : "text-neutral-500"}`} title={genre}>{genre}</dd>
+            </div>
+            <div className="flex min-w-0 gap-1.5">
+              <dt className="shrink-0 text-neutral-500">Ciudad:</dt>
+              <dd className={`truncate ${project.ciudad?.trim() ? "text-neutral-300" : "text-neutral-500"}`} title={city}>{city}</dd>
+            </div>
+          </dl>
         </div>
 
-        {/* External links */}
-        <div className="flex items-center gap-3 text-sm text-neutral-400 pt-2 border-t border-neutral-800">
-          {project.spotifyUrl && (
-            <a
-              href={project.spotifyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-emerald-400 hover:text-emerald-300 font-medium text-xs flex items-center gap-1"
-            >
-              <span>🟢 Spotify</span>
-            </a>
-          )}
-          {project.youtubeUrl && (
-            <a
-              href={project.youtubeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-red-400 hover:text-red-300 font-medium text-xs flex items-center gap-1"
-            >
-              <span>🔴 YouTube</span>
-            </a>
-          )}
-          {project.instagramUrl && (
-            <a
-              href={project.instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-neutral-300 hover:text-red-400 font-medium text-xs flex items-center gap-1"
-            >
-              <span>📷 Instagram</span>
-            </a>
-          )}
-        </div>
-
-        <Link
-          href={`/projects/${project.id}`}
-          className="w-full text-center py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
+        <p
+          className={`mt-2 line-clamp-2 min-h-[2.25rem] text-sm leading-snug ${project.descripcion?.trim() ? "text-neutral-300" : "text-neutral-500"}`}
+          title={description}
         >
-          Ver Perfil Artístico
-        </Link>
+          {description}
+        </p>
+
+        <p className="mt-2 text-xs font-semibold text-neutral-300">
+          <span className="text-neutral-500">Caché:</span>{" "}
+          {hasCache ? `$${cacheAmount.toLocaleString("es-AR")}` : <span className="text-neutral-500">Sin definir</span>}
+        </p>
+
+        <div className="mt-auto flex justify-end border-t border-neutral-800 pt-2">
+          <Link
+            href={`/projects/${project.id}`}
+            className="atp-button atp-button-secondary min-h-9 px-3 text-xs"
+          >
+            Ver perfil
+          </Link>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }

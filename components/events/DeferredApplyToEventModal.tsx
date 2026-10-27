@@ -12,7 +12,7 @@ const ApplyToEventModal = dynamic(
         type="button"
         disabled
         aria-busy="true"
-        className="atp-button atp-button-primary w-full text-sm uppercase tracking-[0.08em]"
+        className="atp-button atp-button-primary w-full px-3 text-xs uppercase tracking-[0.08em]"
       >
         Cargando formulario...
       </button>
@@ -38,7 +38,7 @@ export function DeferredApplyToEventModal(props: ApplyToEventModalProps) {
         type="button"
         onClick={() => setActivated(true)}
         disabled={Boolean(unavailableReason)}
-        className="atp-button atp-button-primary w-full text-sm uppercase tracking-[0.08em]"
+        className="atp-button atp-button-primary w-full px-3 text-xs uppercase tracking-[0.08em]"
       >
         Postular mi banda
       </button>

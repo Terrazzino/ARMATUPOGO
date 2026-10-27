@@ -98,7 +98,7 @@ export function OrganizerContractsList({
             aria-selected={activeTab === tab.id}
             aria-controls="organizer-contracts-panel"
             onClick={() => selectTab(tab.id)}
-            className={`min-h-11 border-b-2 px-4 text-sm font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
+            className={`min-h-11 border-b-2 px-4 text-sm font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:min-h-10 ${
               activeTab === tab.id
                 ? "border-red-600 text-white"
                 : "border-transparent text-neutral-500 hover:text-neutral-200"
@@ -177,29 +177,94 @@ export function OrganizerContractsList({
   );
 }
 
-function OrganizerContractRow({
+export function OrganizerContractRow({
   contract,
   currentUserId,
   now,
   negotiationExpanded,
   onToggleNegotiation,
+  compact = false,
+  actionsDisabled = false,
 }: {
   contract: OrganizerContractListItem;
   currentUserId: string;
   now: string;
   negotiationExpanded: boolean;
   onToggleNegotiation: () => void;
+  compact?: boolean;
+  actionsDisabled?: boolean;
 }) {
   const [lifecycleAction, setLifecycleAction] = useState<LifecycleAction | null>(null);
-  const actionState = getOrganizerContractActionState(contract, new Date(now));
+  const actionState = actionsDisabled
+    ? "hidden"
+    : getOrganizerContractActionState(contract, new Date(now));
   const amount = formatAgreedAmount(contract.estado, contract.montoPactado);
 
   return (
     <div id={`organizer-contract-${contract.id}`} role="rowgroup" className="scroll-mt-6">
       <div
         role="row"
-        className={`grid gap-4 px-4 py-4 transition-colors hover:bg-neutral-900/70 md:grid-cols-2 xl:items-center xl:gap-3 ${gridColumns}`}
+        className={compact
+          ? "grid gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-900/70 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_7rem_minmax(8rem,auto)] md:items-center"
+          : `grid gap-3.5 px-4 py-3.5 transition-colors hover:bg-neutral-900/70 md:grid-cols-2 xl:items-center xl:gap-3 ${gridColumns}`}
       >
+        {compact ? (
+          <>
+            <div role="cell" className="min-w-0">
+              <Link
+                href={`/projects/${contract.proyectoMusical.id}`}
+                className="atp-heading break-words text-xl text-neutral-100 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                {contract.proyectoMusical.nombre}
+              </Link>
+              <p className="mt-1 text-xs text-neutral-500">
+                Responsable: {contract.musico.nombre} {contract.musico.apellido}
+              </p>
+            </div>
+            <div role="cell" className="min-w-0 text-sm">
+              {contract.evento.estado === "PUBLICADO" ? (
+                <Link
+                  href={`/events/${contract.evento.id}`}
+                  className="font-bold text-neutral-200 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  {contract.evento.titulo}
+                </Link>
+              ) : (
+                <span className="font-bold text-neutral-500">{contract.evento.titulo}</span>
+              )}
+              <p className="mt-1 text-xs text-neutral-500">
+                {new Date(contract.evento.startsAt).toLocaleDateString("es-AR")} · <StatusBadge status={contract.estado} />
+              </p>
+            </div>
+            <div role="cell" className="text-sm">
+              <span className="atp-label mb-1 block text-neutral-500 md:hidden">Monto</span>
+              <span className={amount === "Sin acuerdo" ? "text-neutral-500" : "font-bold text-emerald-300"}>{amount}</span>
+            </div>
+            <div role="cell" className="flex flex-wrap gap-2 md:justify-end">
+              {actionState === "negotiation" && (
+                <button type="button" onClick={onToggleNegotiation} aria-expanded={negotiationExpanded} aria-controls={`organizer-negotiation-${contract.id}`} className="atp-button atp-button-primary min-h-9 px-3 text-xs">
+                  {negotiationExpanded ? "Cerrar negociación" : "Ver negociación"}
+                </button>
+              )}
+              {actionState === "awaiting-event" && (
+                <>
+                  <span className="text-xs font-semibold text-neutral-500">Pendiente de realizarse</span>
+                  <button type="button" onClick={() => setLifecycleAction("cancel")} className="atp-button atp-button-ghost min-h-9 px-3 text-xs text-red-400">Cancelar acuerdo</button>
+                </>
+              )}
+              {actionState === "event-in-progress" && <span className="text-xs font-semibold text-neutral-500">Evento en curso</span>}
+              {actionState === "complete" && (
+                <button type="button" onClick={() => setLifecycleAction("complete")} className="atp-button atp-button-primary min-h-9 px-3 text-xs">Marcar completada</button>
+              )}
+              {actionState === "rate-musician" && (
+                <DeferredRatingModal contractId={contract.id} targetName={`${contract.musico.nombre} ${contract.musico.apellido}`} triggerLabel="Calificar músico" />
+              )}
+              {actionState === "already-rated" && <span className="text-xs font-semibold text-neutral-400">Ya calificado</span>}
+              {actionState === "hidden" && <span className="text-xs font-semibold text-neutral-500">Sin acciones disponibles</span>}
+            </div>
+          </>
+        ) : (
+          <>
         <TableCell label="Fecha">
           <time dateTime={contract.evento.startsAt} className="font-bold text-neutral-200">
             {new Date(contract.evento.startsAt).toLocaleDateString("es-AR", {
@@ -318,6 +383,8 @@ function OrganizerContractRow({
             )}
           </div>
         </TableCell>
+          </>
+        )}
       </div>
 
       {actionState === "negotiation" && negotiationExpanded && (
@@ -376,7 +443,7 @@ function ContractLifecyclePanel({
   const invalidCancelReason = action === "cancel" && cancelReason.trim().length < 5;
 
   return (
-    <div role="row" className="border-t border-neutral-800 bg-black p-4 sm:p-5">
+    <div role="row" className="border-t border-neutral-800 bg-black p-4">
       <div role="cell" className="mx-auto max-w-2xl space-y-4">
         <div>
           <h4 className="atp-heading text-xl">

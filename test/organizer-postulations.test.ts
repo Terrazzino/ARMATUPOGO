@@ -21,6 +21,7 @@ function postulation(
       id: `evento-${id}`,
       titulo: `Evento ${id}`,
       startsAt,
+      endsAt: startsAt,
       estado: "PUBLICADO",
     },
     proyectoMusical: { id: `proyecto-${id}`, nombre: `Proyecto ${id}` },
