@@ -34,15 +34,33 @@ cp .env.example .env.local
 ```
 
 Variables requeridas:
-- `DATABASE_URL`: Cadena de conexión PostgreSQL de Prisma.
+- `DATABASE_URL`: Cadena de conexión PostgreSQL de Prisma (modo transacción / pooler).
+- `DIRECT_URL`: Cadena de conexión directa a PostgreSQL (utilizada para migraciones).
 - `NEXT_PUBLIC_SUPABASE_URL`: URL del proyecto Supabase.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Anon Key pública de Supabase.
+- `NEXT_PUBLIC_APP_URL`: URL base de la aplicación (ej. `http://localhost:3000`).
 
-### 3. Generar el cliente de Prisma
+### 3. Configuración e inicialización de la Base de Datos
 
-```bash
-npx prisma generate
-```
+El aprovisionamiento de la base de datos se divide claramente entre el modelo relacional de negocio y la infraestructura de almacenamiento:
+
+1. **Generar el cliente de Prisma:**
+   ```bash
+   npx prisma generate
+   ```
+
+2. **Aplicar las migraciones del modelo de negocio:**
+   ```bash
+   npx prisma migrate deploy
+   ```
+   > Aplica las migraciones canónicas versionadas en `prisma/migrations/`.
+
+3. **Aplicar la infraestructura de Supabase Storage / RLS:**
+   Ejecutar en el **SQL Editor de Supabase** (o procedimiento documentado del proyecto) los scripts de infraestructura versionados:
+   - `supabase/migrations/202610260002_project_images_storage.sql` (bucket `project-images` y políticas RLS).
+   - `supabase/migrations/202610260003_event_images_storage.sql` (bucket `event-images` y políticas RLS).
+
+   *Nota:* No ejecutar `supabase db push` ni asumir sincronización automática mediante Supabase CLI, ya que el historial de CLI de Supabase no está normalizado en la base remota.
 
 ### 4. Iniciar el servidor de desarrollo
 
@@ -65,15 +83,15 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 ├── components/           # Componentes de React (Auth, UI, Formularios)
 ├── docs/                 # Documentación funcional y técnica
 │   ├── spec.md           # Fuente de verdad funcional del MVP
-│   └── DATABASE.md       # Arquitectura y diagrama de base de datos
+│   ├── estado-proyecto.md # Fotografía operativa del repositorio y deuda técnica
+│   └── DATABASE.md       # Arquitectura, modelo Prisma y estrategia de migraciones
 ├── lib/                  # Lógica central, clientes y esquemas
 │   ├── prisma.ts         # Cliente singleton de Prisma ORM
 │   ├── supabase/         # Clientes de Supabase (browser y server)
 │   ├── validations/      # Esquemas Zod de validación
 │   └── types.ts          # Tipos de dominio compartidos
-├── prisma/               # Esquema declarativo de Prisma (schema.prisma)
-├── supabase/             # Migraciones SQL reproducibles
-└── AGENTS.md             # Reglas de trabajo y desarrollo para agentes
+├── prisma/               # Esquema declarativo (schema.prisma) y migraciones de negocio
+└── supabase/             # Scripts SQL de infraestructura (Storage y RLS)
 ```
 
 ---
@@ -83,7 +101,9 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 * `npm run dev` — Inicia el servidor de desarrollo Next.js.
 * `npm run build` — Compila la aplicación para producción.
 * `npm run lint` — Ejecuta ESLint para validar calidad de código.
+* `npm test` — Ejecuta la suite de pruebas unitarias con Vitest.
 * `npx prisma generate` — Genera los tipos y el cliente de Prisma.
+* `npx prisma migrate status` — Consulta el estado de las migraciones de Prisma.
 * `npx prisma studio` — Abre la interfaz gráfica para explorar la base de datos.
 
 ---
@@ -92,4 +112,5 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
 * [Especificación Funcional (`docs/spec.md`)](docs/spec.md)
 * [Documentación de Base de Datos (`docs/DATABASE.md`)](docs/DATABASE.md)
+* [Estado Operativo del Proyecto (`docs/estado-proyecto.md`)](docs/estado-proyecto.md)
 * [Reglas de Trabajo para Agentes (`AGENTS.md`)](AGENTS.md)
