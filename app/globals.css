@@ -13,7 +13,7 @@
   --border-strong: #404040;
   --muted-subtle: #737373;
   --focus-ring: #ff4d54;
-  --content-width: 80rem;
+  --content-width: 76rem;
   --page-gutter: clamp(1rem, 3vw, 2rem);
   --radius-control: 0.375rem;
   --radius-panel: 0.5rem;
@@ -73,8 +73,8 @@ body {
     flex-wrap: wrap;
     align-items: end;
     justify-content: space-between;
-    gap: 1rem;
-    padding-block: clamp(2rem, 5vw, 3.5rem) 1.5rem;
+    gap: 0.875rem;
+    padding-block: clamp(1.5rem, 4vw, 2.75rem) 1.25rem;
     border-bottom: 1px solid var(--border);
   }
 
@@ -89,11 +89,11 @@ body {
   }
 
   .atp-page-title {
-    font-size: clamp(2.5rem, 7vw, 4.75rem);
+    font-size: clamp(2.4rem, 6vw, 4.25rem);
   }
 
   .atp-section-title {
-    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
   }
 
   .atp-kicker,
@@ -230,7 +230,7 @@ body {
     width: min(100%, 36rem);
     max-height: calc(100vh - 2rem);
     overflow-y: auto;
-    padding: clamp(1.25rem, 4vw, 1.75rem);
+    padding: clamp(1.125rem, 3vw, 1.5rem);
     box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 45%);
   }
 
@@ -256,8 +256,23 @@ body {
   }
 
   .atp-empty-state {
-    padding: clamp(2rem, 6vw, 3.5rem);
+    padding: clamp(1.5rem, 4vw, 2.5rem);
     text-align: center;
+  }
+}
+
+@media (min-width: 48rem) {
+  .atp-field,
+  .atp-button {
+    min-height: 2.625rem;
+  }
+
+  .atp-field {
+    padding-block: 0.55rem;
+  }
+
+  .atp-button {
+    padding-block: 0.55rem;
   }
 }
 
@@ -339,6 +354,25 @@ body {
 
 .home-events-board > * {
   position: relative;
+}
+
+.event-card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 40rem) {
+  .event-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .event-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 16.875rem));
+    justify-content: center;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

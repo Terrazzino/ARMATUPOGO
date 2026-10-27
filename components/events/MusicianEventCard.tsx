@@ -95,7 +95,7 @@ export function MusicianEventCard({
             loading={prioritizeImage ? "eager" : "lazy"}
             fetchPriority={prioritizeImage ? "high" : "auto"}
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.015]"
           />
         ) : (
           <div className="event-flyer-placeholder h-full w-full" aria-hidden="true">
@@ -104,23 +104,23 @@ export function MusicianEventCard({
         )}
       </Link>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-1 flex-col p-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-red-400">
             {date} - {startTime} a {endTime} hs
           </p>
-          <span className="border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs font-bold uppercase tracking-[0.08em] text-neutral-300">
+          <span className="border border-neutral-700 bg-neutral-900 px-2 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-neutral-300">
             {opportunityLabel}
           </span>
         </div>
 
-        <h2 className="atp-heading mt-3 text-2xl">
+        <h2 className="atp-heading mt-1.5 text-xl">
           <Link href={`/events/${event.id}`} className="hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
             {event.titulo}
           </Link>
         </h2>
 
-        <dl className="mt-5 space-y-3 border-t border-neutral-800 pt-4 text-sm">
+        <dl className="mt-3 space-y-2 border-t border-neutral-800 pt-2.5 text-sm">
           <div>
             <dt className="atp-label text-neutral-500">Lugar</dt>
             <dd className="mt-1 font-bold text-neutral-200">
@@ -143,7 +143,7 @@ export function MusicianEventCard({
           </div>
         </dl>
 
-        <div className="mt-auto pt-6">
+        <div className="mt-auto pt-3">
           <DeferredApplyToEventModal
             eventId={event.id}
             eventTitle={event.titulo}

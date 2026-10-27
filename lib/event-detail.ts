@@ -5,12 +5,12 @@ export type EventTemporalState = "UPCOMING" | "ONGOING" | "PAST";
 
 export function getEventDetailNavigation(role: RolUsuario | null) {
   if (role === "MUSICO") {
-    return { variant: "dashboard" as const, activeItem: "discovery" as const };
+    return { variant: "dashboard" as const };
   }
   if (role === "ORGANIZADOR") {
-    return { variant: "dashboard" as const, activeItem: null };
+    return { variant: "dashboard" as const };
   }
-  return { variant: "public" as const, activeItem: null };
+  return { variant: "public" as const };
 }
 
 export function getEventTemporalState(input: {

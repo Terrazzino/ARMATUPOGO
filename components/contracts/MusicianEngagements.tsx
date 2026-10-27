@@ -11,6 +11,7 @@ import {
   formatAgreedAmount,
   getMusicianContractActionState,
   groupMusicianEngagements,
+  MUSICIAN_ENGAGEMENT_EMPTY_MESSAGES,
   type MusicianContractStatus,
   type MusicianEngagement,
   type MusicianPostulationStatus,
@@ -27,9 +28,11 @@ interface MusicianContract {
     id: string;
     titulo: string;
     startsAt: Date | string;
+    endsAt: Date | string;
     ubicacion: string;
     nombreLugar?: string | null;
     ciudad?: string | null;
+    estado: "PUBLICADO" | "CANCELADO";
   };
   proyectoMusical: {
     id: string;
@@ -62,9 +65,11 @@ interface MusicianPostulation {
     id: string;
     titulo: string;
     startsAt: Date | string;
+    endsAt: Date | string;
     ubicacion: string;
     nombreLugar?: string | null;
     ciudad?: string | null;
+    estado: "PUBLICADO" | "CANCELADO";
     organizador: {
       nombre: string;
       apellido: string;
@@ -83,7 +88,7 @@ interface MusicianEngagementsProps {
 }
 
 type Engagement = MusicianEngagement<MusicianContract, MusicianPostulation>;
-type Tab = "confirmed" | "pending";
+type Tab = "confirmed" | "pending" | "finished";
 
 const gridColumns = "lg:grid-cols-[6.5rem_minmax(0,1.2fr)_minmax(0,0.95fr)_minmax(0,1.25fr)_7rem_9rem]";
 
@@ -94,11 +99,17 @@ export function MusicianEngagements({
 }: MusicianEngagementsProps) {
   const [activeTab, setActiveTab] = useState<Tab>("confirmed");
   const groups = groupMusicianEngagements(contracts, postulations);
-  const rows = activeTab === "confirmed" ? groups.confirmed : groups.pending;
+  const rows = groups[activeTab];
+  const panelId = `musician-${activeTab}-panel`;
+  const panelLabels: Record<Tab, string> = {
+    confirmed: "Contrataciones confirmadas vigentes",
+    pending: "Postulaciones y negociaciones pendientes",
+    finished: "Fechas finalizadas",
+  };
 
   return (
     <div>
-      <div role="tablist" aria-label="Filtrar fechas y contrataciones" className="mb-5 flex border-b border-neutral-800">
+      <div role="tablist" aria-label="Filtrar fechas y contrataciones" className="mb-5 grid grid-cols-3 border-b border-neutral-800">
         <TabButton
           active={activeTab === "confirmed"}
           controls="musician-confirmed-panel"
@@ -113,23 +124,25 @@ export function MusicianEngagements({
         >
           Pendientes <span aria-label={`${groups.pending.length} registros`}>({groups.pending.length})</span>
         </TabButton>
+        <TabButton
+          active={activeTab === "finished"}
+          controls="musician-finished-panel"
+          onClick={() => setActiveTab("finished")}
+        >
+          Finalizadas <span aria-label={`${groups.finished.length} registros`}>({groups.finished.length})</span>
+        </TabButton>
       </div>
 
       <div
-        id={activeTab === "confirmed" ? "musician-confirmed-panel" : "musician-pending-panel"}
+        id={panelId}
         role="tabpanel"
-        aria-label={activeTab === "confirmed" ? "Contrataciones confirmadas" : "Postulaciones y negociaciones pendientes"}
+        aria-label={panelLabels[activeTab]}
       >
         {rows.length === 0 ? (
           <div className="atp-empty-state py-10">
             <h3 className="atp-heading text-2xl">
-              {activeTab === "confirmed" ? "No hay fechas confirmadas" : "No hay gestiones pendientes"}
+              {MUSICIAN_ENGAGEMENT_EMPTY_MESSAGES[activeTab]}
             </h3>
-            <p className="mt-2 text-sm text-neutral-400">
-              {activeTab === "confirmed"
-                ? "Los acuerdos cerrados y eventos completados aparecerán en esta sección."
-                : "Las postulaciones pendientes y negociaciones activas aparecerán acá."}
-            </p>
           </div>
         ) : (
           <div role="table" aria-label="Mis fechas y contrataciones" className="overflow-hidden border border-neutral-800 bg-neutral-950">
@@ -182,7 +195,7 @@ function TabButton({
       aria-selected={active}
       aria-controls={controls}
       onClick={onClick}
-      className={`min-h-11 border-b-2 px-4 text-sm font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
+      className={`min-h-11 min-w-0 border-b-2 px-1 text-[0.7rem] font-bold uppercase tracking-[0.06em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:min-h-10 sm:px-4 sm:text-sm sm:tracking-[0.1em] ${
         active
           ? "border-red-600 text-white"
           : "border-transparent text-neutral-500 hover:text-neutral-200"
@@ -214,13 +227,14 @@ function EngagementRow({
   const contractActionState = engagement.kind === "contract"
     ? getMusicianContractActionState(
         engagement.item.estado,
-        engagement.item.hasCurrentUserRating
+        engagement.item.hasCurrentUserRating,
+        engagement.item.evento.endsAt
       )
     : "unavailable";
 
   return (
     <div role="rowgroup">
-      <div role="row" className={`grid gap-4 px-4 py-4 transition-colors hover:bg-neutral-900/70 lg:items-center lg:gap-3 ${gridColumns}`}>
+      <div role="row" className={`grid gap-3.5 px-4 py-3.5 transition-colors hover:bg-neutral-900/70 lg:items-center lg:gap-3 ${gridColumns}`}>
         <TableCell label="Fecha">
           <time dateTime={new Date(event.startsAt).toISOString()} className="font-bold text-neutral-200">
             {new Date(event.startsAt).toLocaleDateString("es-AR", {
@@ -236,7 +250,13 @@ function EngagementRow({
             {event.titulo}
           </Link>
           <p className="mt-1 text-xs text-neutral-500">{project.nombre}</p>
-          <div className="mt-2"><StatusBadge status={item.estado} /></div>
+          <div className="mt-2">
+            <StatusBadge
+              status={contractActionState === "awaiting-completion"
+                ? "Pendiente de finalización"
+                : item.estado}
+            />
+          </div>
         </TableCell>
 
         <TableCell label="Organizador">
@@ -281,6 +301,10 @@ function EngagementRow({
             ) : contractActionState === "awaiting-event" ? (
               <span className="text-xs font-semibold leading-tight text-neutral-500">
                 Pendiente de realizarse
+              </span>
+            ) : contractActionState === "awaiting-completion" ? (
+              <span className="text-xs font-semibold leading-tight text-neutral-400">
+                Pendiente de finalización
               </span>
             ) : null}
           </div>

@@ -411,6 +411,8 @@ export async function getMyPendingPostulations() {
           id: true,
           titulo: true,
           startsAt: true,
+          endsAt: true,
+          estado: true,
           ubicacion: true,
           nombreLugar: true,
           ciudad: true,
@@ -495,7 +497,7 @@ export async function getReceivedPostulations() {
       mensaje: true,
       creadoEn: true,
       evento: {
-        select: { id: true, titulo: true, startsAt: true, estado: true },
+        select: { id: true, titulo: true, startsAt: true, endsAt: true, estado: true },
       },
       proyectoMusical: { select: { id: true, nombre: true } },
       musico: { select: { nombre: true, apellido: true } },

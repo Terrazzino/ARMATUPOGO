@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { projectToFormValues } from "@/lib/project-form-values";
+import { projectCreateData, projectUpdateData } from "@/lib/project-access";
 import { proyectoMusicalSchema } from "@/lib/validations/projects";
 
 describe("valores iniciales del formulario de proyecto", () => {
@@ -35,5 +36,31 @@ describe("valores iniciales del formulario de proyecto", () => {
     expect(formValues).not.toHaveProperty("usuario");
     expect(formValues).not.toHaveProperty("creadoEn");
     expect(proyectoMusicalSchema.safeParse(formValues).success).toBe(true);
+  });
+
+  it("omite la ubicación histórica para preservarla durante la edición", () => {
+    const formValues = projectToFormValues({
+      id: crypto.randomUUID(),
+      nombre: "Proyecto con historia",
+      genero: "Rock",
+      ubicacion: "Almagro",
+      ciudad: "CABA",
+    });
+
+    expect(formValues).not.toHaveProperty("ubicacion");
+    expect(projectUpdateData(formValues)).not.toHaveProperty("ubicacion");
+    expect(formValues.ciudad).toBe("CABA");
+  });
+
+  it("permite crear sin ubicación y la persiste como dato ausente", () => {
+    const formValues = {
+      ...projectToFormValues(),
+      nombre: "Proyecto nuevo",
+      genero: "Punk",
+    };
+
+    expect(formValues).not.toHaveProperty("ubicacion");
+    expect(proyectoMusicalSchema.safeParse(formValues).success).toBe(true);
+    expect(projectCreateData(crypto.randomUUID(), formValues).ubicacion).toBeNull();
   });
 });

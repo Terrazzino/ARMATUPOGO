@@ -2,27 +2,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { getAuthenticatedUserForRender as getCurrentUser } from "@/lib/auth-render";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { DashboardNavigation } from "@/components/shared/DashboardNavigation";
 
 interface NavbarProps {
   variant?: "public" | "dashboard";
-  activeItem?: "discovery" | "profile" | null;
 }
 
-export async function Navbar({ variant = "public", activeItem }: NavbarProps) {
+export async function Navbar({ variant = "public" }: NavbarProps) {
   const user = await getCurrentUser();
   const showDashboardNavigation = variant === "dashboard" && Boolean(user);
-  const currentItem = activeItem === undefined && showDashboardNavigation
-    ? "profile"
-    : activeItem;
   const dashboardHref = user?.rol === "MUSICO" ? "/dashboard/musician" : "/dashboard/organizer";
-  const discoveryHref = user?.rol === "MUSICO" ? "/events" : "/projects";
-  const discoveryLabel = user?.rol === "MUSICO" ? "Buscar Fechas" : "Buscar Bandas";
 
   return (
     <header className="bg-black/95 text-white border-b border-neutral-800 sticky top-0 z-30 shadow-lg shadow-black/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" aria-label="Arma tu pogo - Inicio" className="flex items-center gap-2 text-xl font-black tracking-wider text-white hover:text-red-400 transition-colors">
-          <Image src="/branding/arma-tu-pogo-logo.optimized.webp" alt="" aria-hidden="true" width={48} height={48} className="h-12 w-12 object-contain" loading="eager" />
+          <Image src="/branding/arma-tu-pogo-logo.optimized.webp" alt="" aria-hidden="true" width={40} height={40} className="h-10 w-10 object-contain" loading="eager" />
           <span className="hidden sm:inline" aria-hidden="true">ARMA TU POGO</span>
         </Link>
 
@@ -36,28 +31,12 @@ export async function Navbar({ variant = "public", activeItem }: NavbarProps) {
         <div className="flex min-w-0 items-center gap-3">
           {user ? (
             showDashboardNavigation ? (
-              <nav aria-label="Navegación del panel" className="flex min-w-0 items-center gap-1 sm:gap-2">
-                <Link
-                  href={discoveryHref}
-                  aria-current={currentItem === "discovery" ? "page" : undefined}
-                  className="atp-button atp-button-primary min-h-9 whitespace-nowrap px-2.5 text-xs sm:px-3 sm:text-sm"
-                >
-                  {discoveryLabel}
-                </Link>
-                <Link
-                  href={dashboardHref}
-                  aria-current={currentItem === "profile" ? "page" : undefined}
-                  className="atp-button atp-button-ghost min-h-9 whitespace-nowrap px-2.5 text-xs sm:px-3 sm:text-sm"
-                >
-                  Mi Perfil
-                </Link>
-                <LogoutButton variant="dashboard" />
-              </nav>
+              <DashboardNavigation role={user.rol} />
             ) : (
               <div className="flex items-center gap-3">
                 <Link
                   href={dashboardHref}
-                  className="text-sm font-semibold px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                  className="flex min-h-10 items-center gap-2 rounded-md bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
                 >
                   <span>Mi Panel ({user.rol === "MUSICO" ? "Músico" : "Organizador"})</span>
                 </Link>
@@ -68,13 +47,13 @@ export async function Navbar({ variant = "public", activeItem }: NavbarProps) {
             <div className="flex items-center gap-2">
               <Link
                 href="/auth/login"
-                className="text-sm font-medium px-3.5 py-1.5 text-neutral-300 hover:text-white transition-colors"
+                className="inline-flex min-h-10 items-center px-3 text-sm font-medium text-neutral-300 transition-colors hover:text-white"
               >
                 Ingresar
               </Link>
               <Link
                 href="/auth/register"
-                className="text-sm font-medium px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                className="inline-flex min-h-10 items-center rounded-md bg-red-600 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
               >
                 Registrarse
               </Link>

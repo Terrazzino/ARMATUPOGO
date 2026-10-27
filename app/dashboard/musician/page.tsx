@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getAuthenticatedUserForRender as getCurrentUser } from "@/lib/auth-render";
 import { getMyProjects } from "@/app/actions/projects";
 import { getMyContracts, getMyPendingPostulations } from "@/app/actions/contracts";
@@ -40,7 +39,7 @@ export default async function MusicianDashboardPage() {
     <div className="atp-page flex min-h-screen flex-col">
       <Navbar variant="dashboard" />
 
-      <main className="atp-container w-full flex-1 space-y-8 py-8 sm:space-y-10 sm:py-10">
+      <main className="atp-container w-full flex-1 space-y-7 py-6 sm:space-y-8 sm:py-8">
         <DashboardHeader
           roleLabel="Panel de músico"
           name={`${user.nombre} ${user.apellido}`}
@@ -51,7 +50,7 @@ export default async function MusicianDashboardPage() {
           variant="plain"
         />
 
-        <section className="space-y-5" aria-labelledby="musician-projects-title">
+        <section className="space-y-4" aria-labelledby="musician-projects-title">
           <DashboardSectionHeader
             headingId="musician-projects-title"
             title="Mis Proyectos Musicales"
@@ -67,7 +66,7 @@ export default async function MusicianDashboardPage() {
               action={<DeferredCreateProjectModal />}
             />
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {projects.map((project) => (
                 <ProjectCard
                   key={project.id}
@@ -79,16 +78,11 @@ export default async function MusicianDashboardPage() {
           )}
         </section>
 
-        <section className="space-y-5" aria-labelledby="musician-negotiations-title">
+        <section className="space-y-4" aria-labelledby="musician-negotiations-title">
           <DashboardSectionHeader
             headingId="musician-negotiations-title"
             title="Mis Fechas y Contrataciones"
             description="Consulta tus acuerdos confirmados, postulaciones y negociaciones activas"
-            action={(
-              <Link href="/events" className="atp-button atp-button-ghost text-sm">
-                Explorar Cartelera →
-              </Link>
-            )}
           />
 
           <MusicianEngagements

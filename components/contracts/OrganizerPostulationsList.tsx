@@ -65,7 +65,7 @@ export function OrganizerPostulationsList({ groups }: OrganizerPostulationsListP
             aria-selected={activeTab === tab.id}
             aria-controls="organizer-postulations-panel"
             onClick={() => setActiveTab(tab.id)}
-            className={`min-h-11 border-b-2 px-3 text-xs font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:px-4 sm:text-sm ${
+            className={`min-h-11 border-b-2 px-3 text-xs font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:min-h-10 sm:px-4 sm:text-sm ${
               activeTab === tab.id
                 ? "border-red-600 text-white"
                 : "border-transparent text-neutral-500 hover:text-neutral-200"
@@ -134,10 +134,16 @@ export function OrganizerPostulationsList({ groups }: OrganizerPostulationsListP
   );
 }
 
-function OrganizerPostulationRow({
+export function OrganizerPostulationRow({
   postulation,
+  compact = false,
+  allowResolution = true,
+  onResolved,
 }: {
   postulation: OrganizerPostulationListItem;
+  compact?: boolean;
+  allowResolution?: boolean;
+  onResolved?: (action: ResolutionAction) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const actionState = getOrganizerPostulationActionState(postulation);
@@ -147,41 +153,74 @@ function OrganizerPostulationRow({
     <div role="rowgroup">
       <div
         role="row"
-        className={`grid gap-4 px-4 py-4 transition-colors hover:bg-neutral-900/70 md:grid-cols-2 lg:items-center lg:gap-3 ${gridColumns}`}
+        className={compact
+          ? "grid gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-900/70 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] md:items-center"
+          : `grid gap-3.5 px-4 py-3.5 transition-colors hover:bg-neutral-900/70 md:grid-cols-2 lg:items-center lg:gap-3 ${gridColumns}`}
       >
-        <TableCell label="Fecha del evento">
-          <time
-            dateTime={new Date(postulation.evento.startsAt).toISOString()}
-            className="font-bold text-neutral-200"
-          >
-            {new Date(postulation.evento.startsAt).toLocaleDateString("es-AR", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })}
-          </time>
-          <span className="block text-neutral-500">
-            {new Date(postulation.evento.startsAt).toLocaleTimeString("es-AR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })} hs
-          </span>
-        </TableCell>
-
-        <TableCell label="Nombre del evento">
-          {postulation.evento.estado === "PUBLICADO" ? (
+        {compact ? (
+          <>
+            <div role="cell" className="min-w-0">
+              <Link
+                href={`/projects/${postulation.proyectoMusical.id}`}
+                className="atp-heading break-words text-xl text-neutral-100 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                {postulation.proyectoMusical.nombre}
+              </Link>
+              <p className="mt-1 text-xs text-neutral-500">
+                Responsable: {postulation.musico.nombre} {postulation.musico.apellido}
+              </p>
+            </div>
+            <div role="cell" className="min-w-0 text-sm">
+              {postulation.evento.estado === "PUBLICADO" ? (
+                <Link
+                  href={`/events/${postulation.evento.id}`}
+                  className="font-bold text-neutral-200 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  {postulation.evento.titulo}
+                </Link>
+              ) : (
+                <span className="font-bold text-neutral-500">{postulation.evento.titulo}</span>
+              )}
+              <p className="mt-1 text-xs text-neutral-500">
+                {new Date(postulation.evento.startsAt).toLocaleDateString("es-AR")} · <StatusBadge status={postulation.estado} />
+              </p>
+            </div>
+            <div role="cell" className="flex flex-wrap gap-2 md:justify-end">
+              <button
+                type="button"
+                onClick={() => setIsExpanded((value) => !value)}
+                aria-expanded={isExpanded}
+                aria-controls={detailId}
+                className="atp-button atp-button-ghost min-h-9 px-3 text-xs"
+              >
+                {isExpanded ? "Cerrar revisión" : allowResolution ? "Revisar" : "Ver detalle"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+          <TableCell label="Fecha del evento">
+            <time dateTime={new Date(postulation.evento.startsAt).toISOString()} className="font-bold text-neutral-200">
+              {new Date(postulation.evento.startsAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+            </time>
+            <span className="block text-neutral-500">
+              {new Date(postulation.evento.startsAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} hs
+            </span>
+          </TableCell>
+          <TableCell label="Nombre del evento">
+            {postulation.evento.estado === "PUBLICADO" ? (
             <Link
               href={`/events/${postulation.evento.id}`}
               className="atp-heading break-words text-lg text-neutral-100 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
             >
               {postulation.evento.titulo}
             </Link>
-          ) : (
+            ) : (
             <span className="atp-heading break-words text-lg text-neutral-400">
               {postulation.evento.titulo}
             </span>
-          )}
-        </TableCell>
+            )}
+          </TableCell>
 
         <TableCell label="Banda / proyecto musical">
           <Link
@@ -206,7 +245,7 @@ function OrganizerPostulationRow({
           <StatusBadge status={postulation.estado} />
         </TableCell>
 
-        <TableCell label="Acciones">
+          <TableCell label="Acciones">
           <div className="flex flex-wrap gap-2 lg:flex-col lg:items-stretch">
             <button
               type="button"
@@ -233,11 +272,18 @@ function OrganizerPostulationRow({
               </span>
             )}
           </div>
-        </TableCell>
+          </TableCell>
+          </>
+        )}
       </div>
 
       {isExpanded && (
-        <PostulationReview postulation={postulation} detailId={detailId} />
+        <PostulationReview
+          postulation={postulation}
+          detailId={detailId}
+          allowResolution={allowResolution}
+          onResolved={onResolved}
+        />
       )}
     </div>
   );
@@ -246,15 +292,19 @@ function OrganizerPostulationRow({
 function PostulationReview({
   postulation,
   detailId,
+  allowResolution = true,
+  onResolved,
 }: {
   postulation: OrganizerPostulationListItem;
   detailId: string;
+  allowResolution?: boolean;
+  onResolved?: (action: ResolutionAction) => void;
 }) {
   const router = useRouter();
   const [confirmationAction, setConfirmationAction] = useState<ResolutionAction | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const isResolvable = postulation.estado === "PENDIENTE";
+  const isResolvable = allowResolution && postulation.estado === "PENDIENTE";
 
   function processPostulation(action: ResolutionAction) {
     setFeedback(null);
@@ -269,12 +319,13 @@ function PostulationReview({
       }
 
       setConfirmationAction(null);
+      onResolved?.(action);
       router.refresh();
     });
   }
 
   return (
-    <div id={detailId} role="row" className="border-t border-neutral-800 bg-black p-4 sm:p-5">
+    <div id={detailId} role="row" className="border-t border-neutral-800 bg-black p-4">
       <div role="cell" className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.55fr)]">
         <div>
           <p className="atp-label text-neutral-500">Mensaje de postulación</p>

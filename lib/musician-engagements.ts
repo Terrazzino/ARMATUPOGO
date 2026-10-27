@@ -12,16 +12,31 @@ export type MusicianPostulationStatus =
   | "RECHAZADA"
   | "CANCELADA";
 
+export const MUSICIAN_ENGAGEMENT_EMPTY_MESSAGES = {
+  confirmed: "Todavía no tenés fechas confirmadas vigentes",
+  pending: "No tenés postulaciones ni negociaciones pendientes",
+  finished: "Todavía no tenés fechas finalizadas",
+} as const;
+
 interface DatedContract {
   id: string;
   estado: MusicianContractStatus;
-  evento: { startsAt: Date | string };
+  postulacionId?: string | null;
+  evento: {
+    startsAt: Date | string;
+    endsAt: Date | string;
+    estado: "PUBLICADO" | "CANCELADO";
+  };
 }
 
 interface DatedPostulation {
   id: string;
   estado: MusicianPostulationStatus;
-  evento: { startsAt: Date | string };
+  evento: {
+    startsAt: Date | string;
+    endsAt: Date | string;
+    estado: "PUBLICADO" | "CANCELADO";
+  };
 }
 
 export type MusicianEngagement<C, P> =
@@ -40,24 +55,54 @@ function compareEngagements<C extends DatedContract, P extends DatedPostulation>
 export function groupMusicianEngagements<
   C extends DatedContract,
   P extends DatedPostulation,
->(contracts: C[], postulations: P[]) {
+>(contracts: C[], postulations: P[], now: Date = new Date()) {
+  const nowTime = now.getTime();
+  const isCurrentPublishedEvent = (item: C | P) =>
+    item.evento.estado === "PUBLICADO"
+    && new Date(item.evento.endsAt).getTime() > nowTime;
+  const linkedPostulationIds = new Set(
+    contracts.flatMap((contract) => contract.postulacionId ? [contract.postulacionId] : [])
+  );
+
   const confirmed: Array<MusicianEngagement<C, P>> = contracts
-    .filter((contract) => contract.estado === "ACORDADO" || contract.estado === "COMPLETADO")
+    .filter((contract) =>
+      contract.estado === "ACORDADO" && isCurrentPublishedEvent(contract)
+    )
     .map((item) => ({ kind: "contract" as const, item }));
 
   const pending: Array<MusicianEngagement<C, P>> = [
     ...contracts
-      .filter((contract) => contract.estado === "NEGOCIANDO")
+      .filter((contract) =>
+        contract.estado === "NEGOCIANDO" && isCurrentPublishedEvent(contract)
+      )
       .map((item) => ({ kind: "contract" as const, item })),
     ...postulations
-      .filter((postulation) => postulation.estado === "PENDIENTE")
+      .filter((postulation) =>
+        postulation.estado === "PENDIENTE"
+        && isCurrentPublishedEvent(postulation)
+        && !linkedPostulationIds.has(postulation.id)
+      )
       .map((item) => ({ kind: "postulation" as const, item })),
   ];
 
+  const finished: Array<MusicianEngagement<C, P>> = contracts
+    .filter((contract) =>
+      contract.evento.estado === "PUBLICADO"
+      && (
+        contract.estado === "COMPLETADO"
+        || (
+          contract.estado === "ACORDADO"
+          && new Date(contract.evento.endsAt).getTime() <= nowTime
+        )
+      )
+    )
+    .map((item) => ({ kind: "contract" as const, item }));
+
   confirmed.sort(compareEngagements);
   pending.sort(compareEngagements);
+  finished.sort(compareEngagements);
 
-  return { confirmed, pending };
+  return { confirmed, pending, finished };
 }
 
 export function formatAgreedAmount(
@@ -77,16 +122,23 @@ export function formatAgreedAmount(
 export type MusicianContractActionState =
   | "negotiation"
   | "awaiting-event"
+  | "awaiting-completion"
   | "rate-organizer"
   | "already-rated"
   | "unavailable";
 
 export function getMusicianContractActionState(
   contractStatus: MusicianContractStatus,
-  hasPreviousRating: boolean
+  hasPreviousRating: boolean,
+  eventEndsAt?: Date | string,
+  now: Date = new Date()
 ): MusicianContractActionState {
   if (contractStatus === "NEGOCIANDO") return "negotiation";
-  if (contractStatus === "ACORDADO") return "awaiting-event";
+  if (contractStatus === "ACORDADO") {
+    return eventEndsAt && new Date(eventEndsAt).getTime() <= now.getTime()
+      ? "awaiting-completion"
+      : "awaiting-event";
+  }
 
   const ratingState = getRatingActionState({
     contractStatus,

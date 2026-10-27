@@ -3,11 +3,11 @@ import Image from "next/image";
 
 export function Footer() {
   return (
-    <footer className="bg-black text-neutral-400 border-t border-neutral-800 py-10 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="mt-auto border-t border-neutral-800 bg-black py-8 text-neutral-400">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
         <div>
-          <div className="flex items-center gap-2 text-lg font-bold text-white mb-2">
-            <Image src="/branding/arma-tu-pogo-logo.optimized.webp" alt="" width={40} height={40} className="h-10 w-10 object-contain" />
+          <div className="mb-2 flex items-center gap-2 text-lg font-bold text-white">
+            <Image src="/branding/arma-tu-pogo-logo.optimized.webp" alt="" width={36} height={36} className="h-9 w-9 object-contain" />
             <span>ARMA TU POGO</span>
           </div>
           <p className="text-sm text-neutral-400 max-w-sm">

@@ -67,7 +67,7 @@ export function OrganizerEventsList({ groups, now }: OrganizerEventsListProps) {
             aria-selected={activeTab === tab.id}
             aria-controls="organizer-events-panel"
             onClick={() => setActiveTab(tab.id)}
-            className={`min-h-11 border-b-2 px-3 text-xs font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:px-4 sm:text-sm ${
+            className={`min-h-11 border-b-2 px-3 text-xs font-bold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:min-h-10 sm:px-4 sm:text-sm ${
               activeTab === tab.id
                 ? "border-red-600 text-white"
                 : "border-transparent text-neutral-500 hover:text-neutral-200"
@@ -153,7 +153,7 @@ function OrganizerEventRow({
   return (
     <div
       role="row"
-      className={`grid gap-4 px-4 py-4 transition-colors hover:bg-neutral-900/70 md:grid-cols-2 lg:items-center lg:gap-3 ${gridColumns}`}
+      className={`grid gap-3.5 px-4 py-3.5 transition-colors hover:bg-neutral-900/70 md:grid-cols-2 lg:items-center lg:gap-3 ${gridColumns}`}
     >
       <TableCell label="Fecha">
         <time dateTime={new Date(event.startsAt).toISOString()} className="font-bold text-neutral-200">

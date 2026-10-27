@@ -59,6 +59,21 @@ describe("consultas privadas de contratos del músico", () => {
         ],
       })
     );
+
+    const query = mocks.findMany.mock.calls[0][0];
+    expect(query.select.evento.select).toEqual({
+      id: true,
+      titulo: true,
+      startsAt: true,
+      endsAt: true,
+      estado: true,
+      ubicacion: true,
+      nombreLugar: true,
+      ciudad: true,
+      organizador: {
+        select: { id: true, nombre: true, apellido: true },
+      },
+    });
   });
 
   it("impide que un organizador use la consulta privada del músico", async () => {
@@ -86,6 +101,7 @@ describe("consultas privadas de contratos del músico", () => {
       id: true,
       titulo: true,
       startsAt: true,
+      endsAt: true,
       estado: true,
     });
     expect(query.select.musico.select).toEqual({ nombre: true, apellido: true });

@@ -9,14 +9,12 @@ import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
 import { DeferredCreateEventModal } from "@/components/events/DeferredCreateEventModal";
 import { OrganizerEventsList } from "@/components/events/OrganizerEventsList";
-import { OrganizerPostulationsList } from "@/components/contracts/OrganizerPostulationsList";
-import { OrganizerContractsList } from "@/components/contracts/OrganizerContractsList";
+import { OrganizerEngagements } from "@/components/contracts/OrganizerEngagements";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSectionHeader } from "@/components/dashboard/DashboardSectionHeader";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { groupOrganizerEvents } from "@/lib/organizer-events";
-import { groupOrganizerPostulations } from "@/lib/organizer-postulations";
-import { groupOrganizerContracts } from "@/lib/organizer-contracts";
+import { groupOrganizerEngagements } from "@/lib/organizer-engagements";
 
 export const metadata = {
   title: "Panel de Organizador - Arma tu pogo",
@@ -59,18 +57,16 @@ export default async function OrganizerDashboardPage() {
     })),
     now
   );
-  const organizerPostulationGroups = groupOrganizerPostulations(
-    postulations.map((postulation) => ({
+  const organizerPostulations = postulations.map((postulation) => ({
       ...postulation,
       creadoEn: postulation.creadoEn.toISOString(),
       evento: {
         ...postulation.evento,
         startsAt: postulation.evento.startsAt.toISOString(),
+        endsAt: postulation.evento.endsAt.toISOString(),
       },
-    }))
-  );
-  const organizerContractGroups = groupOrganizerContracts(
-    contracts.map((contract) => ({
+    }));
+  const organizerContracts = contracts.map((contract) => ({
       id: contract.id,
       estado: contract.estado,
       montoPactado: contract.montoPactado,
@@ -93,7 +89,10 @@ export default async function OrganizerDashboardPage() {
         ...offer,
         creadoEn: offer.creadoEn.toISOString(),
       })),
-    })),
+    }));
+  const organizerEngagementGroups = groupOrganizerEngagements(
+    organizerPostulations,
+    organizerContracts,
     now
   );
 
@@ -101,7 +100,7 @@ export default async function OrganizerDashboardPage() {
     <div className="atp-page flex min-h-screen flex-col">
       <Navbar variant="dashboard" />
 
-      <main className="atp-container w-full flex-1 space-y-8 py-8 sm:space-y-10 sm:py-10">
+      <main className="atp-container w-full flex-1 space-y-7 py-6 sm:space-y-8 sm:py-8">
         <DashboardHeader
           roleLabel="Panel de organizador"
           name={`${user.nombre} ${user.apellido}`}
@@ -112,7 +111,7 @@ export default async function OrganizerDashboardPage() {
           variant="plain"
         />
 
-        <section className="space-y-5" aria-labelledby="organizer-events-title">
+        <section className="space-y-4" aria-labelledby="organizer-events-title">
           <DashboardSectionHeader
             headingId="organizer-events-title"
             title="Mis Eventos y Recitales"
@@ -140,37 +139,11 @@ export default async function OrganizerDashboardPage() {
           )}
         </section>
 
-        <section className="space-y-5" aria-labelledby="organizer-postulations-title">
+        <section className="space-y-4" aria-labelledby="organizer-engagements-title">
           <DashboardSectionHeader
-            headingId="organizer-postulations-title"
-            title="Postulaciones recibidas"
-            description="Revisa las solicitudes enviadas a tus eventos y gestiona las que están pendientes."
-          />
-
-          {postulations.length === 0 ? (
-            <DashboardEmptyState
-              icon={
-                <Image
-                  src="/branding/postulaciones-256.webp"
-                  alt=""
-                  width={96}
-                  height={96}
-                  className="mx-auto block h-20 w-20 object-contain sm:h-24 sm:w-24"
-                />
-              }
-              title="No hay postulaciones recibidas"
-              description="Cuando un proyecto se postule a uno de tus eventos, aparecerá aquí."
-            />
-          ) : (
-            <OrganizerPostulationsList groups={organizerPostulationGroups} />
-          )}
-        </section>
-
-        <section className="space-y-5" aria-labelledby="organizer-negotiations-title">
-          <DashboardSectionHeader
-            headingId="organizer-negotiations-title"
-            title="Negociaciones y Contrataciones"
-            description="Gestiona las propuestas económicas recibidas de bandas y envía contraofertas"
+            headingId="organizer-engagements-title"
+            title="Postulaciones y Contrataciones"
+            description="Gestiona postulaciones, negociaciones, acuerdos e historial de bandas desde un único lugar."
             action={(
               <Link href="/projects" className="atp-button atp-button-ghost text-sm">
                 Buscar Bandas y Solistas →
@@ -178,32 +151,11 @@ export default async function OrganizerDashboardPage() {
             )}
           />
 
-          {contracts.length === 0 ? (
-            <DashboardEmptyState
-              icon={
-                <Image
-                  src="/branding/contrato-256.webp"
-                  alt=""
-                  width={96}
-                  height={96}
-                  className="mx-auto block h-20 w-20 object-contain sm:h-24 sm:w-24"
-                />
-              }
-              title="No hay negociaciones iniciadas"
-              description="También puedes buscar proyectos musicales en el catálogo e invitarlos directamente a tus fechas."
-              action={(
-                <Link href="/projects" className="atp-button atp-button-primary text-sm">
-                  Buscar Bandas
-                </Link>
-              )}
-            />
-          ) : (
-            <OrganizerContractsList
-              groups={organizerContractGroups}
-              currentUserId={user.id}
-              now={now.toISOString()}
-            />
-          )}
+          <OrganizerEngagements
+            groups={organizerEngagementGroups}
+            currentUserId={user.id}
+            now={now.toISOString()}
+          />
         </section>
       </main>
 
