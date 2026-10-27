@@ -4,6 +4,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { ownedEventWhere } from "@/lib/authorization";
 import { validarModificacionFechasEvento } from "@/lib/contrataciones";
 import { validarReduccionCupos } from "@/lib/cupos";
+import { EVENT_CANCELLATION_BY_ORGANIZER_REASON } from "@/lib/constants";
 import type { EventoInput } from "@/lib/validations/events";
 
 export const privateEventInclude = {
@@ -295,7 +296,7 @@ export async function cancelOwnedEvent(eventId: string, organizerId: string) {
       data: {
         estado: "CANCELADO",
         fechaCancelacion: now,
-        motivoCancelacion: "Cancelación del evento por el organizador",
+        motivoCancelacion: EVENT_CANCELLATION_BY_ORGANIZER_REASON,
       },
     });
 

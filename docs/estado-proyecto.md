@@ -29,8 +29,8 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | Operaciones HTTP | 36 |
 | Server Actions | 39 |
 | Páginas compiladas | 20 |
-| Archivos de tests ejecutados | 33 |
-| Tests aprobados | 342/342 |
+| Archivos de tests ejecutados | 34 |
+| Tests aprobados | 359/359 |
 | Autenticación | Supabase Auth |
 | Base de datos | PostgreSQL en Supabase |
 | Archivos | Supabase Storage para proyectos y eventos |
@@ -61,8 +61,8 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | `lib/validations/` | Contratos Zod para entradas no confiables. |
 | `lib/services/` | Aislamiento de Supabase Auth y Storage. |
 | `lib/supabase/` | Clientes SSR y navegador, con timeout de 5 segundos. |
-| `prisma/` | Schema autoritativo y migración relacional principal. |
-| `supabase/migrations/` | SQL específico de Supabase y políticas de Storage. |
+| `prisma/` | Schema autoritativo (`schema.prisma`) y migraciones canónicas de negocio (`prisma/migrations/**`). |
+| `supabase/migrations/` | SQL específico de Supabase exclusivamente para infraestructura y políticas de Storage (`project-images` y `event-images`). |
 | `test/` | Pruebas unitarias, de Actions, algunos Route Handlers y políticas. |
 | `docs/` | Especificación, ADR, API y documentación operativa. |
 
@@ -81,9 +81,9 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | `Valoracion` | Reputación posterior a una fecha completada; en uso completo. | Vincula contrato, autor, destinatario y, cuando corresponde, proyecto destinatario. |
 | `Entrada` | Tipos y precios informativos de eventos; uso parcial. | Relación N:1 con evento; permite múltiples tipos y precios. |
 
-`prisma/schema.prisma` es la fuente autoritativa del modelo de datos.
+`prisma/schema.prisma` es la fuente autoritativa del modelo de datos y `prisma/migrations/**` su único camino de migración canónico.
 
-`supabase/migrations/202609010001_init_prisma_supabase.sql` es una migración histórica y obsoleta: **no debe utilizarse como representación del modelo actual** hasta resolver la deuda de inicialización canónica.
+Se eliminó el archivo obsoleto `supabase/migrations/202609010001_init_prisma_supabase.sql` que contenía un modelo histórico incompatible. No existen segundas copias manuales del esquema relacional.
 
 ## 6. Matriz funcional
 
@@ -100,7 +100,7 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | Autenticación | COMPLETO con deuda | Supabase Auth, cookies/Bearer, proxy y ownership; alta Auth→Prisma sin compensación. |
 | Servicios externos | PARCIALMENTE VERIFICABLE | Implementados en código; la configuración remota efectiva no se verificó. |
 | Notificaciones | NO IMPLEMENTADO | No existe entidad, inbox, badge, API ni mecanismo de actualización. |
-| Historial de cancelaciones del músico | PARCIAL | Los contratos contienen datos, pero el dashboard no los agrupa ni presenta. |
+| Historial de cancelaciones del músico | COMPLETO (MVP) | Pestaña "Canceladas" en el panel del músico para fechas confirmadas cuyo evento fue cancelado por el organizador. |
 
 ## 7. Flujo principal de negocio
 
@@ -168,8 +168,8 @@ Organizador descubre un proyecto → lo invita a un evento propio → contrato `
 | Servicio | Finalidad | Estado | Observaciones |
 |---|---|---|---|
 | Supabase Auth | Identidad, sesión y confirmación de email | Implementado | Esencial; timeout de 5 segundos y comportamiento fail-safe. |
-| PostgreSQL Supabase | Persistencia de dominio mediante Prisma | Implementado | Configuración auditada en región `sa-east-1`; runtime mediante pooler. |
-| Supabase Storage | Imágenes de proyectos y flyers | Implementado, verificación remota pendiente | Las políticas y buckets están versionados, pero su aplicación remota debe comprobarse fuera del repositorio. |
+| PostgreSQL Supabase | Persistencia de dominio mediante Prisma | Implementado | Configuración auditada en región `sa-east-1`; runtime mediante pooler. Migración canónica `20260909020221_init` verificada en `_prisma_migrations`. |
+| Supabase Storage | Imágenes de proyectos y flyers | Implementado, verificado en BD remota | Buckets `project-images` y `event-images` y sus políticas RLS comprobados en remoto. Scripts versionados en `supabase/migrations/`. Historial de Supabase CLI no normalizado (conserva `00001`). |
 
 ## 11. Tests y calidad
 
@@ -179,10 +179,12 @@ Organizador descubre un proyecto → lo invita a un evento propio → contrato `
 |---|---|
 | `npm run lint` | OK |
 | `npx tsc --noEmit` | OK |
-| `npm test -- --run` | 342/342 tests aprobados en 33 archivos |
+| `npm test -- --run` | 359/359 tests aprobados en 34 archivos |
 | `npm run build` | OK; 20 páginas compiladas |
 
-`test/phase2-model-security.test.mjs` existe, pero actualmente no forma parte del patrón `test/**/*.test.ts` ejecutado por Vitest.
+- Se incorporó `test/offer-access.test.ts` (10 tests unitarios con mocks transaccionales) para verificar que las lecturas de oferta, cupo y agenda se realicen dentro de `tx` Serializable y se controle el retry ante `P2034`.
+- La concurrencia SSI real de PostgreSQL se valida conceptualmente y mediante mocks; no existen pruebas de integración concurrentes automatizadas contra una instancia PostgreSQL real en CI.
+- `test/phase2-model-security.test.mjs` existe, pero actualmente no forma parte del patrón `test/**/*.test.ts` ejecutado por Vitest.
 
 No existen pruebas E2E de navegador ni verificación remota real de Auth/Storage dentro de la suite habitual.
 
@@ -190,17 +192,17 @@ No existen pruebas E2E de navegador ni verificación remota real de Auth/Storage
 
 ### P0 — Bloqueante antes de producción
 
-1. `acceptOfferAsCounterparty`: disponibilidad y cupos se comprueban fuera de la transacción `Serializable`; existe riesgo de carrera entre aceptaciones concurrentes.
-2. Existen dos caminos históricos de migración inicial incompatibles; debe establecerse una única inicialización válida de base de datos.
+No hay bloqueantes P0 conocidos (**P0 = 0**).
+
+- Resuelto: Transaccionalidad Serializable integral y retry acotado de `P2034` en `acceptOfferAsCounterparty` (`lib/offer-access.ts`).
+- Resuelto: Saneamiento de inicialización de BD: eliminación del SQL obsoleto de Supabase y consolidación de Prisma Migrate como único camino canónico.
 
 ### P1 — Importante
 
 - `createOfferForParticipant` puede permitir dos ofertas `PROPUESTA` concurrentes.
 - Registro Supabase → Prisma sin compensación ante fallo del perfil local.
-- `docs/DATABASE.md` está obsoleto y omite `Postulacion`.
+- El historial de Supabase CLI aún no está normalizado: la base remota conserva `00001`, mientras los scripts actuales de Storage fueron aplicados manualmente.
 - El test `.mjs` de seguridad queda fuera de la suite.
-- Configuración remota de Storage pendiente de verificación.
-- El dashboard del músico no muestra cancelaciones.
 
 ### P2 — Mejora
 
@@ -221,17 +223,13 @@ No existen pruebas E2E de navegador ni verificación remota real de Auth/Storage
 
 | Feature | Estado actual | Complejidad | Requiere migración | Prioridad |
 |---|---|---:|---|---|
-| Historial de fechas canceladas para artistas | PARCIAL | MEDIA | No para versión mínima | Próxima |
+| Historial de fechas canceladas para artistas | COMPLETO (MVP) | MEDIA | No para versión mínima | Completada |
 | Sistema de notificaciones | NO IMPLEMENTADO | ALTA | Sí, si es persistente | Próxima, requiere decisión |
 | Precio de entrada gestionado por organizador | PARCIAL | MEDIA | No con el modelo actual | Próxima |
 
-### Historial de fechas canceladas para artistas
+### Historial de fechas canceladas para artistas (MVP)
 
-Ya existen `Evento.CANCELADO`, `Contratacion.CANCELADO`, `fechaCancelacion`, `motivoCancelacion`, propagación desde evento y recuperación de contratos cancelados por backend. Falta principalmente la agrupación y UI del músico.
-
-Definición inicial: **fecha cancelada** = evento cancelado en el cual el músico tenía una contratación activa o acordada. No mezclar automáticamente con postulaciones rechazadas.
-
-La versión mínima no requiere migración. Un historial con motivo, fecha y actor a nivel de evento/postulación sí requeriría ampliar el modelo.
+Implementado en el dashboard del músico mediante la pestaña "Canceladas", agrupando contrataciones acordadas (`fechaAcuerdo !== null`) cuyos eventos fueron cancelados por el organizador (`evento.estado === "CANCELADO"`), con detalle de fecha de cancelación, motivo y monto acordado.
 
 ### Sistema de notificaciones
 
@@ -247,7 +245,9 @@ Estados sugeridos: `PENDIENTE`, `EN ANÁLISIS`, `EN PROGRESO`, `EN REVIEW`, `BLO
 
 | Feature/Tarea | Responsable | Rama | Estado | Archivos principales | Última actualización |
 |---|---|---|---|---|---|
-| _Sin tareas activas registradas_ | — | — | — | — | — |
+| Corrección P0 `acceptOfferAsCounterparty` | — | `feature/fixbackend` | COMPLETADO | `lib/offer-access.ts`, `test/offer-access.test.ts` | 2026-10-27 |
+| Saneamiento P0 de migraciones e inicialización de BD | — | `feature/fixbackend` | COMPLETADO | `supabase/migrations/202609010001_init_prisma_supabase.sql` (eliminado), `docs/DATABASE.md`, `README.md`, `docs/estado-proyecto.md` | 2026-10-27 |
+| Historial de fechas canceladas para músicos | — | `feature/fixbackend` | COMPLETADO | `lib/musician-engagements.ts`, `components/contracts/MusicianEngagements.tsx`, `test/musician-engagements.test.ts` | 2026-10-27 |
 
 No inferir responsables ni trabajo activo sólo por la existencia de una rama. Esta tabla debe actualizarse al comenzar y terminar cada tarea compartida.
 
@@ -272,8 +272,8 @@ Si dos ramas necesitan modificar alguno de estos archivos, coordinar antes de im
 1. **Notificaciones:** persistentes, Realtime/polling o combinación.
 2. **Historial de cancelaciones:** versión mínima basada en `Contratacion` o modelo de auditoría más completo.
 3. **Entradas:** UI simplificada de precio único o gestión explícita de múltiples tipos.
-4. **Migraciones:** definir la inicialización canónica de la base y retirar/archivar el camino incompatible.
-5. **Storage:** verificar buckets, políticas RLS y funcionamiento remoto real.
+4. **Migraciones:** RESUELTO. Prisma Migrate es la única fuente autoritativa del modelo de negocio (`prisma/migrations/**`). Se eliminó el SQL obsoleto e incompatible de `supabase/migrations/`. Supabase SQL se reserva estrictamente para infraestructura de Storage y RLS.
+5. **Storage:** RESUELTO. Se comprobó la existencia y estado activo de los buckets `project-images` y `event-images` en la base remota. Queda pendiente como deuda operativa la normalización de la tabla `supabase_migrations` en el CLI.
 
 ## 17. Protocolo para desarrolladores y agentes
 
@@ -320,8 +320,8 @@ Una feature no debe marcarse **COMPLETA** sólo porque el código compile. Deben
 
 ## 18. Limitaciones conocidas de esta fotografía
 
-- No se verificó un deployment activo ni su región de ejecución.
-- No se verificó el estado remoto de migraciones Prisma o buckets Storage.
+- No se verificó un deployment activo en producción ni su región de ejecución.
+- Se verificó el estado remoto de migraciones Prisma (`_prisma_migrations` al día con `20260909020221_init`) y la existencia de los buckets de Storage (`project-images` y `event-images`). El historial de Supabase CLI permanece no normalizado.
 - No se usaron credenciales reales para pruebas autenticadas de navegador.
 - La auditoría representa exactamente el commit y rama indicados; cambios posteriores pueden volverla obsoleta.
 
@@ -330,3 +330,6 @@ Una feature no debe marcarse **COMPLETA** sólo porque el código compile. Deben
 | Fecha | Commit | Cambio | Autor/Responsable |
 |---|---|---|---|
 | 2026-10-27 | `33b93c7` | Auditoría integral y creación inicial de `estado-proyecto.md` | — |
+| 2026-10-27 | `afe9786` | Corrección P0: transaccionalidad Serializable integral y retry acotado de `P2034` en `acceptOfferAsCounterparty` | — |
+| 2026-10-27 | `1043195` | Saneamiento P0 de inicialización de BD: eliminación de SQL obsoleto de Supabase, consolidación de Prisma Migrate como único camino canónico y actualización de `docs/DATABASE.md` y `README.md` | — |
+| 2026-10-27 | Pendiente | Feature: Historial de fechas canceladas para músicos en el dashboard (agrupación de acuerdos en eventos cancelados y visualización dedicada) | — |

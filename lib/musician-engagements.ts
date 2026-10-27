@@ -1,3 +1,4 @@
+import { EVENT_CANCELLATION_BY_ORGANIZER_REASON } from "@/lib/constants";
 import { getRatingActionState } from "@/lib/rating-presentation";
 
 export type MusicianContractStatus =
@@ -16,12 +17,15 @@ export const MUSICIAN_ENGAGEMENT_EMPTY_MESSAGES = {
   confirmed: "Todavía no tenés fechas confirmadas vigentes",
   pending: "No tenés postulaciones ni negociaciones pendientes",
   finished: "Todavía no tenés fechas finalizadas",
+  cancelled: "Todavía no tenés fechas canceladas",
 } as const;
 
 interface DatedContract {
   id: string;
   estado: MusicianContractStatus;
   postulacionId?: string | null;
+  fechaAcuerdo?: Date | string | null;
+  motivoCancelacion?: string | null;
   evento: {
     startsAt: Date | string;
     endsAt: Date | string;
@@ -49,6 +53,15 @@ function compareEngagements<C extends DatedContract, P extends DatedPostulation>
 ) {
   const dateDifference = new Date(left.item.evento.startsAt).getTime()
     - new Date(right.item.evento.startsAt).getTime();
+  return dateDifference || left.item.id.localeCompare(right.item.id);
+}
+
+function compareEngagementsDescending<C extends DatedContract, P extends DatedPostulation>(
+  left: MusicianEngagement<C, P>,
+  right: MusicianEngagement<C, P>
+) {
+  const dateDifference = new Date(right.item.evento.startsAt).getTime()
+    - new Date(left.item.evento.startsAt).getTime();
   return dateDifference || left.item.id.localeCompare(right.item.id);
 }
 
@@ -98,25 +111,39 @@ export function groupMusicianEngagements<
     )
     .map((item) => ({ kind: "contract" as const, item }));
 
+  const cancelled: Array<MusicianEngagement<C, P>> = contracts
+    .filter((contract) =>
+      contract.evento.estado === "CANCELADO"
+      && contract.fechaAcuerdo !== null
+      && contract.fechaAcuerdo !== undefined
+      && contract.motivoCancelacion === EVENT_CANCELLATION_BY_ORGANIZER_REASON
+    )
+    .map((item) => ({ kind: "contract" as const, item }));
+
   confirmed.sort(compareEngagements);
   pending.sort(compareEngagements);
   finished.sort(compareEngagements);
+  cancelled.sort(compareEngagementsDescending);
 
-  return { confirmed, pending, finished };
+  return { confirmed, pending, finished, cancelled };
 }
 
 export function formatAgreedAmount(
   status: MusicianContractStatus | "PENDIENTE",
   amount?: number | string | { toString(): string } | null
 ) {
-  if ((status !== "ACORDADO" && status !== "COMPLETADO") || amount === null || amount === undefined) {
+  if (status === "NEGOCIANDO" || status === "PENDIENTE") {
     return "Sin acuerdo";
+  }
+
+  if (amount === null || amount === undefined) {
+    return "Monto no informado";
   }
 
   const numericAmount = Number(amount.toString());
   return Number.isFinite(numericAmount)
     ? `$${numericAmount.toLocaleString("es-AR")}`
-    : "Sin acuerdo";
+    : "Monto no informado";
 }
 
 export type MusicianContractActionState =

@@ -86,3 +86,9 @@ export const PUBLIC_ROUTES = ["/", "/events", "/projects", "/artists"];
  * Rutas protegidas (requieren autenticación)
  */
 export const PROTECTED_ROUTES = ["/dashboard"];
+
+/**
+ * Motivo asignado automáticamente a las contrataciones cuando el organizador cancela un evento
+ */
+export const EVENT_CANCELLATION_BY_ORGANIZER_REASON =
+  "Cancelación del evento por el organizador";

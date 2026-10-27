@@ -120,132 +120,158 @@ export async function createOfferForParticipant(input: {
   });
 }
 
+const MAX_SERIALIZABLE_RETRIES = 2;
+
 export async function acceptOfferAsCounterparty(
   offerId: string,
   userId: string
 ) {
-  const offer = await prisma.oferta.findFirst({
-    where: accessibleOfferWhere(offerId, userId),
-    include: {
-      contratacion: {
-        include: {
-          evento: {
+  for (let attempt = 0; attempt <= MAX_SERIALIZABLE_RETRIES; attempt++) {
+    try {
+      return await prisma.$transaction(
+        async (tx) => {
+          const offer = await tx.oferta.findFirst({
+            where: accessibleOfferWhere(offerId, userId),
             include: {
-              contrataciones: { select: { id: true, estado: true } },
+              contratacion: {
+                include: {
+                  evento: {
+                    include: {
+                      contrataciones: { select: { id: true, estado: true } },
+                    },
+                  },
+                  ofertas: {
+                    select: { id: true, remitenteId: true, monto: true, estado: true },
+                  },
+                },
+              },
             },
-          },
-          ofertas: {
-            select: { id: true, remitenteId: true, monto: true, estado: true },
-          },
+          });
+          if (!offer) throw new NotFoundError("Oferta");
+
+          const contract = offer.contratacion;
+          const validation = validarAceptacionOferta({
+            oferta: domainOffer(offer),
+            contratacion: contract,
+            usuarioId: userId,
+            todasLasOfertas: contract.ofertas.map(domainOffer),
+          });
+
+          if (!validation.ok) {
+            switch (validation.motivo) {
+              case "EMISOR_NO_PUEDE_ACEPTAR_PROPIA_OFERTA":
+                throw new ConflictError("No puedes aceptar tu propia oferta");
+              case "OFERTA_NO_PROPUESTA":
+                throw new ConflictError("Esta oferta ya no está disponible");
+              case "CONTRATACION_NO_NEGOCIANDO":
+                throw new ConflictError("La contratación ya no está en negociación");
+              case "USUARIO_NO_PARTICIPANTE":
+                throw new NotFoundError("Oferta");
+            }
+          }
+
+          const activeContracts = await tx.contratacion.findMany({
+            where: {
+              musicoId: contract.musicoId,
+              estado: { in: ["NEGOCIANDO", "ACORDADO"] },
+            },
+            include: {
+              evento: {
+                select: { titulo: true, startsAt: true, endsAt: true },
+              },
+            },
+          });
+
+          const availability = validarDisponibilidadMusico({
+            nuevoEvento: {
+              startsAt: contract.evento.startsAt,
+              endsAt: contract.evento.endsAt,
+            },
+            contratacionesExistentes: activeContracts,
+            contratacionActualIdIgnorar: contract.id,
+          });
+          if (!availability.ok) {
+            throw new ConflictError("El músico no está disponible en ese horario");
+          }
+
+          const capacity = validarDisponibilidadCupo({
+            cantidadRequerida: contract.evento.cantidadMusicosRequerida,
+            contrataciones: contract.evento.contrataciones,
+          });
+          if (!capacity.ok) {
+            throw new ConflictError("El evento no tiene cupos disponibles");
+          }
+
+          const now = new Date();
+          const contractUpdate = await tx.contratacion.updateMany({
+            where: { id: contract.id, estado: "NEGOCIANDO" },
+            data: {
+              estado: "ACORDADO",
+              montoPactado: offer.monto,
+              fechaAcuerdo: now,
+            },
+          });
+          if (contractUpdate.count !== 1) {
+            throw new ConflictError(
+              "La contratación ya fue acordada por otra operación"
+            );
+          }
+
+          const offerUpdate = await tx.oferta.updateMany({
+            where: {
+              id: offer.id,
+              contratacionId: contract.id,
+              estado: "PROPUESTA",
+            },
+            data: { estado: "ACEPTADA" },
+          });
+          if (offerUpdate.count !== 1) {
+            throw new ConflictError("Esta oferta ya no está disponible");
+          }
+
+          if (validation.ofertasAContraofertar.length > 0) {
+            await tx.oferta.updateMany({
+              where: {
+                id: { in: validation.ofertasAContraofertar },
+                contratacionId: contract.id,
+                estado: "PROPUESTA",
+              },
+              data: { estado: "CONTRAOFERTADA" },
+            });
+          }
+
+          const updatedOffer = await tx.oferta.findUniqueOrThrow({
+            where: { id: offer.id },
+          });
+          const updatedContract = await tx.contratacion.findUniqueOrThrow({
+            where: { id: contract.id },
+            include: { evento: true, proyectoMusical: true },
+          });
+          return { updatedOffer, updatedContract };
         },
-      },
-    },
-  });
-  if (!offer) throw new NotFoundError("Oferta");
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      );
+    } catch (error) {
+      const isSerializableConflict =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2034";
 
-  const contract = offer.contratacion;
-  const validation = validarAceptacionOferta({
-    oferta: domainOffer(offer),
-    contratacion: contract,
-    usuarioId: userId,
-    todasLasOfertas: contract.ofertas.map(domainOffer),
-  });
+      if (isSerializableConflict && attempt < MAX_SERIALIZABLE_RETRIES) {
+        continue;
+      }
 
-  if (!validation.ok) {
-    switch (validation.motivo) {
-      case "EMISOR_NO_PUEDE_ACEPTAR_PROPIA_OFERTA":
-        throw new ConflictError("No puedes aceptar tu propia oferta");
-      case "OFERTA_NO_PROPUESTA":
-        throw new ConflictError("Esta oferta ya no está disponible");
-      case "CONTRATACION_NO_NEGOCIANDO":
-        throw new ConflictError("La contratación ya no está en negociación");
-      case "USUARIO_NO_PARTICIPANTE":
-        throw new NotFoundError("Oferta");
-    }
-  }
-
-  const activeContracts = await prisma.contratacion.findMany({
-    where: {
-      musicoId: contract.musicoId,
-      estado: { in: ["NEGOCIANDO", "ACORDADO"] },
-    },
-    include: {
-      evento: {
-        select: { titulo: true, startsAt: true, endsAt: true },
-      },
-    },
-  });
-
-  const availability = validarDisponibilidadMusico({
-    nuevoEvento: {
-      startsAt: contract.evento.startsAt,
-      endsAt: contract.evento.endsAt,
-    },
-    contratacionesExistentes: activeContracts,
-    contratacionActualIdIgnorar: contract.id,
-  });
-  if (!availability.ok) {
-    throw new ConflictError("El músico no está disponible en ese horario");
-  }
-
-  const capacity = validarDisponibilidadCupo({
-    cantidadRequerida: contract.evento.cantidadMusicosRequerida,
-    contrataciones: contract.evento.contrataciones,
-  });
-  if (!capacity.ok) {
-    throw new ConflictError("El evento no tiene cupos disponibles");
-  }
-
-  const now = new Date();
-  return prisma.$transaction(
-    async (tx) => {
-      const contractUpdate = await tx.contratacion.updateMany({
-        where: { id: contract.id, estado: "NEGOCIANDO" },
-        data: {
-          estado: "ACORDADO",
-          montoPactado: offer.monto,
-          fechaAcuerdo: now,
-        },
-      });
-      if (contractUpdate.count !== 1) {
+      if (isSerializableConflict) {
         throw new ConflictError(
-          "La contratación ya fue acordada por otra operación"
+          "La operación no pudo completarse debido a un conflicto de concurrencia. Por favor, reintenta."
         );
       }
 
-      const offerUpdate = await tx.oferta.updateMany({
-        where: {
-          id: offer.id,
-          contratacionId: contract.id,
-          estado: "PROPUESTA",
-        },
-        data: { estado: "ACEPTADA" },
-      });
-      if (offerUpdate.count !== 1) {
-        throw new ConflictError("Esta oferta ya no está disponible");
-      }
+      throw error;
+    }
+  }
 
-      if (validation.ofertasAContraofertar.length > 0) {
-        await tx.oferta.updateMany({
-          where: {
-            id: { in: validation.ofertasAContraofertar },
-            contratacionId: contract.id,
-            estado: "PROPUESTA",
-          },
-          data: { estado: "CONTRAOFERTADA" },
-        });
-      }
-
-      const updatedOffer = await tx.oferta.findUniqueOrThrow({
-        where: { id: offer.id },
-      });
-      const updatedContract = await tx.contratacion.findUniqueOrThrow({
-        where: { id: contract.id },
-        include: { evento: true, proyectoMusical: true },
-      });
-      return { updatedOffer, updatedContract };
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  throw new ConflictError(
+    "La operación no pudo completarse debido a un conflicto de concurrencia. Por favor, reintenta."
   );
 }
 

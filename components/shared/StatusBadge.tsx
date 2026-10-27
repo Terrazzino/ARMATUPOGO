@@ -17,6 +17,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       label = "Cancelado";
       colorClass = "bg-red-950/50 text-red-300 border-red-800";
       break;
+    case "Evento cancelado":
+      label = "Evento cancelado";
+      colorClass = "bg-red-950/50 text-red-300 border-red-800 font-semibold";
+      break;
     case "PENDIENTE":
       label = "Postulación Pendiente";
       colorClass = "bg-amber-950/50 text-amber-300 border-amber-800";

@@ -238,7 +238,7 @@ export function OrganizerContractRow({
             </div>
             <div role="cell" className="text-sm">
               <span className="atp-label mb-1 block text-neutral-500 md:hidden">Monto</span>
-              <span className={amount === "Sin acuerdo" ? "text-neutral-500" : "font-bold text-emerald-300"}>{amount}</span>
+              <span className={amount === "Sin acuerdo" || amount === "Monto no informado" ? "text-neutral-500" : "font-bold text-emerald-300"}>{amount}</span>
             </div>
             <div role="cell" className="flex flex-wrap gap-2 md:justify-end">
               {actionState === "negotiation" && (
@@ -320,7 +320,7 @@ export function OrganizerContractRow({
         </TableCell>
 
         <TableCell label="Monto pactado">
-          <span className={amount === "Sin acuerdo" ? "text-neutral-500" : "font-bold text-emerald-300"}>
+          <span className={amount === "Sin acuerdo" || amount === "Monto no informado" ? "text-neutral-500" : "font-bold text-emerald-300"}>
             {amount}
           </span>
         </TableCell>
