@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { EVENT_CANCELLATION_BY_ORGANIZER_REASON } from "@/lib/constants";
 import {
   formatAgreedAmount,
   getMusicianContractActionState,
@@ -18,12 +19,23 @@ function contract(
   options: {
     eventStatus?: "PUBLICADO" | "CANCELADO";
     postulacionId?: string | null;
+    fechaAcuerdo?: string | null;
+    montoPactado?: number | null;
+    motivoCancelacion?: string | null;
   } = {}
 ) {
   return {
     id,
     estado,
     postulacionId: options.postulacionId,
+    fechaAcuerdo: options.fechaAcuerdo !== undefined ? options.fechaAcuerdo : null,
+    montoPactado: options.montoPactado !== undefined ? options.montoPactado : null,
+    motivoCancelacion:
+      options.motivoCancelacion !== undefined
+        ? options.motivoCancelacion
+        : (options.eventStatus === "CANCELADO" && options.fechaAcuerdo
+            ? EVENT_CANCELLATION_BY_ORGANIZER_REASON
+            : null),
     evento: {
       startsAt,
       endsAt,
@@ -121,12 +133,15 @@ describe("fechas y contrataciones del músico", () => {
     expect(result.pending.map(({ item }) => item.id)).toEqual(["contrato-vinculado"]);
   });
 
-  it("sólo presenta el monto definitivo para acuerdos y contratos completados", () => {
+  it("sólo presenta el monto definitivo para acuerdos y contratos completados o cancelados", () => {
     expect(formatAgreedAmount("NEGOCIANDO", 150000)).toBe("Sin acuerdo");
     expect(formatAgreedAmount("PENDIENTE")).toBe("Sin acuerdo");
-    expect(formatAgreedAmount("ACORDADO", null)).toBe("Sin acuerdo");
+    expect(formatAgreedAmount("ACORDADO", null)).toBe("Monto no informado");
     expect(formatAgreedAmount("ACORDADO", 150000)).toBe("$150.000");
     expect(formatAgreedAmount("COMPLETADO", "82500")).toBe("$82.500");
+    expect(formatAgreedAmount("COMPLETADO", null)).toBe("Monto no informado");
+    expect(formatAgreedAmount("CANCELADO", 200000)).toBe("$200.000");
+    expect(formatAgreedAmount("CANCELADO", null)).toBe("Monto no informado");
   });
 
   it("presenta valoración sólo para contratos completados", () => {
@@ -146,11 +161,196 @@ describe("fechas y contrataciones del músico", () => {
     expect(getMusicianContractActionState("CANCELADO", false)).toBe("unavailable");
   });
 
-  it("define los mensajes vacíos de las tres pestañas", () => {
+  it("define los mensajes vacíos de las cuatro pestañas", () => {
     expect(MUSICIAN_ENGAGEMENT_EMPTY_MESSAGES).toEqual({
       confirmed: "Todavía no tenés fechas confirmadas vigentes",
       pending: "No tenés postulaciones ni negociaciones pendientes",
       finished: "Todavía no tenés fechas finalizadas",
+      cancelled: "Todavía no tenés fechas canceladas",
+    });
+  });
+
+  describe("historial de fechas canceladas para el músico", () => {
+    it("Caso 1: Evento CANCELADO con contrato cancelado y acuerdo previo aparece en cancelled", () => {
+      const c = contract(
+        "fecha-cancelada-confirmada",
+        "CANCELADO",
+        "2026-06-01T20:00:00.000Z",
+        "2026-06-01T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: "2026-05-10T12:00:00.000Z",
+          montoPactado: 120000,
+        }
+      );
+
+      const result = groupMusicianEngagements([c], [], NOW);
+
+      expect(result.cancelled.map(({ item }) => item.id)).toEqual(["fecha-cancelada-confirmada"]);
+      expect(result.confirmed).toHaveLength(0);
+      expect(result.pending).toHaveLength(0);
+      expect(result.finished).toHaveLength(0);
+    });
+
+    it("Caso 2: Evento CANCELADO con contrato sin acuerdo previo (fechaAcuerdo null) NO aparece en cancelled", () => {
+      const c = contract(
+        "evento-cancelado-sin-acuerdo",
+        "CANCELADO",
+        "2026-06-01T20:00:00.000Z",
+        "2026-06-01T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: null,
+        }
+      );
+
+      const result = groupMusicianEngagements([c], [], NOW);
+
+      expect(result.cancelled).toHaveLength(0);
+      expect(result.confirmed).toHaveLength(0);
+      expect(result.pending).toHaveLength(0);
+      expect(result.finished).toHaveLength(0);
+    });
+
+    it("Caso 3: Contrato CANCELADO con evento PUBLICADO (baja individual) NO aparece en cancelled", () => {
+      const c = contract(
+        "baja-individual-contrato",
+        "CANCELADO",
+        "2026-06-01T20:00:00.000Z",
+        "2026-06-01T23:00:00.000Z",
+        {
+          eventStatus: "PUBLICADO",
+          fechaAcuerdo: "2026-05-10T12:00:00.000Z",
+        }
+      );
+
+      const result = groupMusicianEngagements([c], [], NOW);
+
+      expect(result.cancelled).toHaveLength(0);
+      expect(result.confirmed).toHaveLength(0);
+      expect(result.pending).toHaveLength(0);
+      expect(result.finished).toHaveLength(0);
+    });
+
+    it("Caso 4: Evento cancelado de otro escenario sin acuerdo no contamina ningún grupo", () => {
+      const c = contract(
+        "evento-cancelado-negociando",
+        "NEGOCIANDO",
+        "2026-06-01T20:00:00.000Z",
+        "2026-06-01T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: null,
+        }
+      );
+      const p = postulation(
+        "postulacion-evento-cancelado",
+        "PENDIENTE",
+        "2026-06-01T20:00:00.000Z",
+        "2026-06-01T23:00:00.000Z",
+        "CANCELADO"
+      );
+
+      const result = groupMusicianEngagements([c], [p], NOW);
+
+      expect(result.confirmed).toHaveLength(0);
+      expect(result.pending).toHaveLength(0);
+      expect(result.finished).toHaveLength(0);
+      expect(result.cancelled).toHaveLength(0);
+    });
+
+    it("Caso 5: Varias fechas canceladas quedan ordenadas por evento.startsAt descendente", () => {
+      const fechaAntigua = contract(
+        "cancelada-antigua",
+        "CANCELADO",
+        "2026-05-01T20:00:00.000Z",
+        "2026-05-01T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: "2026-04-10T12:00:00.000Z",
+        }
+      );
+      const fechaReciente = contract(
+        "cancelada-reciente",
+        "CANCELADO",
+        "2026-07-15T20:00:00.000Z",
+        "2026-07-15T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: "2026-04-12T12:00:00.000Z",
+        }
+      );
+      const fechaIntermedia = contract(
+        "cancelada-intermedia",
+        "CANCELADO",
+        "2026-06-10T20:00:00.000Z",
+        "2026-06-10T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: "2026-04-11T12:00:00.000Z",
+        }
+      );
+
+      const result = groupMusicianEngagements(
+        [fechaAntigua, fechaReciente, fechaIntermedia],
+        [],
+        NOW
+      );
+
+      expect(result.cancelled.map(({ item }) => item.id)).toEqual([
+        "cancelada-reciente",
+        "cancelada-intermedia",
+        "cancelada-antigua",
+      ]);
+    });
+
+    it("Caso 6: montoPactado null pero fechaAcuerdo != null sigue apareciendo en cancelled con monto no informado", () => {
+      const c = contract(
+        "cancelada-sin-monto",
+        "CANCELADO",
+        "2026-06-01T20:00:00.000Z",
+        "2026-06-01T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: "2026-05-01T10:00:00.000Z",
+          montoPactado: null,
+        }
+      );
+
+      const result = groupMusicianEngagements([c], [], NOW);
+
+      expect(result.cancelled.map(({ item }) => item.id)).toEqual(["cancelada-sin-monto"]);
+      expect(formatAgreedAmount(c.estado, c.montoPactado)).toBe("Monto no informado");
+    });
+
+    it("Caso 7: Empty state de cancelled cuando no hay fechas canceladas", () => {
+      const result = groupMusicianEngagements([], [], NOW);
+
+      expect(result.cancelled).toEqual([]);
+      expect(MUSICIAN_ENGAGEMENT_EMPTY_MESSAGES.cancelled).toBe(
+        "Todavía no tenés fechas canceladas"
+      );
+    });
+
+    it("Caso 8: Contrato acordado cancelado individualmente antes de la cancelación del evento NO aparece en cancelled", () => {
+      const bajaIndividualPrevia = contract(
+        "baja-individual-previa",
+        "CANCELADO",
+        "2026-06-01T20:00:00.000Z",
+        "2026-06-01T23:00:00.000Z",
+        {
+          eventStatus: "CANCELADO",
+          fechaAcuerdo: "2026-05-01T10:00:00.000Z",
+          motivoCancelacion: "Baja individual del músico por motivos personales",
+        }
+      );
+
+      const result = groupMusicianEngagements([bajaIndividualPrevia], [], NOW);
+
+      expect(result.cancelled).toHaveLength(0);
+      expect(result.confirmed).toHaveLength(0);
+      expect(result.pending).toHaveLength(0);
+      expect(result.finished).toHaveLength(0);
     });
   });
 });

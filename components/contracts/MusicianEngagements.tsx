@@ -22,6 +22,7 @@ interface MusicianContract {
   estado: MusicianContractStatus;
   montoPactado?: number | null;
   fechaAcuerdo?: Date | string | null;
+  fechaCancelacion?: Date | string | null;
   motivoCancelacion?: string | null;
   hasCurrentUserRating: boolean;
   evento: {
@@ -88,7 +89,7 @@ interface MusicianEngagementsProps {
 }
 
 type Engagement = MusicianEngagement<MusicianContract, MusicianPostulation>;
-type Tab = "confirmed" | "pending" | "finished";
+type Tab = "confirmed" | "pending" | "finished" | "cancelled";
 
 const gridColumns = "lg:grid-cols-[6.5rem_minmax(0,1.2fr)_minmax(0,0.95fr)_minmax(0,1.25fr)_7rem_9rem]";
 
@@ -105,11 +106,12 @@ export function MusicianEngagements({
     confirmed: "Contrataciones confirmadas vigentes",
     pending: "Postulaciones y negociaciones pendientes",
     finished: "Fechas finalizadas",
+    cancelled: "Fechas canceladas por el organizador",
   };
 
   return (
     <div>
-      <div role="tablist" aria-label="Filtrar fechas y contrataciones" className="mb-5 grid grid-cols-3 border-b border-neutral-800">
+      <div role="tablist" aria-label="Filtrar fechas y contrataciones" className="mb-5 grid grid-cols-2 border-b border-neutral-800 sm:grid-cols-4">
         <TabButton
           active={activeTab === "confirmed"}
           controls="musician-confirmed-panel"
@@ -130,6 +132,13 @@ export function MusicianEngagements({
           onClick={() => setActiveTab("finished")}
         >
           Finalizadas <span aria-label={`${groups.finished.length} registros`}>({groups.finished.length})</span>
+        </TabButton>
+        <TabButton
+          active={activeTab === "cancelled"}
+          controls="musician-cancelled-panel"
+          onClick={() => setActiveTab("cancelled")}
+        >
+          Canceladas <span aria-label={`${groups.cancelled.length} registros`}>({groups.cancelled.length})</span>
         </TabButton>
       </div>
 
@@ -232,6 +241,8 @@ function EngagementRow({
       )
     : "unavailable";
 
+  const isCancelledEvent = event.estado === "CANCELADO";
+
   return (
     <div role="rowgroup">
       <div role="row" className={`grid gap-3.5 px-4 py-3.5 transition-colors hover:bg-neutral-900/70 lg:items-center lg:gap-3 ${gridColumns}`}>
@@ -246,17 +257,43 @@ function EngagementRow({
         </TableCell>
 
         <TableCell label="Nombre del evento">
-          <Link href={`/events/${event.id}`} className="atp-heading text-xl hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
-            {event.titulo}
-          </Link>
+          {isCancelledEvent ? (
+            <span className="atp-heading text-xl text-neutral-200">
+              {event.titulo}
+            </span>
+          ) : (
+            <Link href={`/events/${event.id}`} className="atp-heading text-xl hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+              {event.titulo}
+            </Link>
+          )}
           <p className="mt-1 text-xs text-neutral-500">{project.nombre}</p>
           <div className="mt-2">
             <StatusBadge
-              status={contractActionState === "awaiting-completion"
-                ? "Pendiente de finalización"
-                : item.estado}
+              status={
+                isCancelledEvent
+                  ? "Evento cancelado"
+                  : contractActionState === "awaiting-completion"
+                  ? "Pendiente de finalización"
+                  : item.estado
+              }
             />
           </div>
+          {isCancelledEvent && (
+            <div className="mt-2 space-y-1 text-xs text-neutral-400">
+              <p>
+                <span className="text-neutral-500">Motivo:</span>{" "}
+                {engagement.kind === "contract" && engagement.item.motivoCancelacion
+                  ? engagement.item.motivoCancelacion
+                  : "Sin motivo especificado"}
+              </p>
+              {engagement.kind === "contract" && engagement.item.fechaCancelacion && (
+                <p>
+                  <span className="text-neutral-500">Cancelado el:</span>{" "}
+                  {formatDate(engagement.item.fechaCancelacion)}
+                </p>
+              )}
+            </div>
+          )}
         </TableCell>
 
         <TableCell label="Organizador">
@@ -271,14 +308,18 @@ function EngagementRow({
         </TableCell>
 
         <TableCell label="Monto pactado">
-          <span className={amount === "Sin acuerdo" ? "text-neutral-500" : "font-bold text-emerald-300"}>
+          <span className={amount === "Sin acuerdo" || amount === "Monto no informado" ? "text-neutral-500" : "font-bold text-emerald-300"}>
             {amount}
           </span>
         </TableCell>
 
         <TableCell label="Acciones">
           <div className="flex flex-wrap gap-2 lg:flex-col lg:items-stretch">
-            {contractActionState === "negotiation" ? (
+            {isCancelledEvent ? (
+              <span className="text-xs font-semibold leading-tight text-neutral-500">
+                Fecha cancelada
+              </span>
+            ) : contractActionState === "negotiation" ? (
               <button
                 type="button"
                 onClick={() => setIsExpanded((value) => !value)}
@@ -396,4 +437,14 @@ function CancelPostulationAction({ postulationId }: { postulationId: string }) {
       Cancelar postulación
     </button>
   );
+}
+
+function formatDate(date: Date | string) {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }

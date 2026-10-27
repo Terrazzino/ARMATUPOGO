@@ -30,7 +30,7 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | Server Actions | 39 |
 | Páginas compiladas | 20 |
 | Archivos de tests ejecutados | 34 |
-| Tests aprobados | 352/352 |
+| Tests aprobados | 359/359 |
 | Autenticación | Supabase Auth |
 | Base de datos | PostgreSQL en Supabase |
 | Archivos | Supabase Storage para proyectos y eventos |
@@ -100,7 +100,7 @@ Se eliminó el archivo obsoleto `supabase/migrations/202609010001_init_prisma_su
 | Autenticación | COMPLETO con deuda | Supabase Auth, cookies/Bearer, proxy y ownership; alta Auth→Prisma sin compensación. |
 | Servicios externos | PARCIALMENTE VERIFICABLE | Implementados en código; la configuración remota efectiva no se verificó. |
 | Notificaciones | NO IMPLEMENTADO | No existe entidad, inbox, badge, API ni mecanismo de actualización. |
-| Historial de cancelaciones del músico | PARCIAL | Los contratos contienen datos, pero el dashboard no los agrupa ni presenta. |
+| Historial de cancelaciones del músico | COMPLETO (MVP) | Pestaña "Canceladas" en el panel del músico para fechas confirmadas cuyo evento fue cancelado por el organizador. |
 
 ## 7. Flujo principal de negocio
 
@@ -179,7 +179,7 @@ Organizador descubre un proyecto → lo invita a un evento propio → contrato `
 |---|---|
 | `npm run lint` | OK |
 | `npx tsc --noEmit` | OK |
-| `npm test -- --run` | 352/352 tests aprobados en 34 archivos |
+| `npm test -- --run` | 359/359 tests aprobados en 34 archivos |
 | `npm run build` | OK; 20 páginas compiladas |
 
 - Se incorporó `test/offer-access.test.ts` (10 tests unitarios con mocks transaccionales) para verificar que las lecturas de oferta, cupo y agenda se realicen dentro de `tx` Serializable y se controle el retry ante `P2034`.
@@ -203,7 +203,6 @@ No hay bloqueantes P0 conocidos (**P0 = 0**).
 - Registro Supabase → Prisma sin compensación ante fallo del perfil local.
 - El historial de Supabase CLI aún no está normalizado: la base remota conserva `00001`, mientras los scripts actuales de Storage fueron aplicados manualmente.
 - El test `.mjs` de seguridad queda fuera de la suite.
-- El dashboard del músico no muestra cancelaciones.
 
 ### P2 — Mejora
 
@@ -224,17 +223,13 @@ No hay bloqueantes P0 conocidos (**P0 = 0**).
 
 | Feature | Estado actual | Complejidad | Requiere migración | Prioridad |
 |---|---|---:|---|---|
-| Historial de fechas canceladas para artistas | PARCIAL | MEDIA | No para versión mínima | Próxima |
+| Historial de fechas canceladas para artistas | COMPLETO (MVP) | MEDIA | No para versión mínima | Completada |
 | Sistema de notificaciones | NO IMPLEMENTADO | ALTA | Sí, si es persistente | Próxima, requiere decisión |
 | Precio de entrada gestionado por organizador | PARCIAL | MEDIA | No con el modelo actual | Próxima |
 
-### Historial de fechas canceladas para artistas
+### Historial de fechas canceladas para artistas (MVP)
 
-Ya existen `Evento.CANCELADO`, `Contratacion.CANCELADO`, `fechaCancelacion`, `motivoCancelacion`, propagación desde evento y recuperación de contratos cancelados por backend. Falta principalmente la agrupación y UI del músico.
-
-Definición inicial: **fecha cancelada** = evento cancelado en el cual el músico tenía una contratación activa o acordada. No mezclar automáticamente con postulaciones rechazadas.
-
-La versión mínima no requiere migración. Un historial con motivo, fecha y actor a nivel de evento/postulación sí requeriría ampliar el modelo.
+Implementado en el dashboard del músico mediante la pestaña "Canceladas", agrupando contrataciones acordadas (`fechaAcuerdo !== null`) cuyos eventos fueron cancelados por el organizador (`evento.estado === "CANCELADO"`), con detalle de fecha de cancelación, motivo y monto acordado.
 
 ### Sistema de notificaciones
 
@@ -252,6 +247,7 @@ Estados sugeridos: `PENDIENTE`, `EN ANÁLISIS`, `EN PROGRESO`, `EN REVIEW`, `BLO
 |---|---|---|---|---|---|
 | Corrección P0 `acceptOfferAsCounterparty` | — | `feature/fixbackend` | COMPLETADO | `lib/offer-access.ts`, `test/offer-access.test.ts` | 2026-10-27 |
 | Saneamiento P0 de migraciones e inicialización de BD | — | `feature/fixbackend` | COMPLETADO | `supabase/migrations/202609010001_init_prisma_supabase.sql` (eliminado), `docs/DATABASE.md`, `README.md`, `docs/estado-proyecto.md` | 2026-10-27 |
+| Historial de fechas canceladas para músicos | — | `feature/fixbackend` | COMPLETADO | `lib/musician-engagements.ts`, `components/contracts/MusicianEngagements.tsx`, `test/musician-engagements.test.ts` | 2026-10-27 |
 
 No inferir responsables ni trabajo activo sólo por la existencia de una rama. Esta tabla debe actualizarse al comenzar y terminar cada tarea compartida.
 
@@ -335,4 +331,5 @@ Una feature no debe marcarse **COMPLETA** sólo porque el código compile. Deben
 |---|---|---|---|
 | 2026-10-27 | `33b93c7` | Auditoría integral y creación inicial de `estado-proyecto.md` | — |
 | 2026-10-27 | `afe9786` | Corrección P0: transaccionalidad Serializable integral y retry acotado de `P2034` en `acceptOfferAsCounterparty` | — |
-| 2026-10-27 | Pendiente | Saneamiento P0 de inicialización de BD: eliminación de SQL obsoleto de Supabase, consolidación de Prisma Migrate como único camino canónico y actualización de `docs/DATABASE.md` y `README.md` | — |
+| 2026-10-27 | `1043195` | Saneamiento P0 de inicialización de BD: eliminación de SQL obsoleto de Supabase, consolidación de Prisma Migrate como único camino canónico y actualización de `docs/DATABASE.md` y `README.md` | — |
+| 2026-10-27 | Pendiente | Feature: Historial de fechas canceladas para músicos en el dashboard (agrupación de acuerdos en eventos cancelados y visualización dedicada) | — |
