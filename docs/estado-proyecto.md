@@ -29,8 +29,8 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | Operaciones HTTP | 36 |
 | Server Actions | 39 |
 | Páginas compiladas | 20 |
-| Archivos de tests ejecutados | 33 |
-| Tests aprobados | 342/342 |
+| Archivos de tests ejecutados | 34 |
+| Tests aprobados | 352/352 |
 | Autenticación | Supabase Auth |
 | Base de datos | PostgreSQL en Supabase |
 | Archivos | Supabase Storage para proyectos y eventos |
@@ -179,10 +179,12 @@ Organizador descubre un proyecto → lo invita a un evento propio → contrato `
 |---|---|
 | `npm run lint` | OK |
 | `npx tsc --noEmit` | OK |
-| `npm test -- --run` | 342/342 tests aprobados en 33 archivos |
+| `npm test -- --run` | 352/352 tests aprobados en 34 archivos |
 | `npm run build` | OK; 20 páginas compiladas |
 
-`test/phase2-model-security.test.mjs` existe, pero actualmente no forma parte del patrón `test/**/*.test.ts` ejecutado por Vitest.
+- Se incorporó `test/offer-access.test.ts` (10 tests unitarios con mocks transaccionales) para verificar que las lecturas de oferta, cupo y agenda se realicen dentro de `tx` Serializable y se controle el retry ante `P2034`.
+- La concurrencia SSI real de PostgreSQL se valida conceptualmente y mediante mocks; no existen pruebas de integración concurrentes automatizadas contra una instancia PostgreSQL real en CI.
+- `test/phase2-model-security.test.mjs` existe, pero actualmente no forma parte del patrón `test/**/*.test.ts` ejecutado por Vitest.
 
 No existen pruebas E2E de navegador ni verificación remota real de Auth/Storage dentro de la suite habitual.
 
@@ -190,8 +192,7 @@ No existen pruebas E2E de navegador ni verificación remota real de Auth/Storage
 
 ### P0 — Bloqueante antes de producción
 
-1. `acceptOfferAsCounterparty`: disponibilidad y cupos se comprueban fuera de la transacción `Serializable`; existe riesgo de carrera entre aceptaciones concurrentes.
-2. Existen dos caminos históricos de migración inicial incompatibles; debe establecerse una única inicialización válida de base de datos.
+1. Existen dos caminos históricos de migración inicial incompatibles; debe establecerse una única inicialización válida de base de datos.
 
 ### P1 — Importante
 
@@ -247,7 +248,7 @@ Estados sugeridos: `PENDIENTE`, `EN ANÁLISIS`, `EN PROGRESO`, `EN REVIEW`, `BLO
 
 | Feature/Tarea | Responsable | Rama | Estado | Archivos principales | Última actualización |
 |---|---|---|---|---|---|
-| _Sin tareas activas registradas_ | — | — | — | — | — |
+| Corrección P0 `acceptOfferAsCounterparty` | — | `feature/fixbackend` | COMPLETADO | `lib/offer-access.ts`, `test/offer-access.test.ts` | 2026-10-27 |
 
 No inferir responsables ni trabajo activo sólo por la existencia de una rama. Esta tabla debe actualizarse al comenzar y terminar cada tarea compartida.
 
@@ -330,3 +331,4 @@ Una feature no debe marcarse **COMPLETA** sólo porque el código compile. Deben
 | Fecha | Commit | Cambio | Autor/Responsable |
 |---|---|---|---|
 | 2026-10-27 | `33b93c7` | Auditoría integral y creación inicial de `estado-proyecto.md` | — |
+| 2026-10-27 | Pendiente | Corrección P0: transaccionalidad Serializable integral y retry acotado de `P2034` en `acceptOfferAsCounterparty` | — |
