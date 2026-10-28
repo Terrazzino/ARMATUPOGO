@@ -14,6 +14,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSectionHeader } from "@/components/dashboard/DashboardSectionHeader";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { groupOrganizerEvents } from "@/lib/organizer-events";
+import { ticketPriceToFormValue } from "@/lib/ticket-price";
 import { groupOrganizerEngagements } from "@/lib/organizer-engagements";
 
 export const metadata = {
@@ -51,6 +52,7 @@ export default async function OrganizerDashboardPage() {
       ciudad: event.ciudad,
       cantidadMusicosRequerida: event.cantidadMusicosRequerida,
       cacheOfrecido: event.cacheOfrecido ? Number(event.cacheOfrecido) : null,
+      precioEntrada: ticketPriceToFormValue(event.entradas[0]),
       bannerUrl: event.bannerUrl,
       estado: event.estado,
       contrataciones: event.contrataciones.map(({ estado }) => ({ estado })),

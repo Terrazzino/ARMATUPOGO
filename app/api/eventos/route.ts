@@ -7,7 +7,7 @@ import {
 } from "@/lib/api-helpers";
 import { requireRole } from "@/lib/authorization";
 import { ValidationError } from "@/lib/errors";
-import { eventoSchema } from "@/lib/validations/events";
+import { eventoCreateSchema } from "@/lib/validations/events";
 import {
   eventCreateData,
   privateEventInclude,
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("Cuerpo de solicitud inválido");
     }
 
-    const parsed = eventoSchema.safeParse(body);
+    const parsed = eventoCreateSchema.safeParse(body);
     if (!parsed.success) return zodErrorResponse(parsed.error);
 
     validateEventDates(parsed.data);

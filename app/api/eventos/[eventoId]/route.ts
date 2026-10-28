@@ -8,8 +8,8 @@ import {
 } from "@/lib/api-helpers";
 import { ownedEventWhere, requireRole } from "@/lib/authorization";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import { eventoSchema } from "@/lib/validations/events";
-import { eventUpdateData, validateEventUpdate } from "@/lib/event-access";
+import { eventoUpdateSchema } from "@/lib/validations/events";
+import { generalTicketArgs, updateOwnedEvent, validateEventUpdate } from "@/lib/event-access";
 
 interface RouteParams {
   params: Promise<{ eventoId: string }>;
@@ -60,7 +60,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const existing = await prisma.evento.findFirst({
       where: ownedEventWhere(parsedId.data, user.id),
-      include: { contrataciones: { select: { estado: true } } },
+      include: {
+        contrataciones: { select: { estado: true } },
+        entradas: generalTicketArgs,
+      },
     });
     if (!existing) throw new NotFoundError("Evento");
 
@@ -71,15 +74,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       throw new ValidationError("Cuerpo de solicitud inválido");
     }
 
-    const parsed = eventoSchema.partial().safeParse(body);
+    const parsed = eventoUpdateSchema.safeParse(body);
     if (!parsed.success) return zodErrorResponse(parsed.error);
 
     validateEventUpdate(existing, parsed.data);
 
-    const updated = await prisma.evento.update({
-      where: { id: parsedId.data, organizadorId: user.id },
-      data: eventUpdateData(parsed.data),
-    });
+    const updated = await updateOwnedEvent(parsedId.data, user.id, parsed.data);
 
     return Response.json(updated, { status: 200 });
   } catch (error) {

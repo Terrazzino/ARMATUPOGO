@@ -228,6 +228,7 @@ function OrganizerEventRow({
             ciudad: event.ciudad,
             cantidadMusicosRequerida: event.cantidadMusicosRequerida,
             cacheOfrecido: event.cacheOfrecido ?? null,
+            precioEntrada: event.precioEntrada ?? null,
             bannerUrl: event.bannerUrl ?? null,
             estado: event.estado,
             hasActiveContracts: hasActiveEventContracts(event),

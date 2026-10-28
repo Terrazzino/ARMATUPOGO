@@ -29,8 +29,8 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | Operaciones HTTP | 36 |
 | Server Actions | 39 |
 | Páginas compiladas | 20 |
-| Archivos de tests ejecutados | 34 |
-| Tests aprobados | 359/359 |
+| Archivos de tests ejecutados | 36 |
+| Tests aprobados | 405/405 |
 | Autenticación | Supabase Auth |
 | Base de datos | PostgreSQL en Supabase |
 | Archivos | Supabase Storage para proyectos y eventos |
@@ -79,7 +79,7 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | `Contratacion` | Proceso contractual por postulación o invitación; en uso completo. | Vincula evento, proyecto, músico, organizador, ofertas y valoraciones. Estados `NEGOCIANDO`, `ACORDADO`, `CANCELADO`, `COMPLETADO`. |
 | `Oferta` | Historial económico de una negociación; en uso completo. | Pertenece a un contrato y remitente. Estados `PROPUESTA`, `ACEPTADA`, `RECHAZADA`, `CONTRAOFERTADA`. |
 | `Valoracion` | Reputación posterior a una fecha completada; en uso completo. | Vincula contrato, autor, destinatario y, cuando corresponde, proyecto destinatario. |
-| `Entrada` | Tipos y precios informativos de eventos; uso parcial. | Relación N:1 con evento; permite múltiples tipos y precios. |
+| `Entrada` | Precio informativo del evento; en uso. | Relación N:1 con evento. El modelo admite técnicamente múltiples `Entrada`, pero la UI MVP gestiona una única `GENERAL` por evento. |
 
 `prisma/schema.prisma` es la fuente autoritativa del modelo de datos y `prisma/migrations/**` su único camino de migración canónico.
 
@@ -91,12 +91,12 @@ Se eliminó el archivo obsoleto `supabase/migrations/202609010001_init_prisma_su
 |---|---|---|
 | Usuarios | PARCIAL | Registro, login, logout y API de perfil existen; no hay UI para editar el perfil. |
 | Proyectos | COMPLETO con limitación operativa | ABM, baja lógica, perfiles, búsqueda e imágenes; Storage remoto debe estar configurado. |
-| Eventos | COMPLETO con limitación | ABM, cancelación, cartelera, detalle y flyers; el alta con flyer está bloqueada y se agrega al editar. |
+| Eventos | COMPLETO con limitación | ABM, cancelación, cartelera, detalle, flyers y precio de entrada; el alta con flyer está bloqueada y se agrega al editar. |
 | Postulaciones | COMPLETO | Crear, listar, aceptar, rechazar y cancelar con ownership. |
 | Contrataciones | COMPLETO | Flujo por postulación y contratación directa, cancelación y finalización. |
 | Ofertas | COMPLETO con riesgo concurrente | Negociación funcional; la exclusividad concurrente de `PROPUESTA` no está garantizada. |
 | Valoraciones | COMPLETO | Sólo tras completar; una por autor y contratación. |
-| Entradas | PARCIAL | Modelo y lectura pública existen; no hay flujo de escritura ni formularios. |
+| Entradas | COMPLETO (MVP, precio único) | El organizador define el precio al crear y puede editarlo; cartelera y detalle público lo muestran. Sin compra, pasarela, tickets, stock ni múltiples categorías. |
 | Autenticación | COMPLETO con deuda | Supabase Auth, cookies/Bearer, proxy y ownership; alta Auth→Prisma sin compensación. |
 | Servicios externos | PARCIALMENTE VERIFICABLE | Implementados en código; la configuración remota efectiva no se verificó. |
 | Notificaciones | NO IMPLEMENTADO | No existe entidad, inbox, badge, API ni mecanismo de actualización. |
@@ -134,7 +134,8 @@ Organizador descubre un proyecto → lo invita a un evento propio → contrato `
 
 - Home y cartelera paginada.
 - Catálogo y perfiles públicos de proyectos.
-- Detalle público de eventos, line-up y precios informativos.
+- Detalle público de eventos con line-up y precio de entrada informativo (sin compra).
+- Cartelera con el precio en el CTA deshabilitado (`Comprar entrada · $X`, `Entrada gratuita` o fallback `Consultar precio`).
 - Consulta pública de reputación.
 - Login y registro.
 
@@ -150,7 +151,7 @@ Organizador descubre un proyecto → lo invita a un evento propio → contrato `
 
 ### Organizador
 
-- Crear, editar y cancelar eventos.
+- Crear, editar y cancelar eventos, definiendo y corrigiendo el precio único de entrada (`0` = gratuita).
 - Agregar, reemplazar o quitar flyers en eventos existentes.
 - Consultar eventos próximos, finalizados y cancelados.
 - Buscar e invitar proyectos.
@@ -179,7 +180,7 @@ Organizador descubre un proyecto → lo invita a un evento propio → contrato `
 |---|---|
 | `npm run lint` | OK |
 | `npx tsc --noEmit` | OK |
-| `npm test -- --run` | 359/359 tests aprobados en 34 archivos |
+| `npm test -- --run` | 405/405 tests aprobados en 36 archivos (incluye `test/event-ticket-price.test.ts`, `test/event-update-concurrency.test.ts` y ampliaciones de `events-actions`/`events-api`) |
 | `npm run build` | OK; 20 páginas compiladas |
 
 - Se incorporó `test/offer-access.test.ts` (10 tests unitarios con mocks transaccionales) para verificar que las lecturas de oferta, cupo y agenda se realicen dentro de `tx` Serializable y se controle el retry ante `P2034`.
@@ -211,7 +212,7 @@ No hay bloqueantes P0 conocidos (**P0 = 0**).
 - Faltan índices explícitos para filtros frecuentes por fecha, estado y relaciones.
 - Una postulación duplicada concurrente puede terminar normalizada como `500` aunque el unique preserve integridad.
 - La API/Actions JSON todavía admiten URLs directas de imagen mientras la UI usa Storage.
-- El detalle público obtiene datos completos de entradas, pero no los presenta.
+- El detalle público obtiene datos completos de entradas y presenta sólo el precio; el resto de los campos de `Entrada` no se muestra.
 
 ### P3 — Opcional
 
@@ -225,7 +226,7 @@ No hay bloqueantes P0 conocidos (**P0 = 0**).
 |---|---|---:|---|---|
 | Historial de fechas canceladas para artistas | COMPLETO (MVP) | MEDIA | No para versión mínima | Completada |
 | Sistema de notificaciones | NO IMPLEMENTADO | ALTA | Sí, si es persistente | Próxima, requiere decisión |
-| Precio de entrada gestionado por organizador | PARCIAL | MEDIA | No con el modelo actual | Próxima |
+| Precio de entrada gestionado por organizador | COMPLETO (MVP, precio único) | MEDIA | No | Completada |
 
 ### Historial de fechas canceladas para artistas (MVP)
 
@@ -237,7 +238,14 @@ No existen entidad, leído/no leído, badge, inbox, Actions/API, Realtime ni pol
 
 ### Precio de entrada gestionado por organizador
 
-`Entrada` ya posee `tipoEntrada`, `precio`, `capacidad`, `descripcion`, `urlCompraExterna` y `esGratuita`; soporta múltiples tipos/precios por evento. Faltan validación, Actions/API de escritura, formulario, edición, altas/bajas y visualización completa. No necesita migración para usar el modelo actual.
+Implementado reutilizando `Entrada` sin migración. Cada evento gestionado por la UI tiene una única `Entrada` con `tipoEntrada = "GENERAL"`.
+
+- `precioEntrada` es un entero en pesos argentinos (0 a `VALIDATION_LIMITS.MAX_PRICE`); `esGratuita` se deriva en servidor (`precio === 0`).
+- Creación: `createEvent` y `POST /api/eventos` exigen `precioEntrada`; el evento y la entrada se crean con un único `create` anidado de Prisma (atómico).
+- Edición: `updateEvent` y `PATCH /api/eventos/:id` aceptan `precioEntrada` opcional; se ejecutan bajo transacción `Serializable` con reintento `P2034` (`updateOwnedEvent`) para evitar la creación concurrente de entradas GENERAL en eventos históricos.
+- Cartelera y detalle público usan `lib/ticket-price.ts`. El botón de compra permanece deshabilitado: no existe compra ni pasarela.
+- Eventos históricos sin `Entrada` muestran `Consultar precio`. Sin backfill.
+- Limitación: el modelo sigue soportando múltiples `Entrada`, pero la UI MVP no permite gestionarlas.
 
 ## 14. Trabajo en progreso
 
@@ -248,6 +256,7 @@ Estados sugeridos: `PENDIENTE`, `EN ANÁLISIS`, `EN PROGRESO`, `EN REVIEW`, `BLO
 | Corrección P0 `acceptOfferAsCounterparty` | — | `feature/fixbackend` | COMPLETADO | `lib/offer-access.ts`, `test/offer-access.test.ts` | 2026-10-27 |
 | Saneamiento P0 de migraciones e inicialización de BD | — | `feature/fixbackend` | COMPLETADO | `supabase/migrations/202609010001_init_prisma_supabase.sql` (eliminado), `docs/DATABASE.md`, `README.md`, `docs/estado-proyecto.md` | 2026-10-27 |
 | Historial de fechas canceladas para músicos | — | `feature/fixbackend` | COMPLETADO | `lib/musician-engagements.ts`, `components/contracts/MusicianEngagements.tsx`, `test/musician-engagements.test.ts` | 2026-10-27 |
+| Precio único de entrada definido por el organizador | — | `feature/entrada` | EN REVIEW | `lib/validations/events.ts`, `lib/event-access.ts`, `lib/ticket-price.ts`, `components/events/CreateEventModal.tsx`, `components/events/EventCard.tsx`, `app/events/[id]/page.tsx`, `test/event-ticket-price.test.ts` | 2026-10-27 |
 
 No inferir responsables ni trabajo activo sólo por la existencia de una rama. Esta tabla debe actualizarse al comenzar y terminar cada tarea compartida.
 
@@ -271,7 +280,7 @@ Si dos ramas necesitan modificar alguno de estos archivos, coordinar antes de im
 
 1. **Notificaciones:** persistentes, Realtime/polling o combinación.
 2. **Historial de cancelaciones:** versión mínima basada en `Contratacion` o modelo de auditoría más completo.
-3. **Entradas:** UI simplificada de precio único o gestión explícita de múltiples tipos.
+3. **Entradas:** RESUELTO para el MVP. UI simplificada de precio único (`Entrada` GENERAL, editable). La gestión explícita de múltiples tipos queda fuera de alcance.
 4. **Migraciones:** RESUELTO. Prisma Migrate es la única fuente autoritativa del modelo de negocio (`prisma/migrations/**`). Se eliminó el SQL obsoleto e incompatible de `supabase/migrations/`. Supabase SQL se reserva estrictamente para infraestructura de Storage y RLS.
 5. **Storage:** RESUELTO. Se comprobó la existencia y estado activo de los buckets `project-images` y `event-images` en la base remota. Queda pendiente como deuda operativa la normalización de la tabla `supabase_migrations` en el CLI.
 
@@ -332,4 +341,5 @@ Una feature no debe marcarse **COMPLETA** sólo porque el código compile. Deben
 | 2026-10-27 | `33b93c7` | Auditoría integral y creación inicial de `estado-proyecto.md` | — |
 | 2026-10-27 | `afe9786` | Corrección P0: transaccionalidad Serializable integral y retry acotado de `P2034` en `acceptOfferAsCounterparty` | — |
 | 2026-10-27 | `1043195` | Saneamiento P0 de inicialización de BD: eliminación de SQL obsoleto de Supabase, consolidación de Prisma Migrate como único camino canónico y actualización de `docs/DATABASE.md` y `README.md` | — |
+| 2026-10-27 | Pendiente | Feature: Precio único de entrada: `Entrada` GENERAL creada anidada con el evento y editable (`precioEntrada` en Actions y REST), visible en cartelera y detalle público; sin compra ni pasarela; sin migración | — |
 | 2026-10-27 | Pendiente | Feature: Historial de fechas canceladas para músicos en el dashboard (agrupación de acuerdos en eventos cancelados y visualización dedicada) | — |

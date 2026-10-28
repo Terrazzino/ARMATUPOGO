@@ -63,14 +63,25 @@ autenticado para no revelar la existencia de recursos de otro músico.
 | Método | Ruta | Qué hace | Rol | Errores posibles |
 |---|---|---|---|---|
 | `GET` | `/api/eventos` | Lista exclusivamente los eventos propios del organizador | `ORGANIZADOR` | 401, 403 |
-| `POST` | `/api/eventos` | Publica un nuevo evento | `ORGANIZADOR` | 400, 401, 403 |
+| `POST` | `/api/eventos` | Publica un nuevo evento junto con su precio único de entrada (`precioEntrada`, obligatorio) | `ORGANIZADOR` | 400, 401, 403 |
 | `GET` | `/api/eventos/:eventoId` | Detalle privado de un evento propio, publicado o cancelado | `ORGANIZADOR` propietario | 401, 403, 404 |
-| `PATCH` | `/api/eventos/:eventoId` | Actualiza un evento propio | `ORGANIZADOR` | 400, 401, 403, 404, 409 |
+| `PATCH` | `/api/eventos/:eventoId` | Actualiza un evento propio; admite `precioEntrada` opcional | `ORGANIZADOR` | 400, 401, 403, 404, 409 |
 | `POST` | `/api/eventos/:eventoId/cancelar` | Cancela un evento propio y sus procesos activos | `ORGANIZADOR` | 401, 403, 404, 409 |
 
 Los músicos consultan eventos mediante la API pública. En operaciones privadas,
 un evento ajeno y uno inexistente producen `404`. `PATCH` no acepta `estado`; el único
 flujo para pasar a `CANCELADO` es `/api/eventos/:eventoId/cancelar`.
+
+**Precio de entrada (`precioEntrada`).** Número entero de pesos argentinos: `0` indica entrada
+gratuita y el máximo es `VALIDATION_LIMITS.MAX_PRICE`. No admite negativos, decimales ni texto.
+
+- `POST /api/eventos`: obligatorio. Crea el evento y su única `Entrada` (`tipoEntrada = "GENERAL"`)
+  en una sola escritura anidada, de modo que no puede quedar un evento sin su entrada.
+- `PATCH /api/eventos/:eventoId`: opcional. Actualiza la `Entrada` GENERAL del evento o la crea si
+  es un evento histórico sin entradas.
+- `esGratuita` no se recibe: el servidor lo deriva (`precioEntrada === 0`).
+- No existe un endpoint de `Entrada`; el modelo admite varias, pero este flujo gestiona sólo una.
+- Respuesta de error de validación: `400` con `"Ingresá el precio de entrada (0 si es gratuita)"` si falta.
 
 ---
 
@@ -271,6 +282,8 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 | `POST /api/eventos` | Sin sesión | `401` | "Autenticación requerida" | autorización/autenticación |
 | `POST /api/eventos` | Rol `MUSICO` | `403` | "Solo los organizadores pueden publicar eventos" | autorización/autenticación |
 | `POST /api/eventos` | Campos obligatorios inválidos | `400` | "Datos inválidos" + detalles | Zod |
+| `POST /api/eventos` | `precioEntrada` ausente, negativo, decimal o superior al máximo | `400` | "Datos inválidos" + detalles | Zod |
+| `PATCH /api/eventos/:id` | `precioEntrada` negativo, decimal o superior al máximo | `400` | "Datos inválidos" + detalles | Zod |
 | `POST /api/eventos` | `ends_at` no posterior a `starts_at` | `400` | "La fecha de finalización debe ser posterior a la de inicio" | Zod o regla de dominio |
 | `GET /api/eventos/:id` | Rol `MUSICO` | `403` | "No tienes permisos para esta acción" | autorización |
 | `GET /api/eventos/:id` | Evento ajeno o inexistente | `404` | "Evento no encontrado" | consulta con ownership |

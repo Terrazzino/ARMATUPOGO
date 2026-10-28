@@ -14,12 +14,19 @@ import { requireAuthenticatedUserForRender } from "@/lib/auth-render";
 import { ownedEventWhere, requireRole } from "@/lib/authorization";
 import { normalizeError, NotFoundError, ValidationError } from "@/lib/errors";
 import { calcularCupos } from "@/lib/cupos";
-import { eventIdSchema, eventoSchema, type EventoInput } from "@/lib/validations/events";
+import {
+  eventIdSchema,
+  eventoCreateSchema,
+  eventoUpdateSchema,
+  type EventoCreateInput,
+  type EventoUpdateInput,
+} from "@/lib/validations/events";
 import {
   cancelOwnedEvent,
   eventCreateData,
-  eventUpdateData,
+  generalTicketArgs,
   privateEventInclude,
+  updateOwnedEvent,
   musicianEventListSelect,
   publicEventCardSelect,
   publicEventListOrderBy,
@@ -40,7 +47,7 @@ function parseEventId(id: string) {
 }
 
 function parseEventInput(input: unknown, partial = false) {
-  const result = (partial ? eventoSchema.partial() : eventoSchema).safeParse(input);
+  const result = (partial ? eventoUpdateSchema : eventoCreateSchema).safeParse(input);
   if (!result.success) throw new ValidationError(result.error.issues[0]?.message ?? "Datos del evento inválidos");
   return result.data;
 }
@@ -68,7 +75,7 @@ function parseEventFormData(formData: FormData) {
   return { input, imageAction, image: imageAction === "replace" ? image as File : null };
 }
 
-export async function createEvent(input: EventoInput | FormData) {
+export async function createEvent(input: EventoCreateInput | FormData) {
   try {
     const user = await requireAuthenticatedUser();
     requireRole(user, "ORGANIZADOR");
@@ -76,7 +83,7 @@ export async function createEvent(input: EventoInput | FormData) {
     const submission = input instanceof FormData
       ? parseEventFormData(input)
       : { input, imageAction: "keep" as const, image: null };
-    const validatedData = parseEventInput(submission.input, false) as EventoInput;
+    const validatedData = parseEventInput(submission.input, false) as EventoCreateInput;
     validateEventDates(validatedData);
 
     if (submission.imageAction === "replace" && submission.image) {
@@ -92,6 +99,7 @@ export async function createEvent(input: EventoInput | FormData) {
 
     revalidatePath("/dashboard/organizer");
     revalidatePath("/events");
+    revalidatePath(`/events/${event.id}`);
 
     return { success: true, data: event };
   } catch (error) {
@@ -104,7 +112,7 @@ export async function createEvent(input: EventoInput | FormData) {
   }
 }
 
-export async function updateEvent(id: string, input: Partial<EventoInput> | FormData) {
+export async function updateEvent(id: string, input: Partial<EventoUpdateInput> | FormData) {
   let uploadedPath: string | null = null;
   try {
     const user = await requireAuthenticatedUser();
@@ -113,14 +121,17 @@ export async function updateEvent(id: string, input: Partial<EventoInput> | Form
     const eventId = parseEventId(id);
     const existing = await prisma.evento.findFirst({
       where: ownedEventWhere(eventId, user.id),
-      include: { contrataciones: { select: { estado: true } } },
+      include: {
+        contrataciones: { select: { estado: true } },
+        entradas: generalTicketArgs,
+      },
     });
     if (!existing) throw new NotFoundError("Evento");
 
     const submission = input instanceof FormData
       ? parseEventFormData(input)
       : { input, imageAction: "keep" as const, image: null };
-    const validatedData = parseEventInput(submission.input, true) as Partial<EventoInput>;
+    const validatedData = parseEventInput(submission.input, true) as Partial<EventoUpdateInput>;
     validateEventUpdate(existing, validatedData);
 
     let nextBannerUrl = existing.bannerUrl;
@@ -132,12 +143,8 @@ export async function updateEvent(id: string, input: Partial<EventoInput> | Form
       nextBannerUrl = null;
     }
 
-    const updated = await prisma.evento.update({
-      where: { id: eventId, organizadorId: user.id },
-      data: {
-        ...eventUpdateData(validatedData),
-        ...(submission.imageAction !== "keep" && { bannerUrl: nextBannerUrl }),
-      },
+    const updated = await updateOwnedEvent(eventId, user.id, validatedData, {
+      bannerUrl: submission.imageAction !== "keep" ? nextBannerUrl : undefined,
     });
     const committedUploadedPath = uploadedPath;
     uploadedPath = null;

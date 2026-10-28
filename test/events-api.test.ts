@@ -81,6 +81,7 @@ function validBody() {
     endsAt: new Date(Date.now() + 90_000_000).toISOString(),
     ubicacion: "Sala de pruebas",
     cantidadMusicosRequerida: 2,
+    precioEntrada: 10000,
   };
 }
 
@@ -97,7 +98,7 @@ describe("API privada de eventos", () => {
     vi.clearAllMocks();
     mocks.transaction.mockImplementation(async (callback) =>
       callback({
-        evento: { update: mocks.txEventUpdate },
+        evento: { findFirst: mocks.findFirst, update: (...args: unknown[]) => (args[0] as { data?: { estado?: string } })?.data?.estado === "CANCELADO" ? mocks.txEventUpdate(...args) : mocks.update(...args) },
         postulacion: { updateMany: mocks.txPostulationUpdateMany },
         contratacion: { updateMany: mocks.txContractUpdateMany },
       })
@@ -154,6 +155,111 @@ describe("API privada de eventos", () => {
         estado: "PUBLICADO",
       }),
     });
+  });
+
+  it("POST crea el evento con la Entrada GENERAL anidada", async () => {
+    const organizer = user();
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.create.mockResolvedValue(event(organizer.id));
+
+    const response = await createEvent(
+      request("http://localhost/api/eventos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...validBody(), precioEntrada: 0 }),
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.create.mock.calls[0][0].data.entradas).toEqual({
+      create: { tipoEntrada: "GENERAL", precio: 0, esGratuita: true },
+    });
+  });
+
+  it.each([
+    ["ausente", undefined],
+    ["negativo", -1],
+    ["decimal", 100.5],
+  ])("POST rechaza precio %s con 400", async (_name, precioEntrada) => {
+    mocks.requireAuthenticatedUser.mockResolvedValue(user());
+
+    const response = await createEvent(
+      request("http://localhost/api/eventos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...validBody(), precioEntrada }),
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("PATCH actualiza el precio de la Entrada GENERAL existente", async () => {
+    const organizer = user();
+    const owned = { ...event(organizer.id), entradas: [{ id: "entrada-general" }] };
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.findFirst.mockResolvedValue(owned);
+    mocks.update.mockResolvedValue(owned);
+
+    const response = await patchEvent(
+      request(`http://localhost/api/eventos/${owned.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ precioEntrada: 12000 }),
+      }),
+      params(owned.id)
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.update.mock.calls[0][0].data.entradas).toEqual({
+      update: {
+        where: { id: "entrada-general" },
+        data: { tipoEntrada: "GENERAL", precio: 12000, esGratuita: false },
+      },
+    });
+  });
+
+  it("PATCH crea la Entrada GENERAL en un evento antiguo sin Entrada", async () => {
+    const organizer = user();
+    const owned = { ...event(organizer.id), entradas: [] };
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.findFirst.mockResolvedValue(owned);
+    mocks.update.mockResolvedValue(owned);
+
+    const response = await patchEvent(
+      request(`http://localhost/api/eventos/${owned.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ precioEntrada: 5000 }),
+      }),
+      params(owned.id)
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.update.mock.calls[0][0].data.entradas).toEqual({
+      create: { tipoEntrada: "GENERAL", precio: 5000, esGratuita: false },
+    });
+  });
+
+  it("PATCH rechaza un precio negativo", async () => {
+    const organizer = user();
+    const owned = event(organizer.id);
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.findFirst.mockResolvedValue(owned);
+
+    const response = await patchEvent(
+      request(`http://localhost/api/eventos/${owned.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ precioEntrada: -1 }),
+      }),
+      params(owned.id)
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it("rechaza organizadorId enviado por el cliente", async () => {

@@ -524,6 +524,12 @@ Durante el MVP:
 - no gestiona compras;
 - no necesita endpoints propios para Entrada.
 
+Aclaración de implementación del MVP: cada evento gestionado desde la aplicación tiene una única
+Entrada de tipo `GENERAL`, cuyo precio (pesos argentinos enteros; `0` = gratuita) define el
+organizador al crear el evento y puede corregir al editarlo. El precio es informativo: se muestra
+en la cartelera y en el detalle público, sin compra ni pasarela. El modelo admite múltiples
+Entrada, pero la interfaz no las gestiona.
+
 ---
 
 # 6. Historias de usuario

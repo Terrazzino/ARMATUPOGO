@@ -1,4 +1,4 @@
-import type { EventoInput } from "@/lib/validations/events";
+import type { EventoFormValues } from "@/lib/validations/events";
 
 export type EditableEvent = {
   id: string;
@@ -11,12 +11,14 @@ export type EditableEvent = {
   ciudad?: string | null;
   cantidadMusicosRequerida: number;
   cacheOfrecido?: number | null;
+  /** Precio de la Entrada GENERAL; `null` en eventos históricos sin Entrada. */
+  precioEntrada?: number | null;
   bannerUrl?: string | null;
   estado: "PUBLICADO" | "CANCELADO";
   hasActiveContracts: boolean;
 };
 
-export const EMPTY_EVENT_FORM_VALUES: EventoInput = {
+export const EMPTY_EVENT_FORM_VALUES: EventoFormValues = {
   titulo: "",
   descripcion: "",
   startsAt: "",
@@ -35,7 +37,7 @@ function toDateTimeLocal(value: string) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function eventToFormValues(event?: EditableEvent): EventoInput {
+export function eventToFormValues(event?: EditableEvent): EventoFormValues {
   if (!event) return { ...EMPTY_EVENT_FORM_VALUES };
   return {
     titulo: event.titulo,
@@ -47,6 +49,7 @@ export function eventToFormValues(event?: EditableEvent): EventoInput {
     ciudad: event.ciudad ?? "",
     cantidadMusicosRequerida: event.cantidadMusicosRequerida,
     cacheOfrecido: event.cacheOfrecido ?? null,
+    precioEntrada: event.precioEntrada ?? undefined,
     bannerUrl: event.bannerUrl ?? "",
   };
 }

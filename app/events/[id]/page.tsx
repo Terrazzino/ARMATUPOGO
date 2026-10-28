@@ -16,6 +16,7 @@ import {
 } from "@/lib/event-detail";
 import { getProjectOpportunityState } from "@/lib/musician-event-board";
 import { getPublicEventDetailForRender } from "@/lib/public-detail-data";
+import { formatTicketPrice, getTicketPriceInfo } from "@/lib/ticket-price";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
@@ -88,6 +89,8 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     : temporalState === "ONGOING"
       ? "En curso"
       : "Publicado";
+  const ticketPrice = formatTicketPrice(event.entradas);
+  const isPaidTicket = getTicketPriceInfo(event.entradas).status === "PAID";
   const cache = event.cacheOfrecido && Number(event.cacheOfrecido.toString()) > 0
     ? `$${Number(event.cacheOfrecido.toString()).toLocaleString("es-AR")}`
     : null;
@@ -152,6 +155,13 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 <dd className="mt-1 font-bold text-neutral-100">
                   {event.organizador.nombre} {event.organizador.apellido}
                 </dd>
+              </div>
+              <div>
+                <dt className="atp-label text-neutral-500">Entrada</dt>
+                <dd className="mt-1 font-bold text-neutral-100">{ticketPrice}</dd>
+                {isPaidTicket && (
+                  <dd className="text-neutral-400">La compra de entradas todavía no está disponible.</dd>
+                )}
               </div>
             </dl>
           </div>
