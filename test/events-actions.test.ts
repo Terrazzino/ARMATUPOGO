@@ -106,7 +106,8 @@ describe("Server Actions de eventos", () => {
       callback({
         evento: { findFirst: mocks.findFirst, update: (...args: unknown[]) => (args[0] as { data?: { estado?: string } })?.data?.estado === "CANCELADO" ? mocks.txEventUpdate(...args) : mocks.update(...args) },
         postulacion: { updateMany: mocks.txPostulationUpdateMany },
-        contratacion: { updateMany: mocks.txContractUpdateMany },
+        contratacion: { findMany: vi.fn().mockResolvedValue([]), updateMany: mocks.txContractUpdateMany },
+        notificacion: { createMany: vi.fn().mockResolvedValue({ count: 0 }) },
       })
     );
     mocks.removeEventImage.mockResolvedValue(true);
