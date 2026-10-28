@@ -61,4 +61,33 @@ export const eventoSchema = z.object({
   bannerUrl: z.string().url("URL de banner inválida").optional().or(z.literal("")),
 }).strict();
 
+/**
+ * Precio único de entrada en pesos argentinos enteros. `0` significa entrada gratuita.
+ * `error` cubre campo vacío, ausente o no numérico (NaN).
+ */
+const precioEntradaSchema = z
+  .number({ error: "Ingresá el precio de entrada (0 si es gratuita)" })
+  .int("El precio de entrada debe ser un número entero de pesos")
+  .min(0, "El precio de entrada no puede ser negativo")
+  .max(VALIDATION_LIMITS.MAX_PRICE, "El precio de entrada supera el límite permitido");
+
+/** Contrato de creación (Server Action y POST /api/eventos): el precio es obligatorio. */
+export const eventoCreateSchema = eventoSchema.extend({
+  precioEntrada: precioEntradaSchema,
+});
+
+/** Contrato de actualización (Server Action y PATCH /api/eventos/:id): todos los campos son opcionales. */
+export const eventoUpdateSchema = eventoCreateSchema.partial();
+
+/**
+ * Validación del formulario en modo edición. Los eventos históricos pueden no tener
+ * Entrada, por lo que el precio es opcional y sólo se envía si el organizador lo completa.
+ */
+export const eventoEditFormSchema = eventoSchema.extend({
+  precioEntrada: precioEntradaSchema.optional(),
+});
+
 export type EventoInput = z.infer<typeof eventoSchema>;
+export type EventoCreateInput = z.infer<typeof eventoCreateSchema>;
+export type EventoUpdateInput = z.infer<typeof eventoUpdateSchema>;
+export type EventoFormValues = z.infer<typeof eventoEditFormSchema>;

@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { EventLineupModal, type LineupProject } from "@/components/events/EventLineupModal";
+import {
+  formatTicketCta,
+  formatTicketPrice,
+  getTicketPriceInfo,
+  type TicketPriceSource,
+} from "@/lib/ticket-price";
 
 interface EventCardProps {
   event: {
@@ -10,10 +16,7 @@ interface EventCardProps {
     nombreLugar?: string | null;
     ciudad?: string | null;
     bannerUrl?: string | null;
-    entradas?: Array<{
-      precio: number | string | { toString(): string };
-      esGratuita: boolean;
-    }>;
+    entradas?: TicketPriceSource[];
     contrataciones?: Array<{
       proyectoMusical: {
         id: string;
@@ -76,20 +79,6 @@ function getLineup(event: EventCardProps["event"]): LineupProject[] {
   }));
 }
 
-function formatTicketPrice(event: EventCardProps["event"]) {
-  const tickets = event.entradas ?? [];
-  if (tickets.some((ticket) => ticket.esGratuita)) return "Entrada gratuita";
-
-  const lowestPrice = tickets
-    .map((ticket) => Number(ticket.precio.toString()))
-    .filter((price) => Number.isFinite(price) && price > 0)
-    .sort((a, b) => a - b)[0];
-
-  return lowestPrice
-    ? `Desde $${lowestPrice.toLocaleString("es-AR")}`
-    : "Consultar precio";
-}
-
 export function EventCard({ event, prioritizeImage = false }: EventCardProps) {
   const date = new Date(event.startsAt);
   const day = date.toLocaleDateString("es-AR", { day: "2-digit" });
@@ -101,6 +90,7 @@ export function EventCard({ event, prioritizeImage = false }: EventCardProps) {
   });
   const time = date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
   const lineup = getLineup(event);
+  const priceInfo = getTicketPriceInfo(event.entradas);
 
   return (
     <article className="group flex h-full flex-col overflow-hidden border border-neutral-800 bg-neutral-950 transition-colors hover:border-neutral-600">
@@ -142,10 +132,13 @@ export function EventCard({ event, prioritizeImage = false }: EventCardProps) {
         </h3>
 
         <dl className="mt-3 space-y-2 border-t border-neutral-800 pt-2.5 text-sm">
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-neutral-500">Entrada</dt>
-            <dd className="mt-0.5 font-black text-white">{formatTicketPrice(event)}</dd>
-          </div>
+          {/* Con precio o gratuita, el valor ya se comunica en el botón; sólo se conserva el fallback. */}
+          {priceInfo.status === "UNKNOWN" && (
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-wider text-neutral-500">Entrada</dt>
+              <dd className="mt-0.5 font-black text-white">{formatTicketPrice(event.entradas)}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs font-bold uppercase tracking-wider text-neutral-500">Lugar</dt>
             <dd className="mt-0.5 font-bold text-neutral-200">{event.nombreLugar || "Lugar a confirmar"}</dd>
@@ -161,11 +154,13 @@ export function EventCard({ event, prioritizeImage = false }: EventCardProps) {
             aria-describedby={`ticket-note-${event.id}`}
             className="min-h-11 flex-1 cursor-not-allowed bg-red-600 px-2 py-2 text-xs font-black text-white opacity-65 sm:min-h-10"
           >
-            Comprar entrada
+            {formatTicketCta(event.entradas)}
           </button>
         </div>
         <p id={`ticket-note-${event.id}`} className="sr-only">
-          La compra de entradas todavía no está disponible en la plataforma.
+          {priceInfo.status === "FREE"
+            ? "Entrada gratuita. No requiere compra."
+            : "La compra de entradas todavía no está disponible en la plataforma."}
         </p>
       </div>
     </article>

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   contractFindMany: vi.fn(),
   findFirst: vi.fn(),
   create: vi.fn(),
+  entradaCreate: vi.fn(),
   update: vi.fn(),
   transaction: vi.fn(),
   txEventUpdate: vi.fn(),
@@ -36,6 +37,7 @@ vi.mock("@/lib/prisma", () => ({
       create: mocks.create,
       update: mocks.update,
     },
+    entrada: { create: mocks.entradaCreate },
     proyectoMusical: { findMany: mocks.projectFindMany },
     postulacion: { findMany: mocks.postulationFindMany },
     contratacion: { findMany: mocks.contractFindMany },
@@ -93,6 +95,7 @@ function input() {
     endsAt: new Date(Date.now() + 90_000_000).toISOString(),
     ubicacion: "Sala de pruebas",
     cantidadMusicosRequerida: 2,
+    precioEntrada: 10000,
   };
 }
 
@@ -101,7 +104,7 @@ describe("Server Actions de eventos", () => {
     vi.clearAllMocks();
     mocks.transaction.mockImplementation(async (callback) =>
       callback({
-        evento: { update: mocks.txEventUpdate },
+        evento: { findFirst: mocks.findFirst, update: (...args: unknown[]) => (args[0] as { data?: { estado?: string } })?.data?.estado === "CANCELADO" ? mocks.txEventUpdate(...args) : mocks.update(...args) },
         postulacion: { updateMany: mocks.txPostulationUpdateMany },
         contratacion: { updateMany: mocks.txContractUpdateMany },
       })
@@ -137,6 +140,61 @@ describe("Server Actions de eventos", () => {
     expect(result).toMatchObject({ success: true });
     expect(mocks.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ organizadorId: organizer.id, estado: "PUBLICADO" }),
+    });
+  });
+
+  it("crea el evento con una única Entrada GENERAL anidada y paga", async () => {
+    const organizer = user();
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.create.mockResolvedValue(event(organizer.id));
+
+    const result = await createEvent(input());
+
+    expect(result).toMatchObject({ success: true });
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.create.mock.calls[0][0].data.entradas).toEqual({
+      create: { tipoEntrada: "GENERAL", precio: 10000, esGratuita: false },
+    });
+    // Operación única y atómica: sin escritura separada de Entrada ni transacción manual.
+    expect(mocks.entradaCreate).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it("crea una Entrada GENERAL gratuita cuando el precio es 0", async () => {
+    const organizer = user();
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.create.mockResolvedValue(event(organizer.id));
+
+    const result = await createEvent({ ...input(), precioEntrada: 0 });
+
+    expect(result).toMatchObject({ success: true });
+    expect(mocks.create.mock.calls[0][0].data.entradas).toEqual({
+      create: { tipoEntrada: "GENERAL", precio: 0, esGratuita: true },
+    });
+  });
+
+  it.each([
+    ["negativo", { precioEntrada: -1 }],
+    ["decimal", { precioEntrada: 1500.5 }],
+    ["mayor al máximo", { precioEntrada: 100_000_001 }],
+    ["texto", { precioEntrada: "10000" }],
+    ["ausente", { precioEntrada: undefined }],
+  ])("rechaza el alta con precio %s", async (_name, override) => {
+    mocks.requireAuthenticatedUser.mockResolvedValue(user());
+
+    const result = await createEvent({ ...input(), ...override } as never);
+
+    expect(result).toMatchObject({ error: true, code: "VALIDATION_ERROR" });
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("informa un mensaje claro cuando falta el precio", async () => {
+    mocks.requireAuthenticatedUser.mockResolvedValue(user());
+
+    const result = await createEvent({ ...input(), precioEntrada: undefined } as never);
+
+    expect(result).toMatchObject({
+      message: "Ingresá el precio de entrada (0 si es gratuita)",
     });
   });
 
@@ -179,6 +237,70 @@ describe("Server Actions de eventos", () => {
     expect(mocks.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { organizadorId: organizer.id } })
     );
+  });
+
+  it("edita el precio actualizando la Entrada GENERAL existente", async () => {
+    const organizer = user();
+    const owned = { ...event(organizer.id), entradas: [{ id: "entrada-general" }] };
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.findFirst.mockResolvedValue(owned);
+    mocks.update.mockResolvedValue(owned);
+
+    const result = await updateEvent(owned.id, { precioEntrada: 0 });
+
+    expect(result).toMatchObject({ success: true });
+    expect(mocks.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: owned.id, organizadorId: organizer.id },
+        data: {
+          entradas: {
+            update: {
+              where: { id: "entrada-general" },
+              data: { tipoEntrada: "GENERAL", precio: 0, esGratuita: true },
+            },
+          },
+        },
+      })
+    );
+  });
+
+  it("crea la Entrada GENERAL al editar el precio de un evento antiguo sin Entrada", async () => {
+    const organizer = user();
+    const owned = { ...event(organizer.id), entradas: [] };
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.findFirst.mockResolvedValue(owned);
+    mocks.update.mockResolvedValue(owned);
+
+    const result = await updateEvent(owned.id, { precioEntrada: 8000 });
+
+    expect(result).toMatchObject({ success: true });
+    expect(mocks.update.mock.calls[0][0].data.entradas).toEqual({
+      create: { tipoEntrada: "GENERAL", precio: 8000, esGratuita: false },
+    });
+    expect(mocks.entradaCreate).not.toHaveBeenCalled();
+  });
+
+  it("no toca las Entradas cuando la edición no incluye precio", async () => {
+    const organizer = user();
+    const owned = { ...event(organizer.id), entradas: [{ id: "entrada-general" }] };
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.findFirst.mockResolvedValue(owned);
+    mocks.update.mockResolvedValue(owned);
+
+    await updateEvent(owned.id, { titulo: "Otro título" });
+
+    expect(mocks.update.mock.calls[0][0].data).not.toHaveProperty("entradas");
+  });
+
+  it.each([-5, 99.9])("rechaza editar el precio con %s", async (precioEntrada) => {
+    const organizer = user();
+    mocks.requireAuthenticatedUser.mockResolvedValue(organizer);
+    mocks.findFirst.mockResolvedValue({ ...event(organizer.id), entradas: [] });
+
+    const result = await updateEvent(crypto.randomUUID(), { precioEntrada });
+
+    expect(result).toMatchObject({ error: true });
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it("actualiza con ownership en lectura y escritura", async () => {

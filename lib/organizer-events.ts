@@ -18,6 +18,8 @@ export interface OrganizerEventListItem {
   ciudad: string | null;
   cantidadMusicosRequerida: number;
   cacheOfrecido?: number | null;
+  /** Precio de la Entrada GENERAL; `null` si el evento histórico no tiene Entrada. */
+  precioEntrada?: number | null;
   bannerUrl?: string | null;
   estado: OrganizerEventStatus;
   contrataciones: Array<{ estado: OrganizerEventContractStatus }>;

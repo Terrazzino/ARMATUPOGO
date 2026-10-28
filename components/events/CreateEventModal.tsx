@@ -1,9 +1,13 @@
 "use client";
 
 import { useId, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { eventoSchema, type EventoInput } from "@/lib/validations/events";
+import {
+  eventoCreateSchema,
+  eventoEditFormSchema,
+  type EventoFormValues,
+} from "@/lib/validations/events";
 import { createEvent } from "@/app/actions/events";
 import { updateEvent } from "@/app/actions/events";
 import { ImageUploadField } from "@/components/shared/ImageUploadField";
@@ -25,19 +29,22 @@ function EventModal({ mode, event, initiallyOpen = false }: { mode: "create" | "
     reset,
     control,
     formState: { errors },
-  } = useForm<EventoInput>({
-    resolver: zodResolver(eventoSchema),
+  } = useForm<EventoFormValues>({
+    // En creación el precio es obligatorio; al editar es opcional por los eventos históricos sin Entrada.
+    resolver: zodResolver(
+      mode === "create" ? eventoCreateSchema : eventoEditFormSchema
+    ) as Resolver<EventoFormValues>,
     defaultValues: defaults,
   });
   const eventTitle = useWatch({ control, name: "titulo" });
   const datesLocked = mode === "edit" && event?.hasActiveContracts;
 
-  async function onSubmit(data: EventoInput) {
+  async function onSubmit(data: EventoFormValues) {
     setIsLoading(true);
     setServerError(null);
 
     const formData = new FormData();
-    const payload: Partial<EventoInput> = { ...data };
+    const payload: Partial<EventoFormValues> = { ...data };
     delete payload.bannerUrl;
     if (datesLocked) {
       delete payload.startsAt;
@@ -253,19 +260,48 @@ function EventModal({ mode, event, initiallyOpen = false }: { mode: "create" | "
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="event-fee" className="atp-label mb-2 block">
-                  Caché Ofrecido ($) (Opcional)
-                </label>
-                <input
-                  {...register("cacheOfrecido", { setValueAs: (value) => value === "" ? null : Number(value) })}
-                  id="event-fee"
-                  type="number"
-                  placeholder="Ej: 80000"
-                  min="0"
-                  disabled={isLoading}
-                  className="atp-field"
-                />
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:items-start">
+                <div>
+                  <label htmlFor="event-ticket-price" className="atp-label mb-2 block">
+                    Precio de entrada ($){mode === "create" ? " *" : ""}
+                  </label>
+                  <input
+                    {...register("precioEntrada", {
+                      setValueAs: (value) => value === "" || value == null ? undefined : Number(value),
+                    })}
+                    id="event-ticket-price"
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    step="1"
+                    placeholder="Ej: 10000"
+                    disabled={isLoading}
+                    aria-invalid={Boolean(errors.precioEntrada)}
+                    aria-describedby="event-ticket-price-help"
+                    className="atp-field"
+                  />
+                  <p id="event-ticket-price-help" className="mt-1 text-xs text-neutral-400">
+                    Ingresá 0 si la entrada es gratuita.
+                  </p>
+                  {errors.precioEntrada && (
+                    <p className="mt-1 text-xs font-medium text-red-300">{errors.precioEntrada.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="event-fee" className="atp-label mb-2 block">
+                    Caché Ofrecido ($) (Opcional)
+                  </label>
+                  <input
+                    {...register("cacheOfrecido", { setValueAs: (value) => value === "" ? null : Number(value) })}
+                    id="event-fee"
+                    type="number"
+                    placeholder="Ej: 80000"
+                    min="0"
+                    disabled={isLoading}
+                    className="atp-field"
+                  />
+                </div>
               </div>
 
               <ImageUploadField

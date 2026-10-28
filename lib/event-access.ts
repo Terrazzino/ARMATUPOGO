@@ -1,11 +1,22 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { ownedEventWhere } from "@/lib/authorization";
 import { validarModificacionFechasEvento } from "@/lib/contrataciones";
 import { validarReduccionCupos } from "@/lib/cupos";
 import { EVENT_CANCELLATION_BY_ORGANIZER_REASON } from "@/lib/constants";
-import type { EventoInput } from "@/lib/validations/events";
+import type { EventoCreateInput, EventoInput, EventoUpdateInput } from "@/lib/validations/events";
+
+/** Tipo de la única Entrada que gestiona la UI MVP (el modelo admite varias). */
+export const GENERAL_TICKET_TYPE = "GENERAL";
+
+/** Entrada GENERAL más antigua del evento: la que edita el organizador. */
+export const generalTicketArgs = {
+  where: { tipoEntrada: GENERAL_TICKET_TYPE },
+  orderBy: { creadoEn: "asc" as const },
+  take: 1,
+  select: { id: true, precio: true, esGratuita: true },
+} satisfies Prisma.Evento$entradasArgs;
 
 export const privateEventInclude = {
   contrataciones: {
@@ -18,6 +29,7 @@ export const privateEventInclude = {
       },
     },
   },
+  entradas: generalTicketArgs,
 } satisfies Prisma.EventoInclude;
 
 export const publicEventListSelect = {
@@ -186,9 +198,18 @@ export function publicEventListWhere(
   return where;
 }
 
+/** `esGratuita` se deriva siempre del precio: la fuente de verdad es `precio`. */
+function generalTicketData(precio: number) {
+  return { tipoEntrada: GENERAL_TICKET_TYPE, precio, esGratuita: precio === 0 };
+}
+
+/**
+ * Crea el Evento y su única Entrada GENERAL en una sola escritura anidada de Prisma,
+ * por lo que es atómica: si falla la Entrada no queda un Evento huérfano.
+ */
 export function eventCreateData(
   organizerId: string,
-  data: EventoInput
+  data: EventoCreateInput
 ): Prisma.EventoUncheckedCreateInput {
   return {
     organizadorId: organizerId,
@@ -203,13 +224,25 @@ export function eventCreateData(
     cacheOfrecido: data.cacheOfrecido ?? null,
     estado: "PUBLICADO",
     bannerUrl: data.bannerUrl || null,
+    entradas: { create: generalTicketData(data.precioEntrada) },
   };
 }
 
+/**
+ * `existingGeneralTicketId` es la Entrada GENERAL ya cargada del evento propio.
+ * Si existe se actualiza; si es un evento histórico sin Entrada se crea. Ambos casos
+ * viajan dentro del mismo `evento.update`, cuyo `where` ya filtra por organizador.
+ */
 export function eventUpdateData(
-  data: Partial<EventoInput>
+  data: Partial<EventoUpdateInput>,
+  existingGeneralTicketId?: string | null
 ): Prisma.EventoUpdateInput {
   return {
+    ...(data.precioEntrada !== undefined && {
+      entradas: existingGeneralTicketId
+        ? { update: { where: { id: existingGeneralTicketId }, data: generalTicketData(data.precioEntrada) } }
+        : { create: generalTicketData(data.precioEntrada) },
+    }),
     ...(data.titulo !== undefined && { titulo: data.titulo }),
     ...(data.descripcion !== undefined && { descripcion: data.descripcion || null }),
     ...(data.startsAt !== undefined && { startsAt: new Date(data.startsAt) }),
@@ -260,6 +293,70 @@ export function validateEventUpdate(
       throw new ConflictError("No se pueden reducir los cupos por debajo de los ya acordados");
     }
   }
+}
+
+const MAX_SERIALIZABLE_RETRIES = 2;
+
+/**
+ * Actualiza un evento propio en una transacción Serializable con retry P2034.
+ * Cuando se edita el precio de un evento histórico que aún no tenía Entrada,
+ * la transacción Serializable garantiza que ejecuciones concurrentes no creen
+ * múltiples entradas GENERAL duplicadas.
+ */
+export async function updateOwnedEvent(
+  eventId: string,
+  organizerId: string,
+  data: Partial<EventoUpdateInput>,
+  options?: {
+    bannerUrl?: string | null;
+  }
+) {
+  for (let attempt = 0; attempt <= MAX_SERIALIZABLE_RETRIES; attempt++) {
+    try {
+      return await prisma.$transaction(
+        async (tx) => {
+          const existing = await tx.evento.findFirst({
+            where: ownedEventWhere(eventId, organizerId),
+            include: {
+              contrataciones: { select: { estado: true } },
+              entradas: generalTicketArgs,
+            },
+          });
+          if (!existing) throw new NotFoundError("Evento");
+
+          validateEventUpdate(existing, data);
+
+          const existingGeneralTicketId = existing.entradas?.[0]?.id;
+
+          return await tx.evento.update({
+            where: { id: eventId, organizadorId: organizerId },
+            data: {
+              ...eventUpdateData(data, existingGeneralTicketId),
+              ...(options && options.bannerUrl !== undefined && { bannerUrl: options.bannerUrl }),
+            },
+          });
+        },
+        { isolationLevel: "Serializable" }
+      );
+    } catch (error) {
+      const isSerializableConflict =
+        error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
+
+      if (isSerializableConflict && attempt < MAX_SERIALIZABLE_RETRIES) {
+        continue;
+      }
+      if (isSerializableConflict) {
+        throw new ConflictError(
+          "La operación no pudo completarse debido a un conflicto de concurrencia. Por favor, reintenta."
+        );
+      }
+      throw error;
+    }
+  }
+
+  throw new ConflictError(
+    "La operación no pudo completarse debido a un conflicto de concurrencia. Por favor, reintenta."
+  );
 }
 
 export async function cancelOwnedEvent(eventId: string, organizerId: string) {
