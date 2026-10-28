@@ -418,6 +418,18 @@ Cuando la spec justifica incluir datos adicionales que el frontend necesite proc
 
 ---
 
+### Notificaciones
+
+| Método | Ruta | Qué hace | Rol | Errores posibles |
+|---|---|---|---|---|
+| `GET` | `/api/notificaciones` | Lista las últimas notificaciones del usuario autenticado (parámetro opcional `limit`, máx 50) y el conteo de no leídas (`noLeidasCount`) | Cualquiera autenticado | 401 |
+| `PATCH` | `/api/notificaciones/:id` | Marca una notificación propia como leída | Cualquiera autenticado (propietario) | 400, 401 |
+| `POST` | `/api/notificaciones/marcar-todas` | Marca todas las notificaciones no leídas del usuario como leídas | Cualquiera autenticado | 401 |
+
+Ownership estricto: `PATCH /api/notificaciones/:id` sólo muta si la notificación pertenece al usuario autenticado; en caso de pertenecer a otro o no existir, responde `{ updated: false }` sin revelar datos sensibles.
+
+---
+
 ### General
 
 | Operación | Situación | Status | Qué ve el usuario | Quién lo agarra |

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import { createManyNotifications } from "@/lib/notification-access";
 import { ownedEventWhere } from "@/lib/authorization";
 import { validarModificacionFechasEvento } from "@/lib/contrataciones";
 import { validarReduccionCupos } from "@/lib/cupos";
@@ -375,6 +376,17 @@ export async function cancelOwnedEvent(eventId: string, organizerId: string) {
   }
 
   return prisma.$transaction(async (tx) => {
+    const activeContracts = await tx.contratacion.findMany({
+      where: {
+        eventoId: eventId,
+        estado: { in: ["NEGOCIANDO", "ACORDADO"] },
+      },
+      select: { musicoId: true },
+    });
+    const affectedMusicianIds = [...new Set(activeContracts.map((c) => c.musicoId))].filter(
+      (id) => id !== organizerId
+    );
+
     const updated = await tx.evento.update({
       where: { id: eventId, organizadorId: organizerId },
       data: { estado: "CANCELADO" },
@@ -396,6 +408,19 @@ export async function cancelOwnedEvent(eventId: string, organizerId: string) {
         motivoCancelacion: EVENT_CANCELLATION_BY_ORGANIZER_REASON,
       },
     });
+
+    if (affectedMusicianIds.length > 0) {
+      await createManyNotifications(
+        tx,
+        affectedMusicianIds.map((musicoId) => ({
+          usuarioId: musicoId,
+          tipo: "EVENTO_CANCELADO",
+          titulo: "Evento cancelado",
+          mensaje: `El evento "${existing.titulo}" fue cancelado por el organizador.`,
+          enlace: "/dashboard/musician",
+        }))
+      );
+    }
 
     return updated;
   });

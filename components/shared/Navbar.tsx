@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getAuthenticatedUserForRender as getCurrentUser } from "@/lib/auth-render";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { DashboardNavigation } from "@/components/shared/DashboardNavigation";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface NavbarProps {
   variant?: "public" | "dashboard";
@@ -28,21 +29,24 @@ export async function Navbar({ variant = "public" }: NavbarProps) {
         )}
 
         {/* Auth / Dashboard Controls */}
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {user ? (
-            showDashboardNavigation ? (
-              <DashboardNavigation role={user.rol} />
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  href={dashboardHref}
-                  className="flex min-h-10 items-center gap-2 rounded-md bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
-                >
-                  <span>Mi Panel ({user.rol === "MUSICO" ? "Músico" : "Organizador"})</span>
-                </Link>
-                <LogoutButton />
-              </div>
-            )
+            <>
+              <NotificationBell />
+              {showDashboardNavigation ? (
+                <DashboardNavigation role={user.rol} />
+              ) : (
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Link
+                    href={dashboardHref}
+                    className="flex min-h-10 items-center gap-2 rounded-md bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                  >
+                    <span>Mi Panel ({user.rol === "MUSICO" ? "Músico" : "Organizador"})</span>
+                  </Link>
+                  <LogoutButton />
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex items-center gap-2">
               <Link

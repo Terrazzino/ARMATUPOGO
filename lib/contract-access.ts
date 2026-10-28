@@ -5,6 +5,7 @@ import {
   participatingContractWhere,
 } from "@/lib/authorization";
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { createNotification } from "@/lib/notification-access";
 import { validarDisponibilidadMusico } from "@/lib/disponibilidad";
 import { validarDisponibilidadCupo } from "@/lib/cupos";
 import {
@@ -172,7 +173,7 @@ export async function createDirectContract(input: {
             ? input.initialOfferAmount
             : null;
 
-        return tx.contratacion.create({
+        const contract = await tx.contratacion.create({
           data: {
             eventoId: event.id,
             proyectoMusicalId: project.id,
@@ -197,6 +198,18 @@ export async function createDirectContract(input: {
             ofertas: true,
           },
         });
+
+        if (project.usuarioId !== input.organizerId) {
+          await createNotification(tx, {
+            usuarioId: project.usuarioId,
+            tipo: "INVITACION_RECIBIDA",
+            titulo: "Nueva invitación recibida",
+            mensaje: `Recibiste una invitación para participar con "${project.nombre}" en el evento "${event.titulo}".`,
+            enlace: "/dashboard/musician",
+          });
+        }
+
+        return contract;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     );
@@ -250,13 +263,36 @@ export async function cancelParticipatingContract(input: {
     }
   }
 
-  return prisma.contratacion.update({
-    where: { id: contract.id },
-    data: {
-      estado: "CANCELADO",
-      fechaCancelacion: now,
-      motivoCancelacion: input.cancellationReason || null,
-    },
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.contratacion.update({
+      where: { id: contract.id },
+      data: {
+        estado: "CANCELADO",
+        fechaCancelacion: now,
+        motivoCancelacion: input.cancellationReason || null,
+      },
+    });
+
+    const recipientId =
+      input.userId === contract.organizadorId
+        ? contract.musicoId
+        : contract.organizadorId;
+    const recipientLink =
+      input.userId === contract.organizadorId
+        ? "/dashboard/musician"
+        : "/dashboard/organizer";
+
+    if (recipientId !== input.userId) {
+      await createNotification(tx, {
+        usuarioId: recipientId,
+        tipo: "CONTRATACION_CANCELADA",
+        titulo: "Contratación cancelada",
+        mensaje: `La contratación para el evento "${contract.evento.titulo}" fue cancelada.`,
+        enlace: recipientLink,
+      });
+    }
+
+    return updated;
   });
 }
 

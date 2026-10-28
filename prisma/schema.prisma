@@ -42,6 +42,17 @@ enum EstadoOferta {
   CONTRAOFERTADA
 }
 
+enum TipoNotificacion {
+  POSTULACION_RECIBIDA
+  POSTULACION_ACEPTADA
+  POSTULACION_RECHAZADA
+  INVITACION_RECIBIDA
+  OFERTA_RECIBIDA
+  OFERTA_ACEPTADA
+  CONTRATACION_CANCELADA
+  EVENTO_CANCELADO
+}
+
 model Usuario {
   id            String     @id @db.Uuid
   email         String     @unique
@@ -63,6 +74,7 @@ model Usuario {
   ofertasEnviadas           Oferta[]
   valoracionesDadas         Valoracion[]      @relation("ValoracionesDadas")
   valoracionesRecibidas     Valoracion[]      @relation("ValoracionesRecibidas")
+  notificaciones            Notificacion[]    @relation("NotificacionesUsuario")
 
   @@map("usuarios")
 }
@@ -218,4 +230,21 @@ model Entrada {
   evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
 
   @@map("entradas")
+}
+
+model Notificacion {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId String           @map("user_id") @db.Uuid
+  tipo      TipoNotificacion @map("type")
+  titulo    String           @map("title")
+  mensaje   String           @map("message")
+  enlace    String?          @map("link")
+  leida     Boolean          @default(false) @map("is_read")
+  creadoEn  DateTime         @default(now()) @map("created_at")
+
+  usuario   Usuario          @relation("NotificacionesUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, creadoEn(sort: Desc)])
+  @@index([usuarioId, leida])
+  @@map("notificaciones")
 }

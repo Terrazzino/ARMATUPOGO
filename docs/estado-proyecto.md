@@ -24,13 +24,13 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 
 | Indicador auditado | Estado |
 |---|---:|
-| Entidades Prisma | 8 |
-| Archivos `route.ts` | 26 |
-| Operaciones HTTP | 36 |
-| Server Actions | 39 |
-| Páginas compiladas | 20 |
-| Archivos de tests ejecutados | 36 |
-| Tests aprobados | 405/405 |
+| Entidades Prisma | 9 |
+| Archivos `route.ts` | 29 |
+| Operaciones HTTP | 39 |
+| Server Actions | 43 |
+| Páginas compiladas | 22 |
+| Archivos de tests ejecutados | 39 |
+| Tests aprobados | 435/435 |
 | Autenticación | Supabase Auth |
 | Base de datos | PostgreSQL en Supabase |
 | Archivos | Supabase Storage para proyectos y eventos |
@@ -80,6 +80,7 @@ Arma tu Pogo conecta músicos y proyectos musicales con organizadores mediante p
 | `Oferta` | Historial económico de una negociación; en uso completo. | Pertenece a un contrato y remitente. Estados `PROPUESTA`, `ACEPTADA`, `RECHAZADA`, `CONTRAOFERTADA`. |
 | `Valoracion` | Reputación posterior a una fecha completada; en uso completo. | Vincula contrato, autor, destinatario y, cuando corresponde, proyecto destinatario. |
 | `Entrada` | Precio informativo del evento; en uso. | Relación N:1 con evento. El modelo admite técnicamente múltiples `Entrada`, pero la UI MVP gestiona una única `GENERAL` por evento. |
+| `Notificacion` | Notificación persistente interna; en uso completo. | Vinculada a `Usuario` (cascade). Tipos: `POSTULACION_RECIBIDA`, `POSTULACION_ACEPTADA`, `POSTULACION_RECHAZADA`, `INVITACION_RECIBIDA`, `OFERTA_RECIBIDA`, `OFERTA_ACEPTADA`, `CONTRATACION_CANCELADA`, `EVENTO_CANCELADO`. Migración canónica aplicada en Supabase. |
 
 `prisma/schema.prisma` es la fuente autoritativa del modelo de datos y `prisma/migrations/**` su único camino de migración canónico.
 
@@ -99,7 +100,7 @@ Se eliminó el archivo obsoleto `supabase/migrations/202609010001_init_prisma_su
 | Entradas | COMPLETO (MVP, precio único) | El organizador define el precio al crear y puede editarlo; cartelera y detalle público lo muestran. Sin compra, pasarela, tickets, stock ni múltiples categorías. |
 | Autenticación | COMPLETO con deuda | Supabase Auth, cookies/Bearer, proxy y ownership; alta Auth→Prisma sin compensación. |
 | Servicios externos | PARCIALMENTE VERIFICABLE | Implementados en código; la configuración remota efectiva no se verificó. |
-| Notificaciones | NO IMPLEMENTADO | No existe entidad, inbox, badge, API ni mecanismo de actualización. |
+| Notificaciones | COMPLETO (MVP interno) | Implementada en código, migración aplicada en Supabase y testeada (entidad, triggers transaccionales, API REST, Server Actions, campana, badge y dropdown con marcar leída/todas). Sin WebSockets, push ni email. |
 | Historial de cancelaciones del músico | COMPLETO (MVP) | Pestaña "Canceladas" en el panel del músico para fechas confirmadas cuyo evento fue cancelado por el organizador. |
 
 ## 7. Flujo principal de negocio

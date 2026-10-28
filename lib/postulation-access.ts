@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ownedProjectWhere } from "@/lib/authorization";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { validarCreacionPostulacion } from "@/lib/postulaciones";
+import { createNotification } from "@/lib/notification-access";
 
 export const postulationListInclude = {
   evento: {
@@ -134,25 +135,39 @@ export async function createPostulationForMusician(input: {
     }
   }
 
-  return prisma.postulacion.create({
-    data: {
-      eventoId: input.eventId,
-      proyectoMusicalId: input.projectId,
-      musicoId: input.musicianId,
-      estado: "PENDIENTE",
-      mensaje: formatPostulationMessage(
-        input.initialMessage,
-        input.initialOfferAmount
-      ),
-    },
-    include: {
-      evento: {
-        select: { id: true, titulo: true, startsAt: true, endsAt: true },
+  return prisma.$transaction(async (tx) => {
+    const postulation = await tx.postulacion.create({
+      data: {
+        eventoId: input.eventId,
+        proyectoMusicalId: input.projectId,
+        musicoId: input.musicianId,
+        estado: "PENDIENTE",
+        mensaje: formatPostulationMessage(
+          input.initialMessage,
+          input.initialOfferAmount
+        ),
       },
-      proyectoMusical: {
-        select: { id: true, nombre: true, genero: true },
+      include: {
+        evento: {
+          select: { id: true, titulo: true, startsAt: true, endsAt: true },
+        },
+        proyectoMusical: {
+          select: { id: true, nombre: true, genero: true },
+        },
       },
-    },
+    });
+
+    if (event.organizadorId !== input.musicianId) {
+      await createNotification(tx, {
+        usuarioId: event.organizadorId,
+        tipo: "POSTULACION_RECIBIDA",
+        titulo: "Nueva postulación recibida",
+        mensaje: `El proyecto "${project.nombre}" se postuló a tu evento "${event.titulo}".`,
+        enlace: "/dashboard/organizer",
+      });
+    }
+
+    return postulation;
   });
 }
 
@@ -241,6 +256,16 @@ export async function acceptOwnedPostulation(
         },
       });
 
+      if (postulation.musicoId !== organizerId) {
+        await createNotification(tx, {
+          usuarioId: postulation.musicoId,
+          tipo: "POSTULACION_ACEPTADA",
+          titulo: "Postulación aceptada",
+          mensaje: `Tu postulación con "${postulation.proyectoMusical.nombre}" para el evento "${postulation.evento.titulo}" fue aceptada.`,
+          enlace: "/dashboard/musician",
+        });
+      }
+
       const updatedPostulation = await tx.postulacion.findUniqueOrThrow({
         where: { id: postulationId },
       });
@@ -257,24 +282,37 @@ export async function rejectOwnedPostulation(
 ) {
   const postulation = await prisma.postulacion.findFirst({
     where: organizerPostulationWhere(postulationId, organizerId),
+    include: { evento: true, proyectoMusical: true },
   });
   if (!postulation) throw new NotFoundError("Postulación");
   if (postulation.estado !== "PENDIENTE") {
     throw new ConflictError("La postulación ya no puede rechazarse");
   }
 
-  const result = await prisma.postulacion.updateMany({
-    where: {
-      ...organizerPostulationWhere(postulationId, organizerId),
-      estado: "PENDIENTE",
-    },
-    data: { estado: "RECHAZADA" },
-  });
-  if (result.count !== 1) {
-    throw new ConflictError("La postulación ya fue procesada por otra operación");
-  }
+  return prisma.$transaction(async (tx) => {
+    const result = await tx.postulacion.updateMany({
+      where: {
+        ...organizerPostulationWhere(postulationId, organizerId),
+        estado: "PENDIENTE",
+      },
+      data: { estado: "RECHAZADA" },
+    });
+    if (result.count !== 1) {
+      throw new ConflictError("La postulación ya fue procesada por otra operación");
+    }
 
-  return prisma.postulacion.findUniqueOrThrow({ where: { id: postulationId } });
+    if (postulation.musicoId !== organizerId) {
+      await createNotification(tx, {
+        usuarioId: postulation.musicoId,
+        tipo: "POSTULACION_RECHAZADA",
+        titulo: "Postulación no aceptada",
+        mensaje: `Tu postulación con "${postulation.proyectoMusical.nombre}" para el evento "${postulation.evento.titulo}" fue rechazada.`,
+        enlace: "/dashboard/musician",
+      });
+    }
+
+    return tx.postulacion.findUniqueOrThrow({ where: { id: postulationId } });
+  });
 }
 
 export async function cancelOwnedPostulation(

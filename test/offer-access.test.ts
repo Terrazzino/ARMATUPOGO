@@ -49,6 +49,10 @@ describe("acceptOfferAsCounterparty — transaccionalidad Serializable y retry d
       updateMany: txMocks.contratacionUpdateMany,
       findUniqueOrThrow: txMocks.contratacionFindUniqueOrThrow,
     },
+    notificacion: {
+      create: vi.fn().mockResolvedValue({ id: "mock-notif" }),
+      createMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
   };
 
   type TransactionCallback<T = unknown> = (tx: typeof txMock) => Promise<T>;

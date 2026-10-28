@@ -69,7 +69,8 @@ El MVP se concentrará en el núcleo del marketplace:
 11. cancelación y finalización de contrataciones;
 12. valoración posterior de las partes;
 13. consulta de reputación;
-14. cartelera pública de eventos.
+14. cartelera pública de eventos;
+15. notificaciones internas persistentes sobre postulaciones, contrataciones, ofertas y cancelaciones.
 
 El MVP **no procesará pagos reales ni transferencias de dinero**.
 
