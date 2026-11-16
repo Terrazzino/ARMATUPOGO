@@ -134,6 +134,7 @@ export async function inviteProject(
     });
 
     revalidatePath("/dashboard/organizer");
+    revalidatePath("/dashboard/musician");
 
     return {
       success: true,
@@ -214,6 +215,7 @@ export async function cancelPostulation(postulacionId: string) {
     const updated = await cancelOwnedPostulation(validatedPostulacionId, user.id);
 
     revalidatePath("/dashboard/musician");
+    revalidatePath("/dashboard/organizer");
 
     return {
       success: true,
@@ -245,7 +247,8 @@ export async function createOffer(input: CrearOfertaInput) {
       message: parsed.data.mensaje,
     });
 
-    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/musician");
+    revalidatePath("/dashboard/organizer");
     revalidatePath(`/contracts/${parsed.data.contratacionId}`);
 
     return {
