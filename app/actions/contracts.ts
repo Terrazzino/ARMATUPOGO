@@ -194,7 +194,10 @@ export async function rejectPostulation(postulacionId: string) {
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -219,7 +222,10 @@ export async function cancelPostulation(postulacionId: string) {
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -253,7 +259,12 @@ export async function createOffer(input: CrearOfertaInput) {
 
     return {
       success: true,
-      data: newOffer,
+      data: {
+        id: newOffer.id,
+        contratacionId: newOffer.contratacionId,
+        monto: Number(newOffer.monto),
+        estado: newOffer.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -286,8 +297,18 @@ export async function acceptOffer(ofertaId: string) {
     return {
       success: true,
       data: {
-        offer: updatedOffer,
-        contract: updatedContract,
+        offer: {
+          id: updatedOffer.id,
+          estado: updatedOffer.estado,
+          monto: Number(updatedOffer.monto),
+        },
+        contract: {
+          id: updatedContract.id,
+          estado: updatedContract.estado,
+          montoPactado: updatedContract.montoPactado
+            ? Number(updatedContract.montoPactado)
+            : null,
+        },
       },
     };
   } catch (error) {
@@ -317,7 +338,10 @@ export async function rejectOffer(ofertaId: string) {
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -352,7 +376,10 @@ export async function cancelContract(input: CancelarContratacionInput) {
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
