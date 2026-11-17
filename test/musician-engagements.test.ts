@@ -156,6 +156,27 @@ describe("fechas y contrataciones del músico", () => {
     expect(getMusicianContractActionState("COMPLETADO", true)).toBe("already-rated");
   });
 
+  it("habilita acción de finalización para el músico cuando el evento finalizó y luego permite calificar", () => {
+    const actionBeforeEnd = getMusicianContractActionState(
+      "ACORDADO",
+      false,
+      "2026-05-03T20:00:00.000Z",
+      NOW
+    );
+    expect(actionBeforeEnd).toBe("awaiting-event");
+
+    const actionAfterEnd = getMusicianContractActionState(
+      "ACORDADO",
+      false,
+      "2026-05-01T20:00:00.000Z",
+      NOW
+    );
+    expect(actionAfterEnd).toBe("awaiting-completion");
+
+    const actionCompleted = getMusicianContractActionState("COMPLETADO", false);
+    expect(actionCompleted).toBe("rate-organizer");
+  });
+
   it("conserva la negociación y no expone acciones para contratos cancelados", () => {
     expect(getMusicianContractActionState("NEGOCIANDO", false)).toBe("negotiation");
     expect(getMusicianContractActionState("CANCELADO", false)).toBe("unavailable");

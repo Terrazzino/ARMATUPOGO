@@ -98,49 +98,61 @@ export async function createOfferForParticipant(input: {
     }
   }
 
-  return prisma.$transaction(async (tx) => {
-    if (validation.ofertasAContraofertar.length > 0) {
-      await tx.oferta.updateMany({
-        where: {
-          id: { in: validation.ofertasAContraofertar },
+  try {
+    return await prisma.$transaction(async (tx) => {
+      if (validation.ofertasAContraofertar.length > 0) {
+        await tx.oferta.updateMany({
+          where: {
+            id: { in: validation.ofertasAContraofertar },
+            contratacionId: contract.id,
+            estado: "PROPUESTA",
+          },
+          data: { estado: "CONTRAOFERTADA" },
+        });
+      }
+
+      const createdOffer = await tx.oferta.create({
+        data: {
           contratacionId: contract.id,
+          remitenteId: input.userId,
+          monto: input.amount,
+          mensaje: input.message || null,
           estado: "PROPUESTA",
         },
-        data: { estado: "CONTRAOFERTADA" },
       });
-    }
 
-    const createdOffer = await tx.oferta.create({
-      data: {
-        contratacionId: contract.id,
-        remitenteId: input.userId,
-        monto: input.amount,
-        mensaje: input.message || null,
-        estado: "PROPUESTA",
-      },
+      const recipientId =
+        input.userId === contract.organizadorId
+          ? contract.musicoId
+          : contract.organizadorId;
+      const recipientLink =
+        input.userId === contract.organizadorId
+          ? "/dashboard/musician"
+          : "/dashboard/organizer";
+
+      if (recipientId !== input.userId) {
+        await createNotification(tx, {
+          usuarioId: recipientId,
+          tipo: "OFERTA_RECIBIDA",
+          titulo: "Nueva oferta recibida",
+          mensaje: `Recibiste una oferta de ${input.amount.toLocaleString("es-AR")} para el evento "${contract.evento.titulo}".`,
+          enlace: recipientLink,
+        });
+      }
+
+      return createdOffer;
     });
-
-    const recipientId =
-      input.userId === contract.organizadorId
-        ? contract.musicoId
-        : contract.organizadorId;
-    const recipientLink =
-      input.userId === contract.organizadorId
-        ? "/dashboard/musician"
-        : "/dashboard/organizer";
-
-    if (recipientId !== input.userId) {
-      await createNotification(tx, {
-        usuarioId: recipientId,
-        tipo: "OFERTA_RECIBIDA",
-        titulo: "Nueva oferta recibida",
-        mensaje: `Recibiste una oferta de ${input.amount.toLocaleString("es-AR")} para el evento "${contract.evento.titulo}".`,
-        enlace: recipientLink,
-      });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new ConflictError(
+        "Ya existe una propuesta activa en esta negociación"
+      );
     }
-
-    return createdOffer;
-  });
+    throw error;
+  }
 }
 
 const MAX_SERIALIZABLE_RETRIES = 2;

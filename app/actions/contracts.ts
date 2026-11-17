@@ -134,6 +134,7 @@ export async function inviteProject(
     });
 
     revalidatePath("/dashboard/organizer");
+    revalidatePath("/dashboard/musician");
 
     return {
       success: true,
@@ -193,7 +194,10 @@ export async function rejectPostulation(postulacionId: string) {
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -214,10 +218,14 @@ export async function cancelPostulation(postulacionId: string) {
     const updated = await cancelOwnedPostulation(validatedPostulacionId, user.id);
 
     revalidatePath("/dashboard/musician");
+    revalidatePath("/dashboard/organizer");
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -245,12 +253,18 @@ export async function createOffer(input: CrearOfertaInput) {
       message: parsed.data.mensaje,
     });
 
-    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/musician");
+    revalidatePath("/dashboard/organizer");
     revalidatePath(`/contracts/${parsed.data.contratacionId}`);
 
     return {
       success: true,
-      data: newOffer,
+      data: {
+        id: newOffer.id,
+        contratacionId: newOffer.contratacionId,
+        monto: Number(newOffer.monto),
+        estado: newOffer.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -283,8 +297,18 @@ export async function acceptOffer(ofertaId: string) {
     return {
       success: true,
       data: {
-        offer: updatedOffer,
-        contract: updatedContract,
+        offer: {
+          id: updatedOffer.id,
+          estado: updatedOffer.estado,
+          monto: Number(updatedOffer.monto),
+        },
+        contract: {
+          id: updatedContract.id,
+          estado: updatedContract.estado,
+          montoPactado: updatedContract.montoPactado
+            ? Number(updatedContract.montoPactado)
+            : null,
+        },
       },
     };
   } catch (error) {
@@ -314,7 +338,10 @@ export async function rejectOffer(ofertaId: string) {
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);
@@ -349,7 +376,10 @@ export async function cancelContract(input: CancelarContratacionInput) {
 
     return {
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        estado: updated.estado,
+      },
     };
   } catch (error) {
     const normalized = normalizeError(error);

@@ -135,40 +135,52 @@ export async function createPostulationForMusician(input: {
     }
   }
 
-  return prisma.$transaction(async (tx) => {
-    const postulation = await tx.postulacion.create({
-      data: {
-        eventoId: input.eventId,
-        proyectoMusicalId: input.projectId,
-        musicoId: input.musicianId,
-        estado: "PENDIENTE",
-        mensaje: formatPostulationMessage(
-          input.initialMessage,
-          input.initialOfferAmount
-        ),
-      },
-      include: {
-        evento: {
-          select: { id: true, titulo: true, startsAt: true, endsAt: true },
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const postulation = await tx.postulacion.create({
+        data: {
+          eventoId: input.eventId,
+          proyectoMusicalId: input.projectId,
+          musicoId: input.musicianId,
+          estado: "PENDIENTE",
+          mensaje: formatPostulationMessage(
+            input.initialMessage,
+            input.initialOfferAmount
+          ),
         },
-        proyectoMusical: {
-          select: { id: true, nombre: true, genero: true },
+        include: {
+          evento: {
+            select: { id: true, titulo: true, startsAt: true, endsAt: true },
+          },
+          proyectoMusical: {
+            select: { id: true, nombre: true, genero: true },
+          },
         },
-      },
-    });
-
-    if (event.organizadorId !== input.musicianId) {
-      await createNotification(tx, {
-        usuarioId: event.organizadorId,
-        tipo: "POSTULACION_RECIBIDA",
-        titulo: "Nueva postulación recibida",
-        mensaje: `El proyecto "${project.nombre}" se postuló a tu evento "${event.titulo}".`,
-        enlace: "/dashboard/organizer",
       });
-    }
 
-    return postulation;
-  });
+      if (event.organizadorId !== input.musicianId) {
+        await createNotification(tx, {
+          usuarioId: event.organizadorId,
+          tipo: "POSTULACION_RECIBIDA",
+          titulo: "Nueva postulación recibida",
+          mensaje: `El proyecto "${project.nombre}" se postuló a tu evento "${event.titulo}".`,
+          enlace: "/dashboard/organizer",
+        });
+      }
+
+      return postulation;
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new ConflictError(
+        "Ya existe una postulación para este proyecto en este evento"
+      );
+    }
+    throw error;
+  }
 }
 
 export async function acceptOwnedPostulation(

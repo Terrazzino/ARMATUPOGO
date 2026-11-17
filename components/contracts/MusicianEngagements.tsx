@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cancelPostulation } from "@/app/actions/contracts";
+import { cancelPostulation, completeContract } from "@/app/actions/contracts";
 import { DeferredNegotiationCard } from "@/components/contracts/DeferredNegotiationCard";
 import { DeferredRatingModal } from "@/components/ratings/DeferredRatingModal";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -223,6 +223,7 @@ function EngagementRow({
   currentUserId: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const item = engagement.item;
   const event = item.evento;
   const organizer = engagement.kind === "contract"
@@ -343,10 +344,15 @@ function EngagementRow({
               <span className="text-xs font-semibold leading-tight text-neutral-500">
                 Pendiente de realizarse
               </span>
-            ) : contractActionState === "awaiting-completion" ? (
-              <span className="text-xs font-semibold leading-tight text-neutral-400">
-                Pendiente de finalización
-              </span>
+            ) : contractActionState === "awaiting-completion" && engagement.kind === "contract" ? (
+              <button
+                type="button"
+                onClick={() => setIsCompleting(true)}
+                aria-expanded={isCompleting}
+                className="atp-button atp-button-primary min-h-9 px-3 text-xs"
+              >
+                Marcar completada
+              </button>
             ) : null}
           </div>
         </TableCell>
@@ -359,6 +365,81 @@ function EngagementRow({
           </div>
         </div>
       )}
+
+      {isCompleting && engagement.kind === "contract" && (
+        <CompleteContractPanel
+          contract={engagement.item}
+          onClose={() => setIsCompleting(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CompleteContractPanel({
+  contract,
+  onClose,
+}: {
+  contract: MusicianContract;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function confirmAction() {
+    setFeedback(null);
+    startTransition(async () => {
+      const result = await completeContract(contract.id);
+
+      if (result.error) {
+        setFeedback(result.message);
+        return;
+      }
+
+      onClose();
+      router.refresh();
+    });
+  }
+
+  return (
+    <div role="row" className="border-t border-neutral-800 bg-black p-4">
+      <div role="cell" className="mx-auto max-w-2xl space-y-4">
+        <div>
+          <h4 className="atp-heading text-xl">
+            Confirmar participación completada
+          </h4>
+          <p className="mt-1 text-sm leading-relaxed text-neutral-400">
+            ¿Confirmás que la participación de {contract.proyectoMusical.nombre} en &ldquo;{contract.evento.titulo}&rdquo; ya se realizó? Después podrá ser valorada.
+          </p>
+        </div>
+
+        {feedback && (
+          <p role="alert" className="atp-feedback atp-feedback-error text-sm">
+            {feedback}
+          </p>
+        )}
+
+        <div className="flex flex-wrap justify-end gap-2 border-t border-neutral-800 pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPending}
+            className="atp-button atp-button-ghost min-h-9 px-3 text-xs"
+          >
+            Volver
+          </button>
+          <button
+            type="button"
+            onClick={confirmAction}
+            disabled={isPending}
+            aria-busy={isPending}
+            className="atp-button atp-button-primary min-h-9 px-3 text-xs"
+          >
+            {isPending ? "Procesando..." : "Confirmar finalización"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
