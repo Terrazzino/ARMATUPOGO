@@ -128,6 +128,7 @@ model Evento {
   contrataciones Contratacion[]
   entradas       Entrada[]
 
+  @@index([estado, endsAt, startsAt])
   @@map("eventos")
 }
 
