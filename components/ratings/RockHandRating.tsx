@@ -1,5 +1,6 @@
 import Image from "next/image";
-import rockHandImage from "@/public/branding/valoracion-256.webp";
+
+const rockHandImage = "/branding/valoracion-256.webp";
 
 interface RockHandIconProps {
   size?: number;
