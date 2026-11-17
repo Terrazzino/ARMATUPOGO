@@ -80,32 +80,19 @@ El repositorio cuenta con configuración de Supabase CLI versionada en `supabase
    ```bash
    npm install
    ```
-2. **Configurar variables E2E desde la plantilla:**
-   ```bash
-   # En Windows PowerShell / CMD:
-   copy .env.e2e.example .env.e2e
-   # En Linux / macOS:
-   cp .env.e2e.example .env.e2e
-   ```
-   > `.env.e2e` se encuentra ignorado por git para no versionar secretos locales.
-3. **Iniciar Docker / Container Runtime:**
+2. **Iniciar Docker / Container Runtime:**
    Asegurarse de tener Docker Desktop, Colima o Podman en ejecución.
-4. **Iniciar la infraestructura local de Supabase:**
+3. **Iniciar la infraestructura local de Supabase:**
    ```bash
    npx supabase start
    ```
-5. **Obtener las credenciales locales generadas:**
+4. **Preparar el entorno, base de datos y Storage de forma automática:**
    ```bash
-   npx supabase status -o env
+   npm run e2e:prepare
    ```
-6. **Completar `.env.e2e` local:**
-   Copiar el valor de `ANON_KEY` generado por Supabase Local en la variable `NEXT_PUBLIC_SUPABASE_ANON_KEY` dentro de tu `.env.e2e`.
-7. **Aplicar migraciones sobre la base de datos PostgreSQL local:**
-   ```bash
-   npm run prisma:migrate:e2e
-   ```
-   > Carga explícitamente `.env.e2e` mediante `dotenv-cli` e impide conectar a `.env.local` o a una base remota.
-8. **Ejecutar la suite de pruebas E2E:**
+   > Este comando extrae automáticamente las credenciales locales de Supabase (`.env.e2e`), ejecuta las migraciones de Prisma (`npm run prisma:migrate:e2e`) y aplica las políticas de Supabase Storage para los buckets `project-images` y `event-images`.
+   > Alternativamente, se puede copiar `.env.e2e.example` como `.env.e2e` y completarlo de forma manual.
+5. **Ejecutar la suite de pruebas E2E:**
    ```bash
    npm run test:e2e
    ```
@@ -113,15 +100,14 @@ El repositorio cuenta con configuración de Supabase CLI versionada en `supabase
 
 > **Nota sobre entornos sin Docker:**
 > Si Docker no está instalado en el host de desarrollo:
-> - Las pruebas públicas de navegación y accesibilidad (smoke tests) pueden ejecutarse directamente (`npm run test:e2e`) ya que validan el render y componentes accesibles sin requerir DB local activa.
-> - Las pruebas E2E autenticadas (flujo completo de postulaciones, ofertas y permisos) se habilitarán en cuanto la instancia de Supabase Local esté iniciada con Docker.
+> - Las pruebas públicas de navegación y accesibilidad (smoke tests) pueden ejecutarse directamente (`npm run test:e2e -- e2e/smoke.spec.ts`) ya que validan el render y componentes accesibles sin requerir DB local activa.
+> - La suite completa autenticada (flujo principal, permisos por rol y concurrencia) se ejecuta automáticamente en GitHub Actions CI levantando Supabase Local efímero en el runner.
 
 ### 6. Integración Continua (CI)
 
 Las Pull Requests hacia `main` ejecutan automáticamente los quality gates de GitHub Actions:
-- **Verificación de código:** TypeScript (`npx tsc --noEmit`) y ESLint (`npm run lint`).
-- **Suite Vitest:** pruebas unitarias y de integración de reglas de negocio (`npm test -- --run`).
-- **Smoke E2E Playwright:** validación de carga y navegación pública en entorno aislado (`npm run test:e2e`).
+- **Job `verify`:** TypeScript (`npx tsc --noEmit`), ESLint (`npm run lint`) y pruebas unitarias/integración con Vitest (`npm test -- --run`).
+- **Job `e2e`:** Levanta Supabase Local (`supabase start`), inicializa base de datos, Storage y variables aisladas (`npm run e2e:prepare`), y corre la suite completa de Playwright (`npm run test:e2e`: smoke, permisos por rol, flujo principal y prueba de concurrencia). Ningún paso se conecta a producción ni requiere secretos externos.
 
 ---
 
@@ -156,6 +142,7 @@ Las Pull Requests hacia `main` ejecutan automáticamente los quality gates de Gi
 * `npm run lint` — Ejecuta ESLint para validar calidad de código.
 * `npm test` — Ejecuta la suite de pruebas unitarias con Vitest.
 * `npm run test:e2e` — Ejecuta las pruebas de integración End-to-End con Playwright (en puerto 3100 cargando `.env.e2e`).
+* `npm run e2e:prepare` — Prepara automáticamente el entorno E2E (variables locales, migraciones Prisma y Storage).
 * `npm run prisma:migrate:e2e` — Aplica las migraciones de Prisma en la base de datos de pruebas E2E cargando `.env.e2e`.
 * `npx prisma generate` — Genera los tipos y el cliente de Prisma.
 * `npx prisma migrate status` — Consulta el estado de las migraciones de Prisma.

@@ -35,7 +35,7 @@ jobs:
         run: npm test -- --run
 
   e2e:
-    name: Playwright E2E Smoke
+    name: Playwright E2E
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -53,8 +53,24 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Setup E2E environment
-        run: cp .env.e2e.example .env.e2e
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 3.2.0
 
-      - name: Run Playwright smoke tests
+      - name: Start Supabase Local
+        run: supabase start
+
+      - name: Prepare E2E environment & database
+        run: npm run e2e:prepare
+
+      - name: Run full Playwright test suite
         run: npm run test:e2e
+
+      - name: Upload Playwright test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 5
