@@ -1,6 +1,12 @@
-import { execSync } from "node:child_process";
-import fs from "node:fs";
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
 import path from "node:path";
+
+const require = createRequire(import.meta.url);
+const supabaseCli = path.join(
+  path.dirname(require.resolve("supabase/package.json")),
+  "dist/supabase.js"
+);
 
 const projectStorageMigration = path.resolve(
   process.cwd(),
@@ -13,11 +19,12 @@ const eventStorageMigration = path.resolve(
 
 console.log("[E2E Setup] Aplicando migraciones de Supabase Storage...");
 try {
-  const sql1 = fs.readFileSync(projectStorageMigration, "utf8");
-  execSync("npx supabase db query", { input: sql1, stdio: ["pipe", "inherit", "inherit"] });
-
-  const sql2 = fs.readFileSync(eventStorageMigration, "utf8");
-  execSync("npx supabase db query", { input: sql2, stdio: ["pipe", "inherit", "inherit"] });
+  for (const migration of [projectStorageMigration, eventStorageMigration]) {
+    console.log(`[E2E Setup] Aplicando ${path.basename(migration)}...`);
+    execFileSync(process.execPath, [supabaseCli, "db", "query", "--file", migration], {
+      stdio: "inherit",
+    });
+  }
 
   console.log("[E2E Setup] Buckets y políticas de Storage aplicados correctamente.");
 } catch (error) {
