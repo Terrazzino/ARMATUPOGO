@@ -116,6 +116,13 @@ El repositorio cuenta con configuración de Supabase CLI versionada en `supabase
 > - Las pruebas públicas de navegación y accesibilidad (smoke tests) pueden ejecutarse directamente (`npm run test:e2e`) ya que validan el render y componentes accesibles sin requerir DB local activa.
 > - Las pruebas E2E autenticadas (flujo completo de postulaciones, ofertas y permisos) se habilitarán en cuanto la instancia de Supabase Local esté iniciada con Docker.
 
+### 6. Integración Continua (CI)
+
+Las Pull Requests hacia `main` ejecutan automáticamente los quality gates de GitHub Actions:
+- **Verificación de código:** TypeScript (`npx tsc --noEmit`) y ESLint (`npm run lint`).
+- **Suite Vitest:** pruebas unitarias y de integración de reglas de negocio (`npm test -- --run`).
+- **Smoke E2E Playwright:** validación de carga y navegación pública en entorno aislado (`npm run test:e2e`).
+
 ---
 
 ## 📂 Estructura del Proyecto

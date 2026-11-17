@@ -510,17 +510,64 @@ Las reglas de autorización deben continuar siendo válidas aunque un usuario ma
  ---
  
  # 25. TESTING
- 
- Después de cambios importantes ejecutar, cuando corresponda:
- 
+
+ El proyecto cuenta con dos capas de pruebas automatizadas complementarias:
+
+ ### Vitest (Pruebas unitarias y de integración de backend)
+
+ Se utiliza principalmente para:
+
+ * reglas de negocio;
+ * access layer (`lib/*-access.ts`);
+ * Server Actions (`app/actions/*`);
+ * Route Handlers (`app/api/*`);
+ * errores y normalización;
+ * autorización cuando pueda probarse aisladamente;
+ * regresiones de lógica.
+
+ Comando:
+
+ `npm test -- --run`
+
+ ### Playwright (Pruebas End-to-End en entorno aislado)
+
+ Se utiliza para:
+
+ * flujo real desde la UI;
+ * integración pantalla-servidor;
+ * navegación;
+ * permisos por rol;
+ * interacciones reales;
+ * posteriormente pruebas de concurrencia contra un entorno PostgreSQL aislado.
+
+ Comando:
+
+ `npm run test:e2e`
+
+ ### Principios y reglas de testing
+
+ * **Aislamiento absoluto:** E2E nunca utiliza la base de datos ni los servicios de producción.
+ * **Archivos de entorno:** `.env.e2e` es local y no se versiona (ignorado en `.gitignore`). `.env.e2e.example` sí se versiona como plantilla oficial.
+ * **Configuración Supabase:** `supabase/config.toml` sí se versiona para garantizar reproducibilidad local con Docker.
+ * **Sin atajos ni accesos mágicos:** no se permiten bypasses como `TEST_MODE`, credenciales mágicas o saltos artificiales de autenticación.
+ * **Integración continua:** cada Pull Request hacia `main` debe mantener el CI verde (`verify` y `e2e`).
+ * **Revisión por pares:** los cambios deben ser revisados y aprobados por un integrante del equipo distinto al autor.
+ * **Requisito del proceso:** `main` deberá configurarse para exigir los checks de CI y revisión antes del merge.
+
+ Después de cambios importantes ejecutar:
+
+ `npx tsc --noEmit`
+
  `npm run lint`
- 
- `npm run build`
- 
+
+ `npm test -- --run`
+
+ `npm run test:e2e` (cuando afecte flujos de UI o integración)
+
  Además realizar pruebas funcionales.
- 
+
  Comprobar:
- 
+
  * autenticación;
  * autorización;
  * formularios y validaciones Zod;
@@ -530,7 +577,7 @@ Las reglas de autorización deben continuar siendo válidas aunque un usuario ma
  * responsive;
  * errores;
  * datos y persistencia Prisma.
- 
+
  No considerar una funcionalidad terminada únicamente porque el código compila.
  
  ---
