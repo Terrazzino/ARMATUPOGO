@@ -19,3 +19,4 @@
   - [ ] Playwright E2E ejecutado (`npm run test:e2e`) si se afectó UI, navegación o integración.
 - [ ] **Accesibilidad y UX:** Prueba manual responsive y navegación por teclado si se modificó UI.
 - [ ] **Revisión por pares:** Aprobado por un integrante del equipo distinto al autor.
+
