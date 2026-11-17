@@ -70,6 +70,52 @@ npm run dev
 
 Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
+### 5. Pruebas End-to-End (Playwright)
+
+El repositorio cuenta con configuración de Supabase CLI versionada en `supabase/config.toml` (generada una sola vez con `npx supabase init`). Los desarrolladores **no** necesitan volver a ejecutar `init`.
+
+#### Uso normal del entorno E2E después de clonar:
+
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
+2. **Configurar variables E2E desde la plantilla:**
+   ```bash
+   # En Windows PowerShell / CMD:
+   copy .env.e2e.example .env.e2e
+   # En Linux / macOS:
+   cp .env.e2e.example .env.e2e
+   ```
+   > `.env.e2e` se encuentra ignorado por git para no versionar secretos locales.
+3. **Iniciar Docker / Container Runtime:**
+   Asegurarse de tener Docker Desktop, Colima o Podman en ejecución.
+4. **Iniciar la infraestructura local de Supabase:**
+   ```bash
+   npx supabase start
+   ```
+5. **Obtener las credenciales locales generadas:**
+   ```bash
+   npx supabase status -o env
+   ```
+6. **Completar `.env.e2e` local:**
+   Copiar el valor de `ANON_KEY` generado por Supabase Local en la variable `NEXT_PUBLIC_SUPABASE_ANON_KEY` dentro de tu `.env.e2e`.
+7. **Aplicar migraciones sobre la base de datos PostgreSQL local:**
+   ```bash
+   npm run prisma:migrate:e2e
+   ```
+   > Carga explícitamente `.env.e2e` mediante `dotenv-cli` e impide conectar a `.env.local` o a una base remota.
+8. **Ejecutar la suite de pruebas E2E:**
+   ```bash
+   npm run test:e2e
+   ```
+   > Levanta automáticamente Next.js en el puerto exclusivo `3100` con `reuseExistingServer: false` y las variables de `.env.e2e`.
+
+> **Nota sobre entornos sin Docker:**
+> Si Docker no está instalado en el host de desarrollo:
+> - Las pruebas públicas de navegación y accesibilidad (smoke tests) pueden ejecutarse directamente (`npm run test:e2e`) ya que validan el render y componentes accesibles sin requerir DB local activa.
+> - Las pruebas E2E autenticadas (flujo completo de postulaciones, ofertas y permisos) se habilitarán en cuanto la instancia de Supabase Local esté iniciada con Docker.
+
 ---
 
 ## 📂 Estructura del Proyecto
@@ -102,6 +148,8 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 * `npm run build` — Compila la aplicación para producción.
 * `npm run lint` — Ejecuta ESLint para validar calidad de código.
 * `npm test` — Ejecuta la suite de pruebas unitarias con Vitest.
+* `npm run test:e2e` — Ejecuta las pruebas de integración End-to-End con Playwright (en puerto 3100 cargando `.env.e2e`).
+* `npm run prisma:migrate:e2e` — Aplica las migraciones de Prisma en la base de datos de pruebas E2E cargando `.env.e2e`.
 * `npx prisma generate` — Genera los tipos y el cliente de Prisma.
 * `npx prisma migrate status` — Consulta el estado de las migraciones de Prisma.
 * `npx prisma studio` — Abre la interfaz gráfica para explorar la base de datos.

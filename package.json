@@ -9,8 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "dotenv -e .env.e2e -- playwright test",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:e2e": "dotenv -e .env.e2e -- prisma migrate deploy",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
@@ -25,13 +27,16 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^11.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "prisma": "^6.19.3",
+    "supabase": "^3.2.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite": "^8.3.0",
